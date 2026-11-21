@@ -69,8 +69,8 @@ restart, and the runtime state reflects what is actually active.
 | Plugin API | None |
 | Diagnostics | Local, feature-specific logging in Core; no remote telemetry ([diagnostics](diagnostics.md)) |
 
-Lifecycle failure handling and settings transaction semantics remain
-**[Proposed]** pending technical-lead review (see the
+Lifecycle failure handling and settings transaction semantics were approved
+on 2026-11-21 (see the
 [M0 specification](../specifications/m0-platform-foundations.md#11-open-questions)).
 
 ## Startup performance [Approved 2026-11-21]

@@ -4,7 +4,7 @@ Status labels follow [AGENTS.md](../../AGENTS.md#decision-status-labels).
 
 This document records an approved **future direction** (2026-11-21). It is
 not an M0 telemetry implementation. M0 only includes the local logging
-already required by the [M0 lifecycle](../specifications/m0-platform-foundations.md#44-logging-and-ui-reporting-proposed--requires-technical-lead-review).
+already required by the [M0 lifecycle](../specifications/m0-platform-foundations.md#44-logging-and-ui-reporting-approved-2026-11-21).
 
 ## Decisions [Approved 2026-11-21]
 

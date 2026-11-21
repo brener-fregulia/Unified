@@ -75,8 +75,8 @@ Directory names use the approved mod id `qol_unified` (see the
   with an atomic move; fall back to a non-atomic replace only if the file
   system does not support atomic moves, and log it.
 - Save when the settings screen applies changes, not on every widget change.
-  The ordering of saving versus runtime apply is **[Proposed]** in the
-  [M0 transaction semantics](../specifications/m0-platform-foundations.md#72-transaction-and-failure-semantics-proposed--requires-technical-lead-review).
+  Saving happens before runtime apply, as approved in the
+  [M0 transaction semantics](../specifications/m0-platform-foundations.md#72-transaction-and-failure-semantics-approved-2026-11-21).
 - Disabling a feature changes only its `enabled` value (CFG-P7).
 
 ## Open questions

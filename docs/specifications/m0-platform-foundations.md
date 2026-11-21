@@ -2,16 +2,12 @@
 
 Status labels follow [AGENTS.md](../../AGENTS.md#decision-status-labels).
 
-**Specification status: Approved in part (2026-11-21).** The technical lead
-approved the registration, configuration, compatibility and settings UI
-contracts, and the parts of the lifecycle contract not related to failures.
-Two parts stay **[Proposed]** until the technical lead reviews them:
+**Specification status: Approved (2026-11-21).** The technical lead approved
+all M0 contracts (§3–§7) and acceptance criteria (§9), with the corrections
+listed in §12. Items still marked **[Proposed]** are outside the approved
+contract.
 
-- lifecycle failure handling (§4.2–§4.4);
-- settings transaction and failure semantics (§7.2).
-
-The acceptance criteria (§9) are also still **[Proposed]**. Implementation
-must not start on any [Proposed] part.
+Implementation status is tracked in [§12](#12-implementation-status).
 
 ## 1. Goals [Approved]
 
@@ -70,10 +66,10 @@ implementation**. Names below describe the contract, not final Java types.
 Other setting types (floats, colors, key bindings, lists) are **[Deferred]**
 until a feature needs them.
 
-How a `LIVE` setting reaches a running feature is not yet specified. The
-smallest option is **[Proposed]**: features read current values from an
-immutable settings snapshot owned by the Core, and the Core replaces that
-snapshot on apply. This needs no callback.
+**[Approved 2026-11-21]** Features read current values from an immutable
+**effective settings snapshot** owned by the Core. The Core replaces the
+snapshot when changes are applied, so no callback is needed. Desired and
+effective settings are kept separately (§4.5).
 
 ### 3.3 Conflict descriptor
 
@@ -92,9 +88,9 @@ A feature implementation exposes exactly two operations:
 Features whose behavior is woven in at load time (for example, Mixins) must
 check their effective state at run time instead of relying on unloading.
 
-**[Proposed]** `disable()` must be safe to call after a partial or failed
-`enable()`. It must only undo what is actually installed. This allows the
-rollback in §4.3.
+**[Approved 2026-11-21]** `disable()` must be safe to call after a partial
+or failed `enable()`. It must only undo what is actually installed. This
+allows the rollback in §4.3.
 
 ### 3.5 Registry
 
@@ -124,7 +120,7 @@ restart; the UI shows this as *pending restart*.
 - **LC-6** Disabling a feature never deletes its settings or data (CFG-P7).
 - **LC-7** Lifecycle calls happen on the client (render) thread.
 
-### 4.2 Effective states [Proposed — requires technical-lead review]
+### 4.2 Effective states [Approved 2026-11-21]
 
 This revision replaces the earlier `FAILED` state, which treated a feature
 as inactive even after `disable()` threw. That was unsafe.
@@ -143,7 +139,7 @@ on that feature.
 Three states plus a failure record is the whole model; there are no other
 transitions.
 
-### 4.3 Transitions [Proposed — requires technical-lead review]
+### 4.3 Transitions [Approved 2026-11-21]
 
 | From | Operation | Result | New state | Failure record |
 | --- | --- | --- | --- | --- |
@@ -162,13 +158,17 @@ Requirements:
   Other features and the game continue.
 - **LC-5** No automatic retries. The user can retry by toggling (enable from
   `INACTIVE`, or disable from `UNKNOWN`).
-- **LC-8** A feature in `UNKNOWN` is never reported as inactive or
-  disabled. It cannot be enabled again until a disable succeeds or the game
-  restarts.
+- **LC-8** A feature in `UNKNOWN` is never treated or reported as inactive
+  or disabled. It cannot be enabled again until a cleanup (`disable()`)
+  succeeds or the process restarts.
+- **LC-13** Lifecycle operations run only when the player changes the
+  desired state or explicitly asks for a retry. Nothing retries
+  automatically: not acknowledging or closing a results screen, and not
+  re-applying an unchanged desired state.
 - **LC-9** A game restart starts every feature in `INACTIVE`, then applies
   LC-1 using the saved desired state.
 
-### 4.4 Logging and UI reporting [Proposed — requires technical-lead review]
+### 4.4 Logging and UI reporting [Approved 2026-11-21]
 
 - **LC-10** Each failure is logged once at `ERROR` with the feature id,
   operation and stack trace. A rollback attempt is logged at `WARN`. A
@@ -180,6 +180,19 @@ Requirements:
     *Enable*.
 - **LC-12** Messages are translated; exception details appear only in the
   log.
+
+### 4.5 Desired and effective settings [Approved 2026-11-21]
+
+- **ST-1** Each feature has a **desired settings snapshot** (what the player
+  saved) and an **effective settings snapshot** (what the running feature
+  reads).
+- **ST-2** After a successful save, `LIVE` settings are copied into the
+  effective snapshot immediately.
+- **ST-3** `RESTART_REQUIRED` settings keep their previous effective value
+  until the process restarts. The feature is shown as *pending restart*
+  while the desired and effective values differ.
+- **ST-4** Snapshots are immutable. A new effective snapshot replaces the
+  old one as a whole.
 
 ## 5. Configuration behavior [Approved 2026-11-21]
 
@@ -236,7 +249,7 @@ M0 implements only the global file:
 - **UI-10** The screen is built with native Minecraft screen widgets. No
   configuration UI library is used.
 
-### 7.2 Transaction and failure semantics [Proposed — requires technical-lead review]
+### 7.2 Transaction and failure semantics [Approved 2026-11-21]
 
 - **TX-1 Draft.** Opening the screen copies the current desired states and
   setting values into a draft. All edits change only the draft.
@@ -252,24 +265,25 @@ M0 implements only the global file:
   applied; the screen stays open with an error and the draft is kept. This
   way the running game is never ahead of what is on disk.
 - **TX-6 Runtime apply.** After a successful save:
-  - The new settings snapshot is installed (§3.2).
+  - `LIVE` settings enter the effective snapshot; `RESTART_REQUIRED`
+    settings do not (§4.5).
   - `LIVE` toggles are applied per §4.3, all disables before enables, each
     group in registry order.
   - `RESTART_REQUIRED` changes are marked *pending restart*.
 - **TX-7 Failures do not revert the saved choice.** If a runtime transition
   fails, the saved desired state stays as the user chose it, and the
   effective state and failure indicator are shown honestly (§4.4). Failures
-  are never reported as successful application.
+  are never reported as successful application. A runtime failure does
+  **not** mean the save failed: the file already holds the player's choice.
+  Save failures are reported separately (TX-5).
 - **TX-8 Result.** If every transition succeeded, the screen closes. If any
   failed, the screen stays open with a summary listing the affected
-  features, and the next *Done* or *Cancel* closes it.
+  features, and the next *Done* or *Cancel* closes it. Acknowledging or
+  closing the summary never retries a failed operation (LC-13).
 - **TX-9 Read-only configuration.** If the file is read-only because its
   schema version is newer (see configuration), the screen says that changes
   cannot be saved. *Done* is disabled, so runtime and disk cannot diverge.
 
-The brief asked that "persistent configuration is updated only after a valid
-apply". TX-5 reads that as *after validation succeeds*. If the intent was
-*after runtime apply succeeds*, see Q-M6.
 
 Test cases (unit tests against fixtures, without a game instance):
 
@@ -284,17 +298,20 @@ Test cases (unit tests against fixtures, without a game instance):
 | TX-T7 | Toggle a restart-required fixture | File updated; no lifecycle call; *pending restart* shown |
 | TX-T8 | Configuration read-only (newer schema) | Done disabled; no write |
 | TX-T9 | One failing and one succeeding live change | Success applied; failure reported; screen stays open |
+| TX-T10 | Re-apply an unchanged desired state after a failure (acknowledge/close) | No lifecycle call |
+| TX-T11 | Enable requested while `UNKNOWN` | Rejected; no `enable()` call |
+| TX-T12 | Change a `LIVE` and a `RESTART_REQUIRED` setting together | `LIVE` value effective at once; restart-required value keeps its old effective value; *pending restart* |
 
 ## 8. Test strategy [Approved 2026-11-21]
 
 | Layer | Scope | How |
 | --- | --- | --- |
-| Unit | Registry validation, setting validation, config parse/save/round-trip, migrations, malformed and newer-version files, lifecycle states and failures, conflict default rules, search matching, transaction cases TX-T1–TX-T9 | JUnit 5, without a Minecraft instance |
+| Unit | Registry validation, setting validation, config parse/save/round-trip, migrations, malformed and newer-version files, lifecycle states and failures, conflict default rules, search matching, transaction cases TX-T1–TX-T12 | JUnit 5, without a Minecraft instance |
 | Localization | Every key used by the Core and registered features exists in both language files | Automated test |
 | In-game | Startup, settings screen, toggling live and restart-required features, conflict and failure display | Manual QA checklist in a development client (initially) |
 | Fixtures | Test-only sample features (live, restart-required, failing enable, failing disable, conflicting) | Test sources only; never shipped |
 
-## 9. Acceptance criteria [Proposed]
+## 9. Acceptance criteria [Approved 2026-11-21]
 
 M0 is complete when all of the following are verified and reported:
 
@@ -327,7 +344,7 @@ M0 is complete when all of the following are verified and reported:
 13. **AC-13** No required server-side component; the mod works when joining a
     vanilla server (manual).
 14. **AC-14** All automated tests pass and `git diff --check` is clean.
-15. **AC-15** Transaction cases TX-T1–TX-T9 pass (unit tests).
+15. **AC-15** Transaction cases TX-T1–TX-T12 pass (unit tests).
 
 ## 10. Deferred decisions
 
@@ -352,15 +369,26 @@ Resolved 2026-11-21:
 - **Q-M4** No master switch in M0.
 - **Q-M5** Restart-required changes are shown in the settings screen only.
 
-Still open and blocking M0 implementation:
-
-- **Q-M1 [Open]** Technical-lead review of the revised lifecycle failure
-  model (§4.2–§4.4) and of the transaction semantics (§7.2), plus approval of
-  the acceptance criteria (§9).
-- **Q-M6 [Open]** Confirm TX-5 ("save, then apply") and TX-7 (a failed runtime
-  transition keeps the saved choice). The alternative is to apply first and
-  save only successful transitions, so the file can lag behind the user's
+- **Q-M1** Lifecycle failure model, transaction semantics and acceptance
+  criteria approved, with corrections (§12).
+- **Q-M6** Save → Apply confirmed; failed runtime transitions keep the saved
   choice.
-- **Q-M7 [Open]** Approve the settings-snapshot approach for `LIVE` setting
-  changes (§3.2) and the requirement that `disable()` is safe after a partial
-  `enable()` (§3.4).
+- **Q-M7** Immutable settings snapshots and `disable()` after partial
+  `enable()` approved.
+
+No open questions block M0.
+
+## 12. Implementation status
+
+Corrections applied on approval (2026-11-21): LC-8 and LC-13 (no use of
+`UNKNOWN` as inactive, no automatic retries), §4.5 (desired vs effective
+settings), TX-7 (runtime failure is not a save failure), and TX-T10–TX-T12.
+
+| Area | Status |
+| --- | --- |
+| Descriptors, setting descriptors, registry and freezing (§3) | Implemented (M0.5) |
+| Lifecycle states, transitions, rollback, retry, logging (§4.1–§4.4) | Implemented (M0.5) |
+| Desired vs effective settings snapshots (§4.5) | Implemented (M0.5) |
+| Configuration persistence (§5) | Not started |
+| Compatibility detection (§6) | Not started (descriptor field only) |
+| Settings UI and transaction screen (§7) | Not started; the Core transition API used by TX-6–TX-8 is implemented |
