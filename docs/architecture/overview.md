@@ -54,6 +54,12 @@ example, when their behavior is installed at load time). The system must
 represent this honestly: the UI shows that a change takes effect after
 restart, and the runtime state reflects what is actually active.
 
+## Startup performance
+
+See the [startup performance discovery](../discovery/startup-performance-minecraft-26.3.md)
+(M0.3). It proposes, but does not approve, an early read-only configuration
+read for Mixin gating.
+
 ## Horizon [Approved direction]
 
 Horizon (M5) is a separate native implementation. The Java codebase does not
