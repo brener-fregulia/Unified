@@ -394,7 +394,8 @@ settings), TX-7 (runtime failure is not a save failure), and TX-T10–TX-T12.
 | Save → Apply operation (TX-5–TX-7) | Implemented (M0.6), `CoreRuntime.saveAndApply`; no screen yet |
 | Client-thread rule (LC-7) | Enforced in `CoreRuntime`: the initializer's thread (Fabric's render thread) owns the Core, and calls from other threads fail. `FeatureLifecycle` itself is not guarded; all mutation goes through `CoreRuntime` |
 | Compatibility detection (§6) | Implemented (M0.7); see [below](#compatibility-implementation-m07) |
-| Settings UI and transaction screen (§7) | Not started; the Core Save → Apply operation is implemented |
+| Settings UI and transaction screen (§7) | Implemented (M0.8); see [below](#settings-ui-implementation-m08). Visual QA with populated features pending |
+| Translation-key completeness (AC-12) | Automated (M0.8), `LocalizationTest` |
 
 ### Compatibility implementation (M0.7)
 
@@ -421,3 +422,49 @@ settings), TX-7 (runtime failure is not a save failure), and TX-T10–TX-T12.
   never blocks startup.
 - **Limitation:** detection runs once at startup. Mod versions are not
   considered; any installed version of a declared mod counts as a conflict.
+
+### Settings UI implementation (M0.8)
+
+- **Opening.** The key binding *Open QoL: Unified Settings* is listed under
+  *QoL: Unified* in Controls and has no default key. It opens the screen in
+  game when no other screen is open (so chat and text fields are unaffected)
+  and on the title screen. Closing returns to the previous screen.
+- **Layout.**
+  - Title, then a search field, then category buttons on the left (only
+    categories that have features).
+  - A scrolling feature list on the right, with a message line and
+    *Done*/*Cancel* at the bottom.
+  - Sizes come from the window width, and long text is shortened with "...".
+- **Feature rows.** Each row shows:
+  - the localized name, with status: Active, Inactive, Failed to enable,
+    Unknown, Restart required, or a conflict default / override / warning
+    naming the mod;
+  - the localized description;
+  - an Enabled/Disabled toggle, or *Retry Disable* for `UNKNOWN`;
+  - a *Settings* button.
+- **Conflicts.** The toggle's tooltip gives each conflicting mod and its
+  reason.
+- **Search.** Matches localized name, localized description and id across
+  all categories, with category headers.
+- **Feature settings screen.** Boolean and enum settings use cycle buttons.
+  Integer settings use a text field: invalid or out-of-range input turns red
+  with a tooltip and blocks *Done*. Restart-required settings are labeled.
+  *Back* and Escape return to the main screen and keep the draft.
+- **Transactions.** `SettingsDraft` holds the draft (TX-1) and commits
+  through `CoreRuntime.saveAndApply`:
+  - *Cancel* and Escape discard the draft (TX-2).
+  - Invalid input blocks *Done* (TX-3). An unchanged draft does nothing
+    (TX-4).
+  - A save failure keeps the screen and draft (TX-5).
+  - A runtime failure shows a separate *saved, but some features could not
+    be changed* message (TX-7, TX-8).
+  - After a commit the draft is rebased onto the saved state, so pressing
+    *Done* again never re-applies (LC-13).
+  - With read-only configuration, controls and *Done* are disabled (TX-9).
+- **Logic lives outside screen classes.** Search, status and draft code is
+  Minecraft-free and unit-tested. Screen classes only build widgets.
+- **Limitations.**
+  - The production registry is empty, so a populated list, conflict rows and
+    failure rows have not been seen in a running client.
+  - Enum values are labeled with `qol_unified.feature.<id>.setting.<key>.<value>`
+    keys, which each feature must supply.
