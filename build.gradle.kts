@@ -21,6 +21,10 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform()
+    // Keep log files written during tests out of the project directory.
+    val testRunDir = layout.buildDirectory.dir("test-run")
+    workingDir(testRunDir)
+    doFirst { testRunDir.get().asFile.mkdirs() }
 }
 
 java {
