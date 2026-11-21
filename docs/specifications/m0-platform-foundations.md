@@ -393,5 +393,31 @@ settings), TX-7 (runtime failure is not a save failure), and TX-T10–TX-T12.
 | Startup order: registry → load → lifecycle → start (CFG-1, LC-1) | Implemented (M0.6), `CoreRuntime.start` |
 | Save → Apply operation (TX-5–TX-7) | Implemented (M0.6), `CoreRuntime.saveAndApply`; no screen yet |
 | Client-thread rule (LC-7) | Enforced in `CoreRuntime`: the initializer's thread (Fabric's render thread) owns the Core, and calls from other threads fail. `FeatureLifecycle` itself is not guarded; all mutation goes through `CoreRuntime` |
-| Compatibility detection (§6) | Not started (descriptor field only) |
+| Compatibility detection (§6) | Implemented (M0.7); see [below](#compatibility-implementation-m07) |
 | Settings UI and transaction screen (§7) | Not started; the Core Save → Apply operation is implemented |
+
+### Compatibility implementation (M0.7)
+
+- `CompatibilityReport.detect` checks each declared conflict through a
+  `ModPresence` boundary. In the client this is Fabric Loader's
+  `isModLoaded`; tests use a fake. The policy code has no Minecraft or
+  Fabric imports.
+- Startup order: registry → load configuration → detect conflicts → resolve
+  choices → create lifecycle → start enabled features.
+- **Resolution (CMP-2, CMP-3):**
+  - With no explicit choice, a conflicting feature resolves to disabled.
+  - Explicit `enabled: true` or `false` is kept unchanged.
+  - The resolved default is not an explicit choice, so it is never written
+    to the file. `CoreRuntime.choices()` returns resolved choices for drafts,
+    and Save → Apply resolves the same way.
+- **UI data:** `CoreRuntime.compatibility(id)` gives the feature id, each
+  conflicting mod id with its reason key, `defaultSuppressed` and
+  `playerOverride`.
+- **Ordering:** registry order, then declaration order. A mod declared twice
+  for one feature is reported once.
+- **Logging:** each detected conflict is logged once at `WARN` with the
+  feature id, mod id and startup outcome. A failing presence check is
+  logged at `WARN` and treated as absent; other checks continue. Detection
+  never blocks startup.
+- **Limitation:** detection runs once at startup. Mod versions are not
+  considered; any installed version of a declared mod counts as a conflict.
