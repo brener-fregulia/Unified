@@ -91,3 +91,8 @@ tasks.processResources {
         expand(props)
     }
 }
+
+// Keep the development fixtures compiling in CI without packaging them.
+tasks.check {
+    dependsOn(devFixtures.classesTaskName)
+}
