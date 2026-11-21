@@ -79,6 +79,53 @@ Directory names use the approved mod id `qol_unified` (see the
   [M0 transaction semantics](../specifications/m0-platform-foundations.md#72-transaction-and-failure-semantics-approved-2026-11-21).
 - Disabling a feature changes only its `enabled` value (CFG-P7).
 
+## Implementation (M0.6)
+
+Implemented in `core.config`. The design decisions below were made during
+implementation, within the approved policy.
+
+**Serialization.** Gson 2.14.0, which Minecraft 26.3 already ships as a
+library. It adds no new dependency and is not a Minecraft class, so the Core
+stays Minecraft-free.
+- Files are decoded as strict UTF-8 and parsed with Gson's `STRICT`
+  strictness. Comments, trailing commas and trailing content count as
+  corruption.
+- The parsed document is kept in memory, and saves start from a deep copy of
+  it. Unknown features, settings and fields (including nested structures and
+  `null`) are written back unchanged, and numbers keep their original form.
+- A save writes only explicit enable choices and settings the player changed.
+  Defaults are never written, and invalid original values stay until the
+  player changes that setting.
+
+**Load outcomes.**
+
+| Outcome | Cause | Persistence |
+| --- | --- | --- |
+| `LOADED` | Valid file at the current version | Writable |
+| `MISSING` | No file | Writable; created on first save |
+| `MIGRATED` | Older version, backed up and migrated in memory | Writable; migrated file written on next save |
+| `RECOVERED` | Empty, malformed or non-object JSON, invalid UTF-8, missing or invalid `schemaVersion`, or non-object `features`; backed up | Writable; replaced on next save |
+| `RECOVERY_BLOCKED` | As above, or a needed migration, but the backup failed | Read-only |
+| `MIGRATION_FAILED` | A migration step is missing or threw | Read-only |
+| `READ_FAILED` | The file could not be read | Read-only |
+| `NEWER_VERSION` | `schemaVersion` above the supported version | Read-only; understood values are used |
+
+**Backups** are written to
+`backups/config-<UTC yyyyMMddTHHmmssZ>-<corrupt|pre-migration>[-n].json`.
+Backups are never overwritten.
+
+**Saving.** The file is written to `config.json.tmp`, then moved over the
+original atomically. If the file system doesn't support atomic moves, the
+move falls back to a plain replace, with a warning. On any failure the
+temporary file is deleted and the original is untouched.
+
+**Logs** name only the file name, never full paths or file contents.
+
+**Migrations** run in sequence (`n → n+1`) on a deep copy and set
+`schemaVersion` after each step. Production has no migrations, since
+version 1 is the baseline. The mechanism is exercised by test-only
+migrations.
+
 ## Open questions
 
 - **Q-C1 [Resolved 2026-11-21]** CFG-P1 to CFG-P8 approved.
