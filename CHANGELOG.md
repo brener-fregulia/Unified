@@ -20,3 +20,7 @@ released yet.
   Fabric API) that logs a startup message; English and Brazilian Portuguese
   resources.
 - GitHub Actions build verification on Java 25 (no publishing).
+- Core feature registry and lifecycle foundation: validated feature and
+  setting descriptors, a frozen explicit registry, safe enable/disable with
+  rollback and failure records, and desired vs effective settings. No
+  features are registered yet.

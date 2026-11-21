@@ -1,5 +1,8 @@
 package io.github.brener_fregulia.qolunified;
 
+import io.github.brener_fregulia.qolunified.core.FeatureLifecycle;
+import io.github.brener_fregulia.qolunified.core.FeatureRegistry;
+import java.util.Map;
 import net.fabricmc.api.ClientModInitializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,6 +13,11 @@ public final class QolUnifiedClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
-        LOGGER.info("QoL: Unified initialized successfully.");
+        // Features are registered here explicitly. None exist yet.
+        FeatureRegistry registry = FeatureRegistry.builder().build();
+        // Configuration persistence is not implemented yet; descriptor defaults apply.
+        FeatureLifecycle lifecycle = new FeatureLifecycle(registry, Map.of());
+        lifecycle.startup();
+        LOGGER.info("QoL: Unified initialized successfully ({} features).", registry.features().size());
     }
 }
