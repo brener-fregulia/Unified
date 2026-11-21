@@ -12,6 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.Test;
@@ -22,12 +23,17 @@ class CoreRuntimeTest {
     Path dir;
 
     private CoreRuntime start(TestFeature... features) {
+        return start(modId -> false, features);
+    }
+
+    private CoreRuntime start(io.github.brener_fregulia.qolunified.core.compat.ModPresence installed,
+            TestFeature... features) {
         var builder = FeatureRegistry.builder();
         for (TestFeature f : features) {
             builder.register(f);
         }
         FeatureRegistry registry = builder.build();
-        return CoreRuntime.start(registry, new ConfigurationService(dir.resolve("config.json"), registry),
+        return CoreRuntime.start(registry, new ConfigurationService(dir.resolve("config.json"), registry), installed,
                 Thread.currentThread());
     }
 
@@ -96,6 +102,63 @@ class CoreRuntimeTest {
         var error = assertThrows(ExecutionException.class, future::get);
         assertTrue(error.getCause() instanceof IllegalStateException);
         assertThrows(IllegalStateException.class, () -> CoreRuntime.start(FeatureRegistry.builder().build(),
-                new ConfigurationService(dir.resolve("x.json"), FeatureRegistry.builder().build()), new Thread()));
+                new ConfigurationService(dir.resolve("x.json"), FeatureRegistry.builder().build()), modId -> false, new Thread()));
+    }
+
+    private static TestFeature conflicting(String id, String modId) {
+        var base = TestFeature.descriptor(id, ApplyMode.LIVE, true);
+        return new TestFeature(new FeatureDescriptor(id, base.category(), true, ApplyMode.LIVE, base.settings(),
+                List.of(new ConflictDescriptor(modId, "qol_unified.conflict." + id))));
+    }
+
+    @Test
+    void conflictDisablesByDefaultWithoutWritingConfiguration() throws Exception {
+        var hud = conflicting("hud", "other_hud");
+        var plain = TestFeature.live("plain");
+        var core = start(Set.of("other_hud")::contains, hud, plain);
+        assertEquals(FeatureState.INACTIVE, core.lifecycle().state("hud"));
+        assertEquals(List.of(), hud.calls);
+        assertEquals(FeatureState.ACTIVE, core.lifecycle().state("plain"), "unrelated feature unaffected");
+        assertFalse(Files.exists(dir.resolve("config.json")), "detection never writes");
+        assertFalse(core.choices().get("hud").enabled());
+        assertTrue(core.compatibility("hud").defaultSuppressed());
+        assertEquals(1, core.compatibilityReport().all().size());
+
+        // A draft started from the resolved choices does not persist the conflict default.
+        var result = core.saveAndApply(core.choices());
+        assertFalse(Files.readString(dir.resolve("config.json")).contains("enabled"));
+        assertTrue(result.report().outcomes().isEmpty(), "no lifecycle calls");
+    }
+
+    @Test
+    void explicitEnableStartsDespiteConflict() throws Exception {
+        Files.writeString(dir.resolve("config.json"),
+                "{\"schemaVersion\":1,\"features\":{\"hud\":{\"enabled\":true}}}");
+        String before = Files.readString(dir.resolve("config.json"));
+        var hud = conflicting("hud", "other_hud");
+        var core = start(Set.of("other_hud")::contains, hud);
+        assertEquals(FeatureState.ACTIVE, core.lifecycle().state("hud"));
+        assertTrue(core.compatibility("hud").playerOverride());
+        assertEquals(before, Files.readString(dir.resolve("config.json")));
+    }
+
+    @Test
+    void explicitDisableStaysDisabledWithConflict() throws Exception {
+        Files.writeString(dir.resolve("config.json"),
+                "{\"schemaVersion\":1,\"features\":{\"hud\":{\"enabled\":false}}}");
+        var core = start(Set.of("other_hud")::contains, conflicting("hud", "other_hud"));
+        assertEquals(FeatureState.INACTIVE, core.lifecycle().state("hud"));
+        assertFalse(core.compatibility("hud").playerOverride());
+    }
+
+    @Test
+    void playerCanEnableConflictingFeatureThroughSaveAndApply() throws Exception {
+        var hud = conflicting("hud", "other_hud");
+        var core = start(Set.of("other_hud")::contains, hud);
+        var result = core.saveAndApply(Map.of("hud", core.choices().get("hud").withEnabled(true)));
+        assertEquals(SaveResult.SAVED, result.save());
+        assertEquals(FeatureState.ACTIVE, core.lifecycle().state("hud"));
+        assertTrue(core.compatibility("hud").playerOverride());
+        assertTrue(Files.readString(dir.resolve("config.json")).contains("\"enabled\": true"));
     }
 }
