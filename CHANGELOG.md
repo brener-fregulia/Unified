@@ -19,3 +19,4 @@ released yet.
 - Minimal Fabric client mod for Minecraft 26.3 (Java 25, Fabric Loader,
   Fabric API) that logs a startup message; English and Brazilian Portuguese
   resources.
+- GitHub Actions build verification on Java 25 (no publishing).
