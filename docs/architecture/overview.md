@@ -68,6 +68,7 @@ restart, and the runtime state reflects what is actually active.
 | Testing | JUnit 5 unit tests; manual in-game QA initially |
 | Plugin API | None |
 | Diagnostics | Local, feature-specific logging in Core; no remote telemetry ([diagnostics](diagnostics.md)) |
+| Compatibility detection | Pure policy in `core.compat`; Fabric Loader's `isModLoaded` is used only at the client boundary ([M0 implementation](../specifications/m0-platform-foundations.md#compatibility-implementation-m07)) |
 
 Lifecycle failure handling and settings transaction semantics were approved
 on 2026-11-21 (see the

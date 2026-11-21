@@ -27,10 +27,13 @@ public final class QolUnifiedClient implements ClientModInitializer {
     public void onInitializeClient() {
         // 1. Features are registered here explicitly. None exist yet.
         FeatureRegistry registry = FeatureRegistry.builder().build();
-        // 2–5. Load configuration, resolve choices, initialize the lifecycle and start enabled features.
+        // 2–6. Load configuration, detect installed conflicts, resolve choices, initialize the lifecycle
+        // and start enabled features.
         Path configFile = FabricLoader.getInstance().getConfigDir().resolve(MOD_ID).resolve("config.json");
         // Fabric calls client initializers on the client (render) thread; it becomes the Core's owner thread.
-        core = CoreRuntime.start(registry, new ConfigurationService(configFile, registry), Thread.currentThread());
+        FabricLoader loader = FabricLoader.getInstance();
+        core = CoreRuntime.start(registry, new ConfigurationService(configFile, registry), loader::isModLoaded,
+                Thread.currentThread());
         LOGGER.info("QoL: Unified initialized successfully ({} features).", registry.features().size());
     }
 }

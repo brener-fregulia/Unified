@@ -4,7 +4,7 @@ Status labels follow [AGENTS.md](../../AGENTS.md#decision-status-labels).
 
 The policy requirements and the technical policy below were **approved for M0
 on 2026-11-21** (resolves Q-C1). M0 implements the global configuration only.
-No configuration code exists yet.
+It was implemented in M0.6; see [Implementation (M0.6)](#implementation-m06).
 
 ## Policy requirements [Approved 2026-11-21]
 

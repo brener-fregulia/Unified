@@ -1,5 +1,8 @@
 package io.github.brener_fregulia.qolunified.core;
 
+import io.github.brener_fregulia.qolunified.core.compat.CompatibilityReport;
+import io.github.brener_fregulia.qolunified.core.compat.FeatureCompatibility;
+import io.github.brener_fregulia.qolunified.core.compat.ModPresence;
 import io.github.brener_fregulia.qolunified.core.config.ConfigurationService;
 import io.github.brener_fregulia.qolunified.core.config.FeatureChoice;
 import io.github.brener_fregulia.qolunified.core.config.LoadStatus;
@@ -11,7 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Connects the registry, configuration and lifecycle, and offers the Save → Apply operation for the
+ * Connects the registry, configuration, compatibility detection and lifecycle, and offers the Save → Apply operation for the
  * future settings screen (TX-5, TX-6). Every operation must run on the client thread (LC-7) and fails
  * fast otherwise.
  */
@@ -20,31 +23,39 @@ public final class CoreRuntime {
 
     private final FeatureRegistry registry;
     private final ConfigurationService configuration;
+    private final CompatibilityReport compatibility;
     private final FeatureLifecycle lifecycle;
     private final Thread clientThread;
 
-    private CoreRuntime(FeatureRegistry registry, ConfigurationService configuration, FeatureLifecycle lifecycle,
-            Thread clientThread) {
+    private CoreRuntime(FeatureRegistry registry, ConfigurationService configuration,
+            CompatibilityReport compatibility, FeatureLifecycle lifecycle, Thread clientThread) {
         this.registry = registry;
         this.configuration = configuration;
+        this.compatibility = compatibility;
         this.lifecycle = lifecycle;
         this.clientThread = clientThread;
     }
 
-    /** Loads configuration, initializes the lifecycle from it and starts enabled features. */
-    public static CoreRuntime start(FeatureRegistry registry, ConfigurationService configuration, Thread clientThread) {
+    /**
+     * Loads configuration, detects installed conflicts, resolves startup choices, initializes the
+     * lifecycle and starts enabled features. Conflict detection never writes configuration.
+     */
+    public static CoreRuntime start(FeatureRegistry registry, ConfigurationService configuration,
+            ModPresence installedMods, Thread clientThread) {
         Objects.requireNonNull(clientThread, "clientThread");
         requireThread(clientThread);
         LoadStatus status = configuration.load();
+        CompatibilityReport compatibility =
+                CompatibilityReport.detectAndLog(registry, installedMods, configuration.choices());
         var desired = new LinkedHashMap<String, DesiredFeature>();
-        configuration.choices().forEach((id, choice) -> desired.put(id, choice.toDesired()));
+        configuration.choices().forEach((id, choice) -> desired.put(id, compatibility.resolve(id, choice).toDesired()));
         var lifecycle = new FeatureLifecycle(registry, desired);
         ApplyReport report = lifecycle.startup();
         LOGGER.info("Configuration {}{}; {} of {} features active", status,
                 status.readOnly() ? " (read-only)" : "",
                 report.outcomes().stream().filter(o -> o.state() == FeatureState.ACTIVE).count(),
                 registry.features().size());
-        return new CoreRuntime(registry, configuration, lifecycle, clientThread);
+        return new CoreRuntime(registry, configuration, compatibility, lifecycle, clientThread);
     }
 
     /**
@@ -60,7 +71,8 @@ public final class CoreRuntime {
             return new CommitResult(saved, new ApplyReport(java.util.List.of()));
         }
         var changes = new LinkedHashMap<String, DesiredFeature>();
-        draft.forEach((id, choice) -> changes.put(id, configuration.choices().get(id).toDesired()));
+        draft.forEach((id, choice) -> changes.put(id,
+                compatibility.resolve(id, configuration.choices().get(id)).toDesired()));
         return new CommitResult(saved, lifecycle.apply(changes));
     }
 
@@ -79,8 +91,25 @@ public final class CoreRuntime {
         return lifecycle;
     }
 
+    /**
+     * Current choices with conflict defaults applied (CMP-2). A settings draft should start from
+     * these; unchanged entries are not written, because conflict defaults are not explicit choices.
+     */
     public Map<String, FeatureChoice> choices() {
-        return configuration.choices();
+        var resolved = new LinkedHashMap<String, FeatureChoice>();
+        configuration.choices().forEach((id, choice) -> resolved.put(id, compatibility.resolve(id, choice)));
+        return java.util.Collections.unmodifiableMap(resolved);
+    }
+
+    /** Conflict status of one feature for the settings UI. */
+    public FeatureCompatibility compatibility(String featureId) {
+        registry.require(featureId);
+        return compatibility.status(featureId, configuration.choices().get(featureId));
+    }
+
+    /** All conflicts detected at startup. */
+    public CompatibilityReport compatibilityReport() {
+        return compatibility;
     }
 
     public LoadStatus configurationStatus() {

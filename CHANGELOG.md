@@ -28,3 +28,6 @@ released yet.
   1): validation with safe defaults, preservation of unknown and invalid
   values, backups of corrupt or migrated files, read-only mode for newer
   schema versions and atomic saves.
+- Detection of mods declared as conflicting with a feature: such features are
+  disabled by default unless the player explicitly chose otherwise, and each
+  conflict is logged at startup.
