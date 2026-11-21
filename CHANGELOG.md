@@ -24,3 +24,7 @@ released yet.
   setting descriptors, a frozen explicit registry, safe enable/disable with
   rollback and failure records, and desired vs effective settings. No
   features are registered yet.
+- Global configuration file `config/qol_unified/config.json` (schema version
+  1): validation with safe defaults, preservation of unknown and invalid
+  values, backups of corrupt or migrated files, read-only mode for newer
+  schema versions and atomic saves.

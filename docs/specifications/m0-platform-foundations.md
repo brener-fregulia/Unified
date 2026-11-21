@@ -389,6 +389,9 @@ settings), TX-7 (runtime failure is not a save failure), and TX-T10–TX-T12.
 | Descriptors, setting descriptors, registry and freezing (§3) | Implemented (M0.5) |
 | Lifecycle states, transitions, rollback, retry, logging (§4.1–§4.4) | Implemented (M0.5) |
 | Desired vs effective settings snapshots (§4.5) | Implemented (M0.5) |
-| Configuration persistence (§5) | Not started |
+| Configuration persistence (§5) | Implemented (M0.6); see [configuration implementation](../architecture/configuration.md#implementation-m06) |
+| Startup order: registry → load → lifecycle → start (CFG-1, LC-1) | Implemented (M0.6), `CoreRuntime.start` |
+| Save → Apply operation (TX-5–TX-7) | Implemented (M0.6), `CoreRuntime.saveAndApply`; no screen yet |
+| Client-thread rule (LC-7) | Enforced in `CoreRuntime`: the initializer's thread (Fabric's render thread) owns the Core, and calls from other threads fail. `FeatureLifecycle` itself is not guarded; all mutation goes through `CoreRuntime` |
 | Compatibility detection (§6) | Not started (descriptor field only) |
-| Settings UI and transaction screen (§7) | Not started; the Core transition API used by TX-6–TX-8 is implemented |
+| Settings UI and transaction screen (§7) | Not started; the Core Save → Apply operation is implemented |
