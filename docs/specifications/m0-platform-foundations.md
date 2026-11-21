@@ -394,7 +394,7 @@ settings), TX-7 (runtime failure is not a save failure), and TX-T10–TX-T12.
 | Save → Apply operation (TX-5–TX-7) | Implemented (M0.6), `CoreRuntime.saveAndApply`; no screen yet |
 | Client-thread rule (LC-7) | Enforced in `CoreRuntime`: the initializer's thread (Fabric's render thread) owns the Core, and calls from other threads fail. `FeatureLifecycle` itself is not guarded; all mutation goes through `CoreRuntime` |
 | Compatibility detection (§6) | Implemented (M0.7); see [below](#compatibility-implementation-m07) |
-| Settings UI and transaction screen (§7) | Implemented (M0.8); see [below](#settings-ui-implementation-m08). Visual QA with populated features pending |
+| Settings UI and transaction screen (§7) | Implemented (M0.8); validated with sample features in M0.9, see [below](#integrated-validation-m09) |
 | Translation-key completeness (AC-12) | Automated (M0.8), `LocalizationTest` |
 
 ### Compatibility implementation (M0.7)
@@ -464,7 +464,70 @@ settings), TX-7 (runtime failure is not a save failure), and TX-T10–TX-T12.
 - **Logic lives outside screen classes.** Search, status and draft code is
   Minecraft-free and unit-tested. Screen classes only build widgets.
 - **Limitations.**
-  - The production registry is empty, so a populated list, conflict rows and
-    failure rows have not been seen in a running client.
   - Enum values are labeled with `qol_unified.feature.<id>.setting.<key>.<value>`
     keys, which each feature must supply.
+
+### Integrated validation (M0.9)
+
+**Development fixtures.** The `devFixtures` source set is a separate,
+development-only mod (`qol_unified_dev`). The `jar` task packages only the
+main source set, so the fixtures are never in the distributable JAR. The
+mod provides:
+- 17 sample features built from one configurable `SampleFeature` class:
+  - live toggle and restart-required toggle;
+  - boolean, integer and enum settings;
+  - a conflict with Fabric API;
+  - an always-failing `enable()`, and a `disable()` that fails twice;
+  - fillers across all categories for scrolling and search.
+- A client game test.
+
+Sample features only record lifecycle calls. They perform no gameplay
+action and touch no world, player or server state.
+
+**Deviation: one development-only hook in production code.**
+`QolUnifiedClient` reads the `qol_unified:dev_features` Fabric entrypoint
+(`DevelopmentFeatures`) **only when** `FabricLoader.isDevelopmentEnvironment()`
+is true. A normal install never reports a development environment, so the
+hook has no effect there. It uses Fabric's own entrypoint mechanism, not
+custom discovery.
+
+**Automated client game tests.** These use Fabric's client game-test API,
+which is part of Fabric API, so no new dependency. Each runs in a disposable
+`build/run-gametest*` directory, and scenario seeding refuses to run
+anywhere else. Clicks go through the simulated mouse; search uses simulated
+typing; the integer field is set through the widget. Screenshots are saved
+in each run directory.
+
+| Task | Verified |
+| --- | --- |
+| `runGameTestMain` | Startup states (conflict default, enable-failure cleanup); category navigation; scrolling; search across categories; Cancel and Escape save and apply nothing; LIVE toggle saves and applies; RESTART_REQUIRED toggle saves, stays active and shows *pending restart*; explicit conflict override; disable failure → `UNKNOWN`, no retry on acknowledgment, no enable control, Retry disable failing and then succeeding; invalid integer blocks *Done* and the file is unchanged; boolean, integer and enum edits; LIVE settings effective at once while RESTART_REQUIRED keeps its old effective value; a fresh load sees the saved values; unknown fields preserved |
+| `runGameTestRestart` (after Main, same directory) | After a real restart: choices persisted, restart-required toggle and setting now effective, explicit override kept, unknown fields still preserved |
+| `runGameTestNewer` | Newer schema: read-only, understood values used, *Done* disabled, file byte-for-byte unchanged |
+| `runGameTestCorrupt` | Invalid JSON: exact backup, original kept until save, valid file written on *Done* |
+
+**Issues found and fixed.**
+- After any restart-required change, every later successful *Done* kept the
+  screen open (violated TX-8). The restart notice now appears only when a
+  commit adds a new pending restart. Covered by a game-test check.
+- Layout problems at small window sizes:
+  - The title was left-aligned and clipped.
+  - Category buttons overlapped the footer.
+  - Status shared the name line and was cut off.
+  - Category buttons stayed disabled while searching.
+  - Fixed with: a centered title, category buttons sized to the available
+    height, three-line rows (name, status, description), and button state
+    refreshed during search.
+- The `UNKNOWN` status text was too long to read in a row. It is now short
+  ("May still be active"), and the full explanation is the *Retry Disable*
+  tooltip. A conflict default no longer repeats "Inactive".
+- Integer errors were only shown on hover. The feature settings screen now
+  has a visible error line.
+
+**Limitations and remaining manual QA.**
+- Simulated key presses don't reach screens for every key in this
+  Minecraft version (SDL input), so opening the screen with the real key
+  binding is still manual QA.
+- At the smallest window size (854×480, GUI scale 2), long status and
+  description lines are shortened with "..."; conflict mod names are in the
+  toggle tooltip.
+- The game tests ran in English only.
