@@ -1,0 +1,31 @@
+# Gradle
+.gradle/
+.kotlin/
+build/
+out/
+classes/
+
+# Fabric / Minecraft development run directory
+run/
+
+# IDEs
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.settings/
+.classpath
+.project
+bin/
+*.launch
+
+# OS
+.DS_Store
+Thumbs.db
+
+# JVM crash/diagnostic files
+hs_err_*.log
+replay_*.log
+*.hprof
+*.jfr

@@ -61,14 +61,35 @@ contain Horizon code or abstractions for it. What is shared is the written
 behavior in `docs/specifications/` and, where practical, compatible data
 formats (configuration, waypoints, exploration data).
 
+## Build bootstrap [Approved 2026-11-21]
+
+Approved in M0.2. Versions verified 2026-11-21.
+
+| Item | Decision |
+| --- | --- |
+| Minecraft | Java Edition 26.3 (non-obfuscated) |
+| Java | 25 (bytecode release 25) |
+| Build | Gradle Wrapper 9.9.2, Kotlin DSL |
+| Loom | `net.fabricmc.fabric-loom` 1.19.4 (non-remapping plugin for 26.1+) |
+| Fabric Loader | 0.20.1 |
+| Fabric API | 0.166.2+26.3, approved dependency (resolves Q-A1) |
+| Mod ID / package | `qol_unified` / `io.github.brener_fregulia.qolunified` (resolves Q-A4) |
+| Environment | Client only; one `client` entrypoint, no `main`/server entrypoint |
+| Unit tests | JUnit 5, from the Core milestone (resolves the unit-test part of Q-A5) |
+| CI | GitHub Actions build verification only; no publishing or tagging |
+
+Sources: `meta.fabricmc.net` (game and loader versions),
+`maven.fabricmc.net` metadata (Loom, Fabric API), `services.gradle.org`
+(Gradle), and the official `FabricMC/fabric-example-mod` 26.3 setup.
+
 ## Open questions
 
-- **Q-A1 [Open]** Depend on Fabric API, or use only Fabric Loader and Mixin?
+- **Q-A1 [Resolved 2026-11-21]** Fabric API is an approved dependency.
 - **Q-A2 [Open]** Build the settings UI with vanilla screen widgets only, or
   use a configuration library? (Any library is a dependency requiring
   approval.)
 - **Q-A3 [Open]** Integrate with Mod Menu as an optional entry point?
-- **Q-A4 [Open]** Mod ID and Java base package name (e.g. mod id
-  `qol_unified`).
-- **Q-A5 [Open]** Unit test framework and whether to use Fabric's game test
-  tooling for in-game tests.
+- **Q-A4 [Resolved 2026-11-21]** Mod ID `qol_unified`, package
+  `io.github.brener_fregulia.qolunified`.
+- **Q-A5 [Partly resolved 2026-11-21]** JUnit 5 is approved for unit tests.
+  Whether to use Fabric's game test tooling for in-game tests remains open.

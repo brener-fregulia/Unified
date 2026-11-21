@@ -7,8 +7,9 @@ inventory tools, controls, chat, networking and navigation) into a single
 client-side mod. Each feature can be enabled or disabled individually from a
 central settings screen.
 
-> **Status:** pre-implementation. The repository currently contains
-> specifications only (milestone M0.1). There is no build and no release yet.
+> **Status:** early development (milestone M0.2). The project builds a
+> minimal Fabric client mod that only logs a startup message. No features,
+> configuration or settings screen exist yet, and nothing has been released.
 
 ## Initial target
 
@@ -21,10 +22,38 @@ central settings screen.
 | Languages | English, Brazilian Portuguese |
 | Distribution | One JAR, client-side only |
 
-Exact library and tool versions are verified at build bootstrap, not assumed.
+Exact dependency versions live in [`gradle.properties`](gradle.properties)
+and are recorded in the [architecture overview](docs/architecture/overview.md#build-bootstrap-approved-2026-11-21).
 
 A future native implementation for Minecraft Horizon (Rust Edition) is planned
 (milestone M5). It shares behavioral specifications, not executable code.
+
+## Building
+
+Requires **JDK 25** (Temurin recommended) on `PATH` or in `JAVA_HOME`. The
+Gradle Wrapper downloads the correct Gradle version; no separate Gradle
+install is needed.
+
+On Windows (PowerShell or Command Prompt):
+
+```powershell
+.\gradlew.bat clean build
+```
+
+On macOS/Linux or Git Bash, use `./gradlew clean build`.
+
+The distributable mod JAR is written to `build/libs/`, for example
+`build/libs/qol-unified-26.3.0-alpha.1-SNAPSHOT.jar`.
+
+### Development client
+
+```powershell
+.\gradlew.bat runClient
+```
+
+This launches Minecraft 26.3 with the mod and Fabric API loaded. Game files
+are kept in `run/` (ignored by Git). A successful start logs
+`QoL: Unified initialized successfully.`
 
 ## Documentation
 

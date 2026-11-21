@@ -16,3 +16,6 @@ released yet.
   Foundations specification.
 - Agent guide (`AGENTS.md`) with decision status labels and engineering rules.
 - Versioning, release and changelog policy.
+- Minimal Fabric client mod for Minecraft 26.3 (Java 25, Fabric Loader,
+  Fabric API) that logs a startup message; English and Brazilian Portuguese
+  resources.

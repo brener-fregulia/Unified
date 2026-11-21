@@ -30,8 +30,8 @@ technical choices are also **[Proposed]**. No configuration code exists yet.
 <game dir>/qol_unified/    reserved for navigation data (M4, not specified)
 ```
 
-Directory names use the proposed mod id `qol_unified` (see Q-A4 in the
-[overview](overview.md#open-questions)). Per-world/per-server files are
+Directory names use the approved mod id `qol_unified` (see the
+[overview](overview.md#build-bootstrap-approved-2026-11-21)). Per-world/per-server files are
 **[Deferred]** to a later milestone.
 
 ### Document shape [Proposed]

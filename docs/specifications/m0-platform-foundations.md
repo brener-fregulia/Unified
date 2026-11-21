@@ -228,7 +228,8 @@ M0 is complete when all of the following are verified and reported:
 - **Q-M4 [Open]** Is a master switch to disable all features required in M0?
 - **Q-M5 [Open]** Should restart-required features offer an in-game
   "restart needed" notice outside the settings screen?
-- Also blocking for M0 implementation: Q-A1 (Fabric API), Q-A2 (UI library),
-  Q-A4 (mod id and package), Q-A5 (test tooling), Q-C1 (configuration policy)
+- Also blocking for M0 implementation: Q-A2 (UI library), Q-A5 (in-game
+  test tooling), Q-C1 (configuration policy). Q-A1 and Q-A4 were resolved in
+  M0.2
   — see [overview](../architecture/overview.md#open-questions) and
   [configuration](../architecture/configuration.md#open-questions).
