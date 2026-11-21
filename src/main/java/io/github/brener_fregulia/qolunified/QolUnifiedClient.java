@@ -4,7 +4,9 @@ import io.github.brener_fregulia.qolunified.core.CoreRuntime;
 import io.github.brener_fregulia.qolunified.core.FeatureRegistry;
 import io.github.brener_fregulia.qolunified.core.config.ConfigurationService;
 import io.github.brener_fregulia.qolunified.ui.screen.SettingsKeyBinding;
+import io.github.brener_fregulia.qolunified.core.Feature;
 import java.nio.file.Path;
+import java.util.List;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.loader.api.FabricLoader;
 import org.slf4j.Logger;
@@ -26,13 +28,20 @@ public final class QolUnifiedClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
-        // 1. Features are registered explicitly in Features.
-        FeatureRegistry registry = Features.createRegistry();
+        // 1. Features are registered explicitly in Features. Sample features exist only in development.
+        FabricLoader loader = FabricLoader.getInstance();
+        List<Feature> development = loader.isDevelopmentEnvironment()
+                ? loader.getEntrypoints(DevelopmentFeatures.ENTRYPOINT, DevelopmentFeatures.class).stream()
+                        .flatMap(source -> source.features().stream()).toList()
+                : List.of();
+        if (!development.isEmpty()) {
+            LOGGER.warn("Development environment: registering {} sample features", development.size());
+        }
+        FeatureRegistry registry = Features.createRegistry(development);
         // 2–6. Load configuration, detect installed conflicts, resolve choices, initialize the lifecycle
         // and start enabled features.
         Path configFile = FabricLoader.getInstance().getConfigDir().resolve(MOD_ID).resolve("config.json");
         // Fabric calls client initializers on the client (render) thread; it becomes the Core's owner thread.
-        FabricLoader loader = FabricLoader.getInstance();
         core = CoreRuntime.start(registry, new ConfigurationService(configFile, registry), loader::isModLoaded,
                 Thread.currentThread());
         SettingsKeyBinding.register();

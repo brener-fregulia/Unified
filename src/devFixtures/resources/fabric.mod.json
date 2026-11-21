@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "id": "qol_unified_dev",
+  "version": "0.0.0-dev",
+  "name": "QoL: Unified Development Fixtures",
+  "description": "Development-only sample features and client game tests. Not distributed.",
+  "environment": "client",
+  "entrypoints": {
+    "qol_unified:dev_features": ["io.github.brener_fregulia.qolunified.dev.DevFixtures"]
+  },
+  "depends": {
+    "qol_unified": "*"
+  }
+}

@@ -56,6 +56,17 @@ This launches Minecraft 26.3 with the mod and Fabric API loaded. Game files
 are kept in `run/` (ignored by Git). A successful start logs
 `QoL: Unified initialized successfully (0 features).`
 
+### Development fixtures
+
+For development only, two kinds of Gradle task load a separate fixture mod
+with sample features:
+- `runFixtureClient` starts a manual QA client in `run-fixtures/`.
+- `runGameTestMain`, then `runGameTestRestart`, `runGameTestNewer` and
+  `runGameTestCorrupt`, run automated client tests in `build/run-gametest*`.
+  Screenshots are saved there.
+
+Neither affects the distributable JAR.
+
 ## Settings
 
 Open **Options → Controls → Key Binds**, find **QoL: Unified → Open QoL:
