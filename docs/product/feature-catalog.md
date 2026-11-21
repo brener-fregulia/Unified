@@ -7,11 +7,13 @@ milestone assignments and the restart notes are **[Proposed]** unless marked
 otherwise. "Inspired by" names describe behavior only; no third-party code or
 assets may be copied.
 
-## Identifier rules [Proposed]
+## Identifier rules [Approved 2026-11-21]
 
 - Pattern: `^[a-z][a-z0-9_]{1,63}$` (lowercase, digits, underscores).
 - Stable forever once released: identifiers key configuration and data files.
 - Renaming a released identifier requires a configuration migration.
+- Reserved for a possible future feature: `fast_startup` (not scheduled;
+  [Approved 2026-11-21](../discovery/startup-performance-minecraft-26.3.md#decisions-2026-11-21)).
 
 ## Categories [Approved]
 

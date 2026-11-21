@@ -1,12 +1,13 @@
 # Discovery: Startup Performance on Minecraft 26.3
 
 Status labels follow [AGENTS.md](../../AGENTS.md#decision-status-labels).
-This is a discovery report (M0.3). Nothing here is approved for
-implementation; every recommendation is **[Proposed]**. The approved M0 scope
-is unchanged.
+This is a discovery report (M0.3). It was closed on 2026-11-21 with the
+technical lead's [decisions](#decisions-2026-11-21). Recommendations not
+covered by those decisions remain **[Proposed]**, and no startup
+optimization is scheduled.
 
-Date of investigation: 2026-11-21. Prospective feature id:
-`performance.fast_startup` (see [§9](#9-open-decisions-and-unresolved-questions)).
+Date of investigation: 2026-11-21. Reserved feature id: `fast_startup`
+(Q-SP5).
 
 ## 1. Executive summary
 
@@ -229,7 +230,7 @@ Findings:
    Minecraft-free** ([overview](../architecture/overview.md#dependency-direction-proposed)),
    so it can be read that early.
 
-Smallest proposed adjustment **[Proposed]**:
+Smallest proposed adjustment (**[Deferred]** by Q-SP7):
 
 - Add a static, **read-only early read** of the configuration: it parses the
   file, applies the safe-handling rules in memory, never writes, and returns
@@ -273,25 +274,40 @@ For a future milestone, if approved; nothing is scheduled:
    singleplayer and vanilla-server joins work.
 7. **SP-AC7** Conflicting mods, if declared, are detected per M0 §6.
 
-## 9. Open decisions and unresolved questions
+## Decisions (2026-11-21)
 
-- **Q-SP1 [Open]** Was "FasLoad" meant to be Fastload (world loading), or a
+| Id | Decision | Status |
+| --- | --- | --- |
+| Q-SP1 | The intended "FasLoad" reference remains unconfirmed; no further investigation now. | [Approved 2026-11-21] |
+| Q-SP2 | Qualitative startup-performance policy (see [AGENTS.md](../../AGENTS.md#engineering-rules)). A numerical budget is deferred until production-install measurements exist. | [Approved 2026-11-21] |
+| Q-SP3 | Production-install benchmarking is required before any startup optimization work. | [Approved 2026-11-21] |
+| Q-SP4 | A development-only benchmark harness may be committed; implementation is deferred. | [Approved 2026-11-21] |
+| Q-SP5 | Plain feature ids matching the descriptor pattern are kept. `fast_startup` is reserved for a possible future feature. | [Approved 2026-11-21] |
+| Q-SP6 | No startup optimization feature is scheduled. Startup-performance engineering guidelines are kept. | [Approved 2026-11-21] |
+| Q-SP7 | Early read-only configuration loading (§6) is deferred until a confirmed requirement exists. | [Deferred] |
+
+Because of these decisions, §6–§8 are reference material only.
+SP-AC2's budget waits on Q-SP2's deferred numerical budget.
+
+## 9. Original questions (resolved above)
+
+- **Q-SP1** Was "FasLoad" meant to be Fastload (world loading), or a
   different mod? If Fastload: world loading is out of scope for this
   investigation.
-- **Q-SP2 [Open]** Acceptable startup budget for QoL: Unified over Fabric +
+- **Q-SP2** Acceptable startup budget for QoL: Unified over Fabric +
   Fabric API (e.g. ≤ 0.1 s warm median)?
-- **Q-SP3 [Open]** Re-measure C − B with a production install to confirm or
+- **Q-SP3** Re-measure C − B with a production install to confirm or
   reject the ≈0.3 s dev-environment difference.
-- **Q-SP4 [Open]** May benchmark tooling be committed (e.g. a `tools/`
+- **Q-SP4** May benchmark tooling be committed (e.g. a `tools/`
   directory, not shipped in the JAR)?
-- **Q-SP5 [Open]** The id `performance.fast_startup` contains a dot and a
+- **Q-SP5** The id `performance.fast_startup` contains a dot and a
   category prefix. The proposed id rule (`^[a-z][a-z0-9_]{1,63}$`, see the
-  [feature catalog](../product/feature-catalog.md#identifier-rules-proposed))
+  [feature catalog](../product/feature-catalog.md#identifier-rules-approved-2026-11-21))
   does not allow that; the existing catalog uses plain ids such as
   `server_ping`. Which form is intended?
-- **Q-SP6 [Open]** Should startup optimization become a catalog feature at
+- **Q-SP6** Should startup optimization become a catalog feature at
   all, given the small measured headroom, or be limited to candidates 1–2?
-- **Q-SP7 [Open]** Is the early read-only configuration read (§6) approved
+- **Q-SP7** Is the early read-only configuration read (§6) approved
   as a Core contract addition?
 - Unresolved technical: whether vanilla 26.3 resource loading is
   filesystem-bound with many packs; whether Java 25 AOT caching helps under

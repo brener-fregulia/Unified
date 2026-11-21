@@ -48,6 +48,8 @@ commit message or the document.
 | `docs/product/feature-catalog.md` | Planned features and identifiers |
 | `docs/architecture/overview.md` | Components and boundaries |
 | `docs/architecture/configuration.md` | Configuration and data policy |
+| `docs/architecture/diagnostics.md` | Diagnostics direction |
+| `docs/discovery/` | Closed technical investigations |
 | `docs/specifications/` | One spec per milestone or feature |
 | `docs/development/versioning.md` | Versioning, release and changelog policy |
 | `CHANGELOG.md` | User-relevant changes |
@@ -73,6 +75,13 @@ commit message or the document.
   both `en_us` and `pt_br`.
 - **No license decisions.** Do not add or change a license file.
 - **Horizon.** Do not write speculative Horizon (Rust) code before M5.
+- **Startup performance.** Keep startup cost minimal: no work in initializers
+  beyond what is needed, no eager loading of feature classes or data, no
+  Mixins unless the feature requires them. Do not add startup optimizations
+  without production-install benchmarks.
+- **Diagnostics.** Log feature failures with the feature id. No remote
+  telemetry, embedded write tokens or automatic public issue creation (see
+  [diagnostics](docs/architecture/diagnostics.md)).
 
 ## Git workflow
 

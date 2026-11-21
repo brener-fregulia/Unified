@@ -54,11 +54,31 @@ example, when their behavior is installed at load time). The system must
 represent this honestly: the UI shows that a change takes effect after
 restart, and the runtime state reflects what is actually active.
 
-## Startup performance
+## Core decisions [Approved 2026-11-21]
 
-See the [startup performance discovery](../discovery/startup-performance-minecraft-26.3.md)
-(M0.3). It proposes, but does not approve, an early read-only configuration
-read for Mixin gating.
+| Topic | Decision |
+| --- | --- |
+| Feature descriptor and registry | Explicit, code-defined registry per [M0 §3](../specifications/m0-platform-foundations.md#3-feature-registration-contract-approved-2026-11-21) |
+| Configuration | Global only in M0; per-world/per-server deferred ([configuration](configuration.md)) |
+| Settings UI | Native Minecraft screen widgets; no configuration UI library (resolves Q-A2) |
+| Entry point | Configurable key binding, unassigned by default; Mod Menu optional and deferred (resolves Q-A3) |
+| Conflicts | Disable by default only without an explicit player choice; explicit choices win with a visible warning |
+| Master switch | None in M0 |
+| Restart-required changes | Indicated in the settings screen |
+| Testing | JUnit 5 unit tests; manual in-game QA initially |
+| Plugin API | None |
+| Diagnostics | Local, feature-specific logging in Core; no remote telemetry ([diagnostics](diagnostics.md)) |
+
+Lifecycle failure handling and settings transaction semantics remain
+**[Proposed]** pending technical-lead review (see the
+[M0 specification](../specifications/m0-platform-foundations.md#11-open-questions)).
+
+## Startup performance [Approved 2026-11-21]
+
+No startup optimization is scheduled. The qualitative startup policy in
+[AGENTS.md](../../AGENTS.md#engineering-rules) applies. Early configuration
+loading is deferred. See the
+[startup performance discovery](../discovery/startup-performance-minecraft-26.3.md#decisions-2026-11-21).
 
 ## Horizon [Approved direction]
 
@@ -91,11 +111,11 @@ Sources: `meta.fabricmc.net` (game and loader versions),
 ## Open questions
 
 - **Q-A1 [Resolved 2026-11-21]** Fabric API is an approved dependency.
-- **Q-A2 [Open]** Build the settings UI with vanilla screen widgets only, or
-  use a configuration library? (Any library is a dependency requiring
-  approval.)
-- **Q-A3 [Open]** Integrate with Mod Menu as an optional entry point?
+- **Q-A2 [Resolved 2026-11-21]** Native Minecraft screen widgets; no
+  configuration UI library.
+- **Q-A3 [Resolved 2026-11-21]** Mod Menu integration is optional and
+  deferred.
 - **Q-A4 [Resolved 2026-11-21]** Mod ID `qol_unified`, package
   `io.github.brener_fregulia.qolunified`.
-- **Q-A5 [Partly resolved 2026-11-21]** JUnit 5 is approved for unit tests.
-  Whether to use Fabric's game test tooling for in-game tests remains open.
+- **Q-A5 [Resolved 2026-11-21]** JUnit 5 for unit tests; manual in-game QA
+  initially. In-game test automation is deferred.

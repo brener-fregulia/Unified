@@ -2,9 +2,16 @@
 
 Status labels follow [AGENTS.md](../../AGENTS.md#decision-status-labels).
 
-**Specification status: Draft.** Goals marked **[Approved]** come from the PO
-brief. All contracts, requirements and acceptance criteria are
-**[Proposed]** until approved. Implementation must not start before approval.
+**Specification status: Approved in part (2026-11-21).** The technical lead
+approved the registration, configuration, compatibility and settings UI
+contracts, and the parts of the lifecycle contract not related to failures.
+Two parts stay **[Proposed]** until the technical lead reviews them:
+
+- lifecycle failure handling (§4.2–§4.4);
+- settings transaction and failure semantics (§7.2).
+
+The acceptance criteria (§9) are also still **[Proposed]**. Implementation
+must not start on any [Proposed] part.
 
 ## 1. Goals [Approved]
 
@@ -21,15 +28,19 @@ brief. All contracts, requirements and acceptance criteria are
 | Non-goal | Status |
 | --- | --- |
 | Any user-facing feature (Food HUD and others start in M1) | [Approved] |
-| Public plugin API or third-party feature registration | [Approved] |
+| Public plugin API or third-party feature registration | [Approved 2026-11-21] |
 | DI framework, event bus, reflection discovery, plugin loader | [Approved] |
-| Per-world/per-server configuration | [Deferred] |
+| Per-world/per-server configuration | [Deferred] (approved 2026-11-21) |
+| Master switch for all features | [Approved 2026-11-21] (not in M0) |
+| Mod Menu integration | [Deferred] (approved 2026-11-21; optional) |
+| Remote telemetry or report submission | [Approved 2026-11-21] (not in M0; see [diagnostics](../architecture/diagnostics.md)) |
+| Startup optimizations, Mixin gating, early configuration loading | [Approved 2026-11-21] (not scheduled; see [discovery](../discovery/startup-performance-minecraft-26.3.md#decisions-2026-11-21)) |
 | Navigation data storage | [Deferred] to M4 |
 | Horizon implementation | [Deferred] to M5 |
 | In-game conflict *resolution* beyond enabling/disabling features | [Proposed] |
 | Polished UI styling, icons, animations | [Proposed] |
 
-## 3. Feature registration contract [Proposed]
+## 3. Feature registration contract [Approved 2026-11-21]
 
 Each feature provides one **feature descriptor** and one **feature
 implementation**. Names below describe the contract, not final Java types.
@@ -59,6 +70,11 @@ implementation**. Names below describe the contract, not final Java types.
 Other setting types (floats, colors, key bindings, lists) are **[Deferred]**
 until a feature needs them.
 
+How a `LIVE` setting reaches a running feature is not yet specified. The
+smallest option is **[Proposed]**: features read current values from an
+immutable settings snapshot owned by the Core, and the Core replaces that
+snapshot on apply. This needs no callback.
+
 ### 3.3 Conflict descriptor
 
 | Field | Rules |
@@ -76,6 +92,10 @@ A feature implementation exposes exactly two operations:
 Features whose behavior is woven in at load time (for example, Mixins) must
 check their effective state at run time instead of relying on unloading.
 
+**[Proposed]** `disable()` must be safe to call after a partial or failed
+`enable()`. It must only undo what is actually installed. This allows the
+rollback in §4.3.
+
 ### 3.5 Registry
 
 - Features are listed **explicitly in code** in one place (no scanning or
@@ -86,22 +106,14 @@ check their effective state at run time instead of relying on unloading.
   fails startup with a clear error. These are developer errors and must be
   caught by tests before release.
 
-## 4. Feature lifecycle requirements [Proposed]
+## 4. Feature lifecycle requirements
 
-### 4.1 States
+### 4.1 Desired and effective state [Approved 2026-11-21]
 
-| State | Meaning |
-| --- | --- |
-| `ENABLED` | Feature is active. |
-| `DISABLED` | Feature is inactive. |
-| `FAILED` | `enable()` or `disable()` threw; feature is treated as inactive. |
-
-Separately, each feature has a **desired state** (from configuration and
-defaults) and an **effective state** (what is actually running). For
-`RESTART_REQUIRED` features they may differ until restart; the UI shows this
-as *pending restart*.
-
-### 4.2 Requirements
+Each feature has a **desired state** (enabled or disabled, from
+configuration, defaults and conflicts) and an **effective state** (what is
+actually running). For `RESTART_REQUIRED` features they may differ until
+restart; the UI shows this as *pending restart*.
 
 - **LC-1** At startup, after configuration and compatibility detection, each
   feature whose desired state is enabled is enabled.
@@ -109,22 +121,74 @@ as *pending restart*.
   toggling to the current state is a no-op.
 - **LC-3** Toggling a `RESTART_REQUIRED` feature only changes the desired
   state and marks it pending restart.
-- **LC-4** An exception in one feature's `enable()`/`disable()` is caught and
-  logged with the feature id; the feature moves to `FAILED`; other features
-  and the game continue.
-- **LC-5** A `FAILED` feature can be retried by toggling it off and on; it is
-  not retried automatically.
 - **LC-6** Disabling a feature never deletes its settings or data (CFG-P7).
 - **LC-7** Lifecycle calls happen on the client (render) thread.
 
-## 5. Configuration behavior [Proposed]
+### 4.2 Effective states [Proposed — requires technical-lead review]
+
+This revision replaces the earlier `FAILED` state, which treated a feature
+as inactive even after `disable()` threw. That was unsafe.
+
+| Effective state | Meaning | Known? |
+| --- | --- | --- |
+| `ACTIVE` | Last `enable()` returned normally. | Known active |
+| `INACTIVE` | Never enabled, or the last `disable()` (or rollback) returned normally. | Known inactive |
+| `UNKNOWN` | `disable()` threw, so the feature may be fully or partly active. | Unknown |
+
+Each feature also keeps one optional **last failure** record: the operation
+(`ENABLE`, `DISABLE`, or `ENABLE` with a failed rollback), the exception
+type, and the time. The record is cleared by the next successful operation
+on that feature.
+
+Three states plus a failure record is the whole model; there are no other
+transitions.
+
+### 4.3 Transitions [Proposed — requires technical-lead review]
+
+| From | Operation | Result | New state | Failure record |
+| --- | --- | --- | --- | --- |
+| `INACTIVE` | `enable()` | returns | `ACTIVE` | cleared |
+| `INACTIVE` | `enable()` | throws → Core calls `disable()` once as rollback; rollback returns | `INACTIVE` | `ENABLE` |
+| `INACTIVE` | `enable()` | throws → rollback also throws | `UNKNOWN` | `ENABLE` + rollback failed |
+| `ACTIVE` | `disable()` | returns | `INACTIVE` | cleared |
+| `ACTIVE` | `disable()` | throws | `UNKNOWN` | `DISABLE` |
+| `UNKNOWN` | `disable()` (user retry) | returns | `INACTIVE` | cleared |
+| `UNKNOWN` | `disable()` (user retry) | throws | `UNKNOWN` | `DISABLE` (updated) |
+| `UNKNOWN` | `enable()` | **not allowed** | `UNKNOWN` | — |
+
+Requirements:
+
+- **LC-4** Exceptions from `enable()`/`disable()` are caught per feature.
+  Other features and the game continue.
+- **LC-5** No automatic retries. The user can retry by toggling (enable from
+  `INACTIVE`, or disable from `UNKNOWN`).
+- **LC-8** A feature in `UNKNOWN` is never reported as inactive or
+  disabled. It cannot be enabled again until a disable succeeds or the game
+  restarts.
+- **LC-9** A game restart starts every feature in `INACTIVE`, then applies
+  LC-1 using the saved desired state.
+
+### 4.4 Logging and UI reporting [Proposed — requires technical-lead review]
+
+- **LC-10** Each failure is logged once at `ERROR` with the feature id,
+  operation and stack trace. A rollback attempt is logged at `WARN`. A
+  successful retry is logged at `INFO`.
+- **LC-11** The settings screen shows, per feature:
+  - `INACTIVE` with an `ENABLE` failure: *"Failed to enable — see log."*
+  - `UNKNOWN`: *"Could not be fully disabled; it may still be active.
+    Restart the game to be sure."* The control offers *Retry disable*, not
+    *Enable*.
+- **LC-12** Messages are translated; exception details appear only in the
+  log.
+
+## 5. Configuration behavior [Approved 2026-11-21]
 
 Configuration follows [configuration.md](../architecture/configuration.md).
 M0 implements only the global file:
 
 - **CFG-1** Load once at startup, before features are enabled.
 - **CFG-2** Missing, malformed, newer-version, unknown and invalid values are
-  handled as in the [safe handling table](../architecture/configuration.md#safe-handling-proposed).
+  handled as in the [safe handling table](../architecture/configuration.md#safe-handling).
 - **CFG-3** M0 ships `schemaVersion: 1` and a migration mechanism with a test
   migration exercised only by tests.
 - **CFG-4** Saving is atomic where supported and happens when the user applies
@@ -133,7 +197,7 @@ M0 implements only the global file:
 - **CFG-6** Loading then saving an unchanged file preserves all known and
   unknown entries (semantic round-trip; formatting may differ).
 
-## 6. Compatibility detection behavior [Proposed]
+## 6. Compatibility detection behavior [Approved 2026-11-21]
 
 - **CMP-1** At startup, for each feature, check whether any declared
   conflicting mod is loaded, using the Fabric Loader API.
@@ -143,36 +207,92 @@ M0 implements only the global file:
   value the user set.
 - **CMP-4** Detected conflicts are logged once at startup and shown in the
   settings screen next to the feature, with the reason.
-- **CMP-5** The user can enable a conflicting feature; the UI warns but does
-  not block.
+- **CMP-5** The user can enable a conflicting feature. The UI shows a
+  visible warning but does not block.
 - **CMP-6** Detection only reports mods declared in descriptors; it does not
   guess or scan other mods' contents.
 
-## 7. Minimal settings UI requirements [Proposed]
+## 7. Settings UI
+
+### 7.1 Requirements [Approved 2026-11-21]
 
 - **UI-1** One screen lists all registered features grouped by category, in
   a stable order.
 - **UI-2** Each feature row shows: localized name, enable toggle, and status
-  indicators for *pending restart*, *conflict detected* and *failed*.
+  indicators for *pending restart*, *conflict detected* and failure states
+  (§4.4).
 - **UI-3** A search field filters features by localized name, localized
   description and id, case-insensitively, in the active language.
 - **UI-4** Opening a feature shows its settings with widgets for the M0
   setting types; invalid input is rejected before apply.
-- **UI-5** *Done* applies and saves changes; *Cancel* discards them.
-- **UI-6** When applied changes require restart, the screen says so.
+- **UI-5** *Done* applies and saves changes; *Cancel* discards them. Detailed
+  semantics are in §7.2.
+- **UI-6** Restart-required changes are indicated in the settings screen.
+  There is no notice outside it.
 - **UI-7** All strings use translation keys present in `en_us` and `pt_br`.
 - **UI-8** The screen works with zero registered features (empty state).
-- **UI-9** Entry point: a key binding without a default key, plus any entry
-  approved in Q-M2.
+- **UI-9** The screen is opened through a configurable key binding that has
+  no default key. Mod Menu integration is optional and deferred.
+- **UI-10** The screen is built with native Minecraft screen widgets. No
+  configuration UI library is used.
 
-## 8. Test strategy [Proposed]
+### 7.2 Transaction and failure semantics [Proposed — requires technical-lead review]
+
+- **TX-1 Draft.** Opening the screen copies the current desired states and
+  setting values into a draft. All edits change only the draft.
+- **TX-2 Cancel.** *Cancel*, or closing the screen with Escape, discards the
+  draft. There are no lifecycle calls and no file write.
+- **TX-3 Validate.** *Done* validates the whole draft first. If anything is
+  invalid, nothing is applied or saved; the screen stays open and marks the
+  invalid fields.
+- **TX-4 No-op.** If the draft equals the current configuration, *Done*
+  closes the screen without writing the file.
+- **TX-5 Save, then apply.** After validation, the Core saves the draft
+  atomically **before** any runtime change. If the save fails, nothing is
+  applied; the screen stays open with an error and the draft is kept. This
+  way the running game is never ahead of what is on disk.
+- **TX-6 Runtime apply.** After a successful save:
+  - The new settings snapshot is installed (§3.2).
+  - `LIVE` toggles are applied per §4.3, all disables before enables, each
+    group in registry order.
+  - `RESTART_REQUIRED` changes are marked *pending restart*.
+- **TX-7 Failures do not revert the saved choice.** If a runtime transition
+  fails, the saved desired state stays as the user chose it, and the
+  effective state and failure indicator are shown honestly (§4.4). Failures
+  are never reported as successful application.
+- **TX-8 Result.** If every transition succeeded, the screen closes. If any
+  failed, the screen stays open with a summary listing the affected
+  features, and the next *Done* or *Cancel* closes it.
+- **TX-9 Read-only configuration.** If the file is read-only because its
+  schema version is newer (see configuration), the screen says that changes
+  cannot be saved. *Done* is disabled, so runtime and disk cannot diverge.
+
+The brief asked that "persistent configuration is updated only after a valid
+apply". TX-5 reads that as *after validation succeeds*. If the intent was
+*after runtime apply succeeds*, see Q-M6.
+
+Test cases (unit tests against fixtures, without a game instance):
+
+| Id | Scenario | Expected |
+| --- | --- | --- |
+| TX-T1 | Edit, then Cancel | No lifecycle calls; file byte-for-byte unchanged |
+| TX-T2 | Done with an invalid integer | No calls, no write; draft kept |
+| TX-T3 | Done with an unchanged draft | No calls, no write |
+| TX-T4 | Save fails (simulated IO error) | No lifecycle calls; error reported; draft kept |
+| TX-T5 | Enable a live fixture whose `enable()` throws | File has `enabled: true`; fixture `INACTIVE` with `ENABLE` failure; rollback called once; other changes applied |
+| TX-T6 | Disable a live fixture whose `disable()` throws | File has `enabled: false`; fixture `UNKNOWN`; enable blocked; retry disable allowed |
+| TX-T7 | Toggle a restart-required fixture | File updated; no lifecycle call; *pending restart* shown |
+| TX-T8 | Configuration read-only (newer schema) | Done disabled; no write |
+| TX-T9 | One failing and one succeeding live change | Success applied; failure reported; screen stays open |
+
+## 8. Test strategy [Approved 2026-11-21]
 
 | Layer | Scope | How |
 | --- | --- | --- |
-| Unit | Registry validation, setting validation, config parse/save/round-trip, migrations, malformed and newer-version files, lifecycle state transitions, failure isolation, conflict default rules, search matching | Automated, without a Minecraft instance |
+| Unit | Registry validation, setting validation, config parse/save/round-trip, migrations, malformed and newer-version files, lifecycle states and failures, conflict default rules, search matching, transaction cases TX-T1–TX-T9 | JUnit 5, without a Minecraft instance |
 | Localization | Every key used by the Core and registered features exists in both language files | Automated test |
-| In-game | Startup, settings screen, toggling live and restart-required features, conflict display | Manual checklist in a development client; automation per Q-A5 |
-| Fixtures | Test-only sample features (live, restart-required, failing, conflicting) | Test sources only; never shipped |
+| In-game | Startup, settings screen, toggling live and restart-required features, conflict and failure display | Manual QA checklist in a development client (initially) |
+| Fixtures | Test-only sample features (live, restart-required, failing enable, failing disable, conflicting) | Test sources only; never shipped |
 
 ## 9. Acceptance criteria [Proposed]
 
@@ -194,10 +314,12 @@ M0 is complete when all of the following are verified and reported:
    `enable()` exactly once each; settings are unchanged (unit test).
 8. **AC-8** Toggling a restart-required fixture marks it pending restart and
    leaves its effective state unchanged until restart (unit test).
-9. **AC-9** A fixture whose `enable()` throws ends `FAILED` while other
-   fixtures end `ENABLED` (unit test).
+9. **AC-9** A fixture whose `enable()` throws ends `INACTIVE` with an
+   `ENABLE` failure. A fixture whose `disable()` throws ends `UNKNOWN`,
+   never `INACTIVE`. Other fixtures end `ACTIVE` (unit test).
 10. **AC-10** A conflicting fixture with no explicit choice starts disabled;
-    with an explicit `enabled: true` it starts enabled (unit test).
+    with an explicit `enabled: true` it starts enabled and shows a warning
+    (unit test + manual).
 11. **AC-11** The settings screen lists fixtures by category, filters by
     search, shows status indicators, and *Cancel* leaves `config.json`
     byte-for-byte unchanged (manual checklist).
@@ -205,31 +327,40 @@ M0 is complete when all of the following are verified and reported:
 13. **AC-13** No required server-side component; the mod works when joining a
     vanilla server (manual).
 14. **AC-14** All automated tests pass and `git diff --check` is clean.
+15. **AC-15** Transaction cases TX-T1–TX-T9 pass (unit tests).
 
 ## 10. Deferred decisions
 
 | Topic | Deferred to |
 | --- | --- |
 | Per-world/per-server configuration and precedence (Q-C2, Q-C3) | Later milestone, before first feature needing it |
+| Mod Menu integration | Later, optional |
+| In-game test automation (rest of Q-A5) | After manual QA proves insufficient |
+| Remote diagnostics reporting | See [diagnostics](../architecture/diagnostics.md) |
 | Navigation data format and storage | M4 |
 | Shared data formats with Horizon (Q-C4) | Before M4 data formats are frozen |
 | Additional setting types | When a feature needs them |
 | Horizon implementation | M5 |
 | License (Q-V1) and distribution (Q-V2) | Before first public release |
 
-## 11. Open questions for the PO
+## 11. Open questions
 
-- **Q-M1 [Open]** Approve or amend this specification (contracts §3–§7,
-  acceptance criteria §9).
-- **Q-M2 [Open]** Settings screen entry points: key binding only, Mod Menu
-  integration (Q-A3), a button on a vanilla screen, or a combination?
-- **Q-M3 [Open]** Should conflict detection auto-disable by default (CMP-2),
-  or only warn?
-- **Q-M4 [Open]** Is a master switch to disable all features required in M0?
-- **Q-M5 [Open]** Should restart-required features offer an in-game
-  "restart needed" notice outside the settings screen?
-- Also blocking for M0 implementation: Q-A2 (UI library), Q-A5 (in-game
-  test tooling), Q-C1 (configuration policy). Q-A1 and Q-A4 were resolved in
-  M0.2
-  — see [overview](../architecture/overview.md#open-questions) and
-  [configuration](../architecture/configuration.md#open-questions).
+Resolved 2026-11-21:
+
+- **Q-M2** Key binding only; Mod Menu optional and deferred.
+- **Q-M3** Disable by default only when the player has no explicit choice.
+- **Q-M4** No master switch in M0.
+- **Q-M5** Restart-required changes are shown in the settings screen only.
+
+Still open and blocking M0 implementation:
+
+- **Q-M1 [Open]** Technical-lead review of the revised lifecycle failure
+  model (§4.2–§4.4) and of the transaction semantics (§7.2), plus approval of
+  the acceptance criteria (§9).
+- **Q-M6 [Open]** Confirm TX-5 ("save, then apply") and TX-7 (a failed runtime
+  transition keeps the saved choice). The alternative is to apply first and
+  save only successful transitions, so the file can lag behind the user's
+  choice.
+- **Q-M7 [Open]** Approve the settings-snapshot approach for `LIVE` setting
+  changes (§3.2) and the requirement that `disable()` is safe after a partial
+  `enable()` (§3.4).

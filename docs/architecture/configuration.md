@@ -2,16 +2,16 @@
 
 Status labels follow [AGENTS.md](../../AGENTS.md#decision-status-labels).
 
-The policy items below were provided by the PO as **proposed requirements**.
-They are recorded as **[Proposed]** until explicitly approved. Detailed
-technical choices are also **[Proposed]**. No configuration code exists yet.
+The policy requirements and the technical policy below were **approved for M0
+on 2026-11-21** (resolves Q-C1). M0 implements the global configuration only.
+No configuration code exists yet.
 
-## Policy requirements [Proposed by PO]
+## Policy requirements [Approved 2026-11-21]
 
 | Id | Requirement |
 | --- | --- |
 | CFG-P1 | Configuration is versioned JSON. |
-| CFG-P2 | Global settings, with optional per-world/per-server settings. |
+| CFG-P2 | Global settings, with optional per-world/per-server settings. M0: global only; per-world/per-server is **[Deferred]**. |
 | CFG-P3 | Persistent navigation data is stored separately from configuration. |
 | CFG-P4 | Features are keyed by stable identifiers. |
 | CFG-P5 | Schema migrations are applied when needed. |
@@ -19,9 +19,9 @@ technical choices are also **[Proposed]**. No configuration code exists yet.
 | CFG-P7 | Disabling a feature never deletes its settings or player data. |
 | CFG-P8 | Important files are persisted atomically when practical. |
 
-## Technical proposal
+## Technical policy [Approved 2026-11-21]
 
-### File layout [Proposed]
+### File layout
 
 ```text
 <game dir>/config/qol_unified/
@@ -34,7 +34,7 @@ Directory names use the approved mod id `qol_unified` (see the
 [overview](overview.md#build-bootstrap-approved-2026-11-21)). Per-world/per-server files are
 **[Deferred]** to a later milestone.
 
-### Document shape [Proposed]
+### Document shape
 
 ```json
 {
@@ -57,7 +57,7 @@ Directory names use the approved mod id `qol_unified` (see the
   in the [M0 specification](../specifications/m0-platform-foundations.md)).
 - A setting absent from `settings` uses its declared default.
 
-### Safe handling [Proposed]
+### Safe handling
 
 | Situation | Behavior |
 | --- | --- |
@@ -69,17 +69,19 @@ Directory names use the approved mod id `qol_unified` (see the
 | Unknown setting key | Preserve unchanged on save. |
 | Value of wrong type or out of range | Use the default at runtime, log a warning, keep the original value in the file until the user changes that setting. |
 
-### Persistence [Proposed]
+### Persistence
 
 - Write to a temporary file in the same directory, then replace the target
   with an atomic move; fall back to a non-atomic replace only if the file
   system does not support atomic moves, and log it.
 - Save when the settings screen applies changes, not on every widget change.
+  The ordering of saving versus runtime apply is **[Proposed]** in the
+  [M0 transaction semantics](../specifications/m0-platform-foundations.md#72-transaction-and-failure-semantics-proposed--requires-technical-lead-review).
 - Disabling a feature changes only its `enabled` value (CFG-P7).
 
 ## Open questions
 
-- **Q-C1 [Open]** Approve or amend requirements CFG-P1 to CFG-P8.
+- **Q-C1 [Resolved 2026-11-21]** CFG-P1 to CFG-P8 approved.
 - **Q-C2 [Open]** Precedence rules between global and per-world/per-server
   settings, and which settings may be overridden per world/server.
 - **Q-C3 [Open]** Should per-server settings key on server address, and how
