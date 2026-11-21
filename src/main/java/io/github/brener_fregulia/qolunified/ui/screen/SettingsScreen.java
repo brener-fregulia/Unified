@@ -25,7 +25,7 @@ import net.minecraft.network.chat.Component;
 /** Central QoL: Unified settings screen (UI-1–UI-10, TX-1–TX-9). Holds a draft until Done. */
 public final class SettingsScreen extends Screen {
     private static final int HEADER = 52;
-    private static final int FOOTER = 52;
+    private static final int FOOTER = 44;
     private static final int GAP = 8;
 
     private final Screen parent;
@@ -38,6 +38,7 @@ public final class SettingsScreen extends Screen {
     private RowList list;
     private Button doneButton;
     private StringWidget messageWidget;
+    private final java.util.Map<FeatureCategory, Button> categoryButtons = new java.util.EnumMap<>(FeatureCategory.class);
 
     public SettingsScreen(Screen parent, CoreRuntime core) {
         super(Component.translatable(UiKeys.TITLE));
@@ -57,7 +58,8 @@ public final class SettingsScreen extends Screen {
     @Override
     protected void init() {
         CoreRuntime core = draft.core();
-        addRenderableWidget(new StringWidget(0, 10, width, font.lineHeight, title, font));
+        int titleWidth = Math.min(font.width(title), width - 2 * GAP);
+        addRenderableWidget(new StringWidget((width - titleWidth) / 2, 10, titleWidth, font.lineHeight, title, font));
 
         int searchWidth = Math.min(300, width - 2 * GAP);
         EditBox search = new EditBox(font, (width - searchWidth) / 2, 26, searchWidth, 20,
@@ -67,6 +69,7 @@ public final class SettingsScreen extends Screen {
         search.setResponder(value -> {
             query = value;
             refreshList();
+            updateCategoryButtons();
         });
         addRenderableWidget(search);
 
@@ -82,17 +85,23 @@ public final class SettingsScreen extends Screen {
             addRenderableWidget(empty);
             list = null;
         } else {
-            int navWidth = Math.max(70, Math.min(120, width / 5));
+            int navWidth = Math.max(80, Math.min(130, width / 4));
+            // Fit all category buttons into the list height; shrink them before overlapping the footer.
+            int step = Math.max(14, Math.min(24, listHeight / categories.size()));
+            int buttonHeight = Math.min(20, step - 2);
             int y = listTop;
+            categoryButtons.clear();
             for (FeatureCategory category : categories) {
-                Button button = Button.builder(Component.translatable(UiKeys.category(category)), b -> {
+                Component label = Component.translatable(UiKeys.category(category));
+                Button button = Button.builder(label, b -> {
                     selected = category;
                     rebuildWidgets();
-                }).bounds(GAP, y, navWidth, 20).build();
-                button.active = category != selected || !query.isBlank();
+                }).bounds(GAP, y, navWidth, buttonHeight).tooltip(Tooltip.create(label)).build();
+                categoryButtons.put(category, button);
                 addRenderableWidget(button);
-                y += 24;
+                y += step;
             }
+            updateCategoryButtons();
             int listX = GAP * 2 + navWidth;
             list = new RowList(minecraft, width - listX - GAP, listHeight, listTop);
             list.setX(listX);
@@ -100,7 +109,7 @@ public final class SettingsScreen extends Screen {
             refreshList();
         }
 
-        messageWidget = new StringWidget(GAP, height - FOOTER + 6, width - 2 * GAP, font.lineHeight, message, font);
+        messageWidget = new StringWidget(GAP, height - FOOTER + 4, width - 2 * GAP, font.lineHeight, message, font);
         messageWidget.setMaxWidth(width - 2 * GAP);
         addRenderableWidget(messageWidget);
         setMessage(message, messageIsError);
@@ -113,6 +122,11 @@ public final class SettingsScreen extends Screen {
         addRenderableWidget(doneButton);
         addRenderableWidget(Button.builder(Component.translatable(UiKeys.CANCEL), b -> onClose())
                 .bounds(width / 2 + GAP / 2, footerY, buttonWidth, 20).build());
+    }
+
+    /** The selected category is shown as an inactive button, except while a search spans all categories. */
+    private void updateCategoryButtons() {
+        categoryButtons.forEach((category, button) -> button.active = category != selected || !query.isBlank());
     }
 
     private void refreshList() {
@@ -141,7 +155,7 @@ public final class SettingsScreen extends Screen {
         if (FeatureStatus.offersRetryDisable(core, id)) {
             widgets.add(Button.builder(Component.translatable(UiKeys.RETRY_DISABLE), b -> retryDisable(id))
                     .size(90, 20)
-                    .tooltip(Tooltip.create(Component.translatable(UiKeys.STATUS_UNKNOWN)))
+                    .tooltip(Tooltip.create(Component.translatable(UiKeys.TOOLTIP_UNKNOWN)))
                     .build());
         } else {
             CycleButton<Boolean> toggle = CycleButton.booleanBuilder(Component.translatable(UiKeys.ENABLED),
@@ -156,13 +170,12 @@ public final class SettingsScreen extends Screen {
             widgets.add(toggle);
         }
         Button settings = Button.builder(Component.translatable(UiKeys.FEATURE_SETTINGS),
-                b -> minecraft.gui.setScreen(new FeatureSettingsScreen(this, draft, descriptor))).size(70, 20).build();
+                b -> minecraft.gui.setScreen(new FeatureSettingsScreen(this, draft, descriptor))).size(60, 20).build();
         settings.active = !descriptor.settings().isEmpty();
         widgets.add(settings);
 
-        Component name = Component.translatable(descriptor.nameKey());
-        Component title = Component.literal(name.getString() + "  [" + Texts.status(core, id).getString() + "]");
-        return RowList.row(font, title, Component.translatable(descriptor.descriptionKey()), widgets);
+        return RowList.feature(font, Component.translatable(descriptor.nameKey()), Texts.status(core, id),
+                Texts.needsAttention(core, id), Component.translatable(descriptor.descriptionKey()), widgets);
     }
 
     private void retryDisable(String id) {
@@ -173,13 +186,13 @@ public final class SettingsScreen extends Screen {
     }
 
     private void done() {
-        SettingsDraft.CommitOutcome outcome = draft.commit();
         CoreRuntime core = draft.core();
+        java.util.Set<String> pendingBefore = pendingRestart(core);
+        SettingsDraft.CommitOutcome outcome = draft.commit();
         switch (outcome.kind()) {
             case NO_CHANGE, APPLIED -> {
-                boolean restart = core.registry().features().stream()
-                        .anyMatch(f -> core.lifecycle().pendingRestart(f.descriptor().id()));
-                if (restart && outcome.kind() == SettingsDraft.CommitOutcome.Kind.APPLIED) {
+                // Stay open once to announce restart-required changes made by this commit (UI-6).
+                if (!pendingBefore.containsAll(pendingRestart(core))) {
                     setMessage(Component.translatable(UiKeys.MESSAGE_RESTART), false);
                     rebuildWidgets();
                     return;
@@ -195,6 +208,16 @@ public final class SettingsScreen extends Screen {
                 rebuildWidgets();
             }
         }
+    }
+
+    private static java.util.Set<String> pendingRestart(CoreRuntime core) {
+        var pending = new java.util.HashSet<String>();
+        core.registry().features().forEach(f -> {
+            if (core.lifecycle().pendingRestart(f.descriptor().id())) {
+                pending.add(f.descriptor().id());
+            }
+        });
+        return pending;
     }
 
     private void setMessage(Component text, boolean error) {

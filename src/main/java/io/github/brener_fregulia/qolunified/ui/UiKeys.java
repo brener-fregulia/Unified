@@ -25,6 +25,7 @@ public final class UiKeys {
     public static final String STATUS_ACTIVE = "qol_unified.status.active";
     public static final String STATUS_INACTIVE = "qol_unified.status.inactive";
     public static final String STATUS_UNKNOWN = "qol_unified.status.unknown";
+    public static final String TOOLTIP_UNKNOWN = "qol_unified.tooltip.unknown";
     public static final String STATUS_ENABLE_FAILED = "qol_unified.status.enable_failed";
     public static final String STATUS_PENDING_RESTART = "qol_unified.status.pending_restart";
     public static final String STATUS_CONFLICT_DEFAULT = "qol_unified.status.conflict_default";

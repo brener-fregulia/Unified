@@ -89,7 +89,8 @@ class SettingsDraftTest {
         var core = UiFixtures.start(dir, Set.of("other_hud"), hud);
         var draft = new SettingsDraft(core);
         assertFalse(draft.choice("hud").enabled());
-        assertTrue(FeatureStatus.keys(core, "hud").contains(UiKeys.STATUS_CONFLICT_DEFAULT));
+        assertEquals(List.of(UiKeys.STATUS_CONFLICT_DEFAULT), FeatureStatus.keys(core, "hud"),
+                "the conflict default replaces the plain Inactive status");
         draft.setEnabled("hud", true);
         assertEquals(Kind.APPLIED, draft.commit().kind());
         assertEquals(FeatureState.ACTIVE, core.lifecycle().state("hud"));

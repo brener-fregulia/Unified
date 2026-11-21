@@ -27,6 +27,12 @@ final class Texts {
         return Component.literal(String.join(" · ", parts));
     }
 
+    /** True when the status is more than plain Active/Inactive. */
+    static boolean needsAttention(CoreRuntime core, String featureId) {
+        return FeatureStatus.keys(core, featureId).stream()
+                .anyMatch(k -> !k.equals(UiKeys.STATUS_ACTIVE) && !k.equals(UiKeys.STATUS_INACTIVE));
+    }
+
     static Component conflictReasons(CoreRuntime core, String featureId) {
         return Component.literal(core.compatibility(featureId).conflicts().stream()
                 .map(c -> c.modId() + ": " + I18n.get(c.reasonKey()))

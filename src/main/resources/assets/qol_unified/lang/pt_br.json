@@ -1,10 +1,8 @@
 {
   "modmenu.nameTranslation.qol_unified": "QoL: Unified",
   "modmenu.descriptionTranslation.qol_unified": "Um mod de qualidade de vida completo, modular e exclusivo do cliente.",
-
   "key.qol_unified.open_settings": "Abrir configurações do QoL: Unified",
   "key.category.qol_unified.main": "QoL: Unified",
-
   "qol_unified.settings.title": "Configurações do QoL: Unified",
   "qol_unified.settings.search": "Pesquisar recursos...",
   "qol_unified.settings.empty": "Ainda não há recursos disponíveis. Eles aparecerão aqui à medida que forem adicionados em versões futuras.",
@@ -18,16 +16,15 @@
   "qol_unified.settings.enabled": "Ativado",
   "qol_unified.settings.disabled": "Desativado",
   "qol_unified.settings.restart_required_suffix": "Entra em vigor após reiniciar o jogo",
-
   "qol_unified.status.active": "Ativo",
   "qol_unified.status.inactive": "Inativo",
-  "qol_unified.status.unknown": "Não foi possível desativar por completo e pode continuar ativo. Reinicie o jogo para garantir.",
+  "qol_unified.status.unknown": "Pode ainda estar ativo",
+  "qol_unified.tooltip.unknown": "Não foi possível desativar por completo e pode continuar ativo. Tente novamente ou reinicie o jogo para garantir.",
   "qol_unified.status.enable_failed": "Falha ao ativar — veja o log",
   "qol_unified.status.pending_restart": "Requer reinício",
-  "qol_unified.status.conflict_default": "Desativado por padrão: conflito com %s",
+  "qol_unified.status.conflict_default": "Desativado: conflito com %s",
   "qol_unified.status.conflict_override": "Ativado apesar do conflito com %s",
   "qol_unified.status.conflict": "Conflito com %s",
-
   "qol_unified.message.read_only": "Não é possível salvar: o arquivo de configuração é de uma versão mais nova ou não pôde ser lido com segurança.",
   "qol_unified.message.invalid": "Corrija os valores destacados antes de salvar.",
   "qol_unified.message.save_failed": "Não foi possível salvar as configurações. Suas alterações foram mantidas aqui; veja o log.",
@@ -35,11 +32,9 @@
   "qol_unified.message.restart": "Configurações salvas. Algumas alterações entram em vigor após reiniciar o jogo.",
   "qol_unified.message.retry_failed": "Ainda não foi possível desativar o recurso. Reinicie o jogo para garantir.",
   "qol_unified.message.retry_succeeded": "O recurso foi desativado.",
-
   "qol_unified.error.not_a_number": "Digite um número inteiro entre %s e %s.",
   "qol_unified.error.out_of_range": "Digite um valor entre %s e %s.",
   "qol_unified.error.invalid_value": "Este valor não é permitido.",
-
   "qol_unified.category.hud_information": "HUD e informações",
   "qol_unified.category.inventory": "Inventário",
   "qol_unified.category.visuals": "Visual",

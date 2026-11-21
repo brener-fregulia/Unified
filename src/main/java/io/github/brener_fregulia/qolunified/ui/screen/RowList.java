@@ -13,10 +13,12 @@ import net.minecraft.network.chat.Component;
 
 /** A scrolling list of rows, each with up to two lines of text and right-aligned widgets. */
 final class RowList extends ContainerObjectSelectionList<RowList.Row> {
-    static final int ROW_HEIGHT = 36;
+    static final int ROW_HEIGHT = 40;
     private static final int TEXT = 0xFFFFFFFF;
     private static final int MUTED = 0xFFA0A0A0;
     private static final int HEADER = 0xFFFFD866;
+    private static final int STATUS = 0xFFB8D8B8;
+    private static final int WARNING = 0xFFFFC060;
 
     RowList(Minecraft minecraft, int width, int height, int y) {
         super(minecraft, width, height, y, ROW_HEIGHT);
@@ -33,23 +35,34 @@ final class RowList extends ContainerObjectSelectionList<RowList.Row> {
     }
 
     static Row header(Font font, Component text) {
-        return new Row(font, text, null, HEADER, List.of());
+        return new Row(font, text, null, 0, null, HEADER, List.of());
     }
 
     static Row row(Font font, Component title, Component detail, List<AbstractWidget> widgets) {
-        return new Row(font, title, detail, TEXT, widgets);
+        return new Row(font, title, null, 0, detail, TEXT, widgets);
+    }
+
+    /** A feature row: name, status line (highlighted when it needs attention) and description. */
+    static Row feature(Font font, Component title, Component status, boolean warning, Component detail,
+            List<AbstractWidget> widgets) {
+        return new Row(font, title, status, warning ? WARNING : STATUS, detail, TEXT, widgets);
     }
 
     static final class Row extends ContainerObjectSelectionList.Entry<Row> {
         private final Font font;
         private final Component title;
+        private final Component status;
+        private final int statusColor;
         private final Component detail;
         private final int titleColor;
         private final List<AbstractWidget> widgets;
 
-        private Row(Font font, Component title, Component detail, int titleColor, List<AbstractWidget> widgets) {
+        private Row(Font font, Component title, Component status, int statusColor, Component detail, int titleColor,
+                List<AbstractWidget> widgets) {
             this.font = font;
             this.title = title;
+            this.status = status;
+            this.statusColor = statusColor;
             this.detail = detail;
             this.titleColor = titleColor;
             this.widgets = List.copyOf(widgets);
@@ -68,10 +81,22 @@ final class RowList extends ContainerObjectSelectionList<RowList.Row> {
                 right -= 4;
             }
             int textWidth = Math.max(20, right - getContentX() - 4);
-            int y = detail == null ? getContentYMiddle() - font.lineHeight / 2 : getContentY() + 4;
-            graphics.text(font, truncate(title, textWidth), getContentX(), y, titleColor);
+            var lines = new java.util.ArrayList<Component>();
+            var colors = new java.util.ArrayList<Integer>();
+            lines.add(title);
+            colors.add(titleColor);
+            if (status != null) {
+                lines.add(status);
+                colors.add(statusColor);
+            }
             if (detail != null) {
-                graphics.text(font, truncate(detail, textWidth), getContentX(), y + font.lineHeight + 3, MUTED);
+                lines.add(detail);
+                colors.add(MUTED);
+            }
+            int lineStep = font.lineHeight + 2;
+            int y = getContentYMiddle() - (lines.size() * lineStep - 2) / 2;
+            for (int i = 0; i < lines.size(); i++) {
+                graphics.text(font, truncate(lines.get(i), textWidth), getContentX(), y + i * lineStep, colors.get(i));
             }
         }
 

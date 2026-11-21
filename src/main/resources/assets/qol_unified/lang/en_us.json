@@ -1,10 +1,8 @@
 {
   "modmenu.nameTranslation.qol_unified": "QoL: Unified",
   "modmenu.descriptionTranslation.qol_unified": "An all-in-one, modular, client-side quality-of-life mod.",
-
   "key.qol_unified.open_settings": "Open QoL: Unified Settings",
   "key.category.qol_unified.main": "QoL: Unified",
-
   "qol_unified.settings.title": "QoL: Unified Settings",
   "qol_unified.settings.search": "Search features...",
   "qol_unified.settings.empty": "No features are available yet. Features will appear here as they are added in future versions.",
@@ -18,16 +16,15 @@
   "qol_unified.settings.enabled": "Enabled",
   "qol_unified.settings.disabled": "Disabled",
   "qol_unified.settings.restart_required_suffix": "Takes effect after restarting the game",
-
   "qol_unified.status.active": "Active",
   "qol_unified.status.inactive": "Inactive",
-  "qol_unified.status.unknown": "Could not be fully disabled and may still be active. Restart the game to be sure.",
+  "qol_unified.status.unknown": "May still be active",
+  "qol_unified.tooltip.unknown": "Could not be fully disabled and may still be active. Retry, or restart the game to be sure.",
   "qol_unified.status.enable_failed": "Failed to enable — see log",
   "qol_unified.status.pending_restart": "Restart required",
-  "qol_unified.status.conflict_default": "Disabled by default: conflicts with %s",
+  "qol_unified.status.conflict_default": "Disabled: conflicts with %s",
   "qol_unified.status.conflict_override": "Enabled despite a conflict with %s",
   "qol_unified.status.conflict": "Conflicts with %s",
-
   "qol_unified.message.read_only": "Settings cannot be saved: the configuration file is from a newer version or could not be safely read.",
   "qol_unified.message.invalid": "Fix the highlighted values before saving.",
   "qol_unified.message.save_failed": "Settings could not be saved. Your changes were kept here; see the log.",
@@ -35,11 +32,9 @@
   "qol_unified.message.restart": "Settings saved. Some changes take effect after restarting the game.",
   "qol_unified.message.retry_failed": "The feature still could not be disabled. Restart the game to be sure.",
   "qol_unified.message.retry_succeeded": "The feature was disabled.",
-
   "qol_unified.error.not_a_number": "Enter a whole number between %s and %s.",
   "qol_unified.error.out_of_range": "Enter a value between %s and %s.",
   "qol_unified.error.invalid_value": "This value is not allowed.",
-
   "qol_unified.category.hud_information": "HUD & Information",
   "qol_unified.category.inventory": "Inventory",
   "qol_unified.category.visuals": "Visuals",

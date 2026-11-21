@@ -21,7 +21,14 @@ public final class FeatureStatus {
         switch (state) {
             case ACTIVE -> keys.add(UiKeys.STATUS_ACTIVE);
             case UNKNOWN -> keys.add(UiKeys.STATUS_UNKNOWN);
-            case INACTIVE -> keys.add(enableFailed ? UiKeys.STATUS_ENABLE_FAILED : UiKeys.STATUS_INACTIVE);
+            case INACTIVE -> {
+                if (enableFailed) {
+                    keys.add(UiKeys.STATUS_ENABLE_FAILED);
+                } else if (!core.compatibility(featureId).defaultSuppressed()) {
+                    // A conflict default already explains why the feature is inactive.
+                    keys.add(UiKeys.STATUS_INACTIVE);
+                }
+            }
         }
         if (core.lifecycle().pendingRestart(featureId)) {
             keys.add(UiKeys.STATUS_PENDING_RESTART);

@@ -25,6 +25,7 @@ final class FeatureSettingsScreen extends Screen {
     private final SettingsScreen parent;
     private final SettingsDraft draft;
     private final FeatureDescriptor descriptor;
+    private StringWidget errorLine;
 
     FeatureSettingsScreen(SettingsScreen parent, SettingsDraft draft, FeatureDescriptor descriptor) {
         super(Component.translatable(descriptor.nameKey()));
@@ -35,9 +36,12 @@ final class FeatureSettingsScreen extends Screen {
 
     @Override
     protected void init() {
-        addRenderableWidget(new StringWidget(0, 10, width, font.lineHeight, title, font));
+        int titleWidth = Math.min(font.width(title), width - 2 * GAP);
+        addRenderableWidget(new StringWidget((width - titleWidth) / 2, 10, titleWidth, font.lineHeight, title, font));
         int top = 28;
-        var list = new RowList(minecraft, width, Math.max(40, height - top - 40), top);
+        var list = new RowList(minecraft, width, Math.max(40, height - top - 52), top);
+        errorLine = new StringWidget(GAP, height - 44, width - 2 * GAP, font.lineHeight, Component.empty(), font);
+        errorLine.setMaxWidth(width - 2 * GAP);
         var rows = new ArrayList<RowList.Row>();
         for (SettingDescriptor setting : descriptor.settings()) {
             rows.add(settingRow(setting));
@@ -47,6 +51,7 @@ final class FeatureSettingsScreen extends Screen {
         }
         list.setRows(rows);
         addRenderableWidget(list);
+        addRenderableWidget(errorLine);
         addRenderableWidget(Button.builder(Component.translatable(UiKeys.BACK), b -> onClose())
                 .bounds(width / 2 - 75, height - 28, 150, 20).build());
     }
@@ -82,8 +87,13 @@ final class FeatureSettingsScreen extends Screen {
             Optional<String> error = draft.hasInvalidInput(id, key)
                     ? Optional.of(validationKey(id, key, setting, box.getValue())) : Optional.empty();
             box.setTextColor(error.isPresent() ? 0xFFFF7070 : 0xFFE0E0E0);
-            box.setTooltip(error.map(k -> Tooltip.create(Component.literal(
-                    I18n.get(k, setting.min(), setting.max())))).orElse(null));
+            Optional<Component> text = error.map(k -> Component.literal(
+                    I18n.get(setting.nameKey(id)) + ": " + I18n.get(k, setting.min(), setting.max())));
+            box.setTooltip(text.map(Tooltip::create).orElse(null));
+            if (errorLine != null) {
+                errorLine.setMessage(text.map(t -> t.copy().withStyle(net.minecraft.ChatFormatting.RED))
+                        .orElse(Component.empty()));
+            }
         };
         box.setResponder(text -> {
             if (draft.editable()) {
