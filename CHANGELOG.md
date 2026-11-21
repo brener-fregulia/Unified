@@ -31,3 +31,7 @@ released yet.
 - Detection of mods declared as conflicting with a feature: such features are
   disabled by default unless the player explicitly chose otherwise, and each
   conflict is logged at startup.
+- Settings screen built from native Minecraft widgets, opened with a
+  configurable key binding (no default key): categories, search, per-feature
+  settings, status and conflict indicators, and Done/Cancel. English and
+  Brazilian Portuguese.

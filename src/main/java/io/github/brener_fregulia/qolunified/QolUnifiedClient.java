@@ -3,6 +3,7 @@ package io.github.brener_fregulia.qolunified;
 import io.github.brener_fregulia.qolunified.core.CoreRuntime;
 import io.github.brener_fregulia.qolunified.core.FeatureRegistry;
 import io.github.brener_fregulia.qolunified.core.config.ConfigurationService;
+import io.github.brener_fregulia.qolunified.ui.screen.SettingsKeyBinding;
 import java.nio.file.Path;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.loader.api.FabricLoader;
@@ -25,8 +26,8 @@ public final class QolUnifiedClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
-        // 1. Features are registered here explicitly. None exist yet.
-        FeatureRegistry registry = FeatureRegistry.builder().build();
+        // 1. Features are registered explicitly in Features.
+        FeatureRegistry registry = Features.createRegistry();
         // 2–6. Load configuration, detect installed conflicts, resolve choices, initialize the lifecycle
         // and start enabled features.
         Path configFile = FabricLoader.getInstance().getConfigDir().resolve(MOD_ID).resolve("config.json");
@@ -34,6 +35,7 @@ public final class QolUnifiedClient implements ClientModInitializer {
         FabricLoader loader = FabricLoader.getInstance();
         core = CoreRuntime.start(registry, new ConfigurationService(configFile, registry), loader::isModLoaded,
                 Thread.currentThread());
+        SettingsKeyBinding.register();
         LOGGER.info("QoL: Unified initialized successfully ({} features).", registry.features().size());
     }
 }

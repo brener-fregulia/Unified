@@ -7,9 +7,10 @@ inventory tools, controls, chat, networking and navigation) into a single
 client-side mod. Each feature can be enabled or disabled individually from a
 central settings screen.
 
-> **Status:** early development (milestone M0.2). The project builds a
-> minimal Fabric client mod that only logs a startup message. No features,
-> configuration or settings screen exist yet, and nothing has been released.
+> **Status:** early development (milestone M0). The Core platform is in
+> place: feature registry and lifecycle, configuration file, conflict
+> detection and a settings screen. No gameplay features exist yet, and
+> nothing has been released.
 
 ## Initial target
 
@@ -53,7 +54,17 @@ The distributable mod JAR is written to `build/libs/`, for example
 
 This launches Minecraft 26.3 with the mod and Fabric API loaded. Game files
 are kept in `run/` (ignored by Git). A successful start logs
-`QoL: Unified initialized successfully.`
+`QoL: Unified initialized successfully (0 features).`
+
+## Settings
+
+Open **Options → Controls → Key Binds**, find **QoL: Unified → Open QoL:
+Unified Settings**, and assign a key; there is no default. Press it in game
+or on the title screen to open the settings. Changes apply only when you
+press **Done**; **Cancel** or Escape discards them. Settings are stored in
+`config/qol_unified/config.json`.
+
+No features are available yet, so the screen currently shows an empty state.
 
 ## Documentation
 
