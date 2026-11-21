@@ -40,6 +40,16 @@ workflow.
   - [Configuration](docs/architecture/configuration.md)
 - Specifications
   - [M0 — Platform Foundations](docs/specifications/m0-platform-foundations.md)
+- Development
+  - [Versioning and release policy](docs/development/versioning.md)
+- [Changelog](CHANGELOG.md)
+
+## Versioning
+
+Versions follow `MC_MAJOR.MC_MINOR.MOD_REVISION[-PRERELEASE]`, where the first
+two numbers are the target Minecraft release line (e.g. `26.3.0-alpha.1`,
+`26.3.0`, `26.3.1`). The first intended distributable version is
+`26.3.0-alpha.1`. See the [versioning policy](docs/development/versioning.md).
 
 ## License
 

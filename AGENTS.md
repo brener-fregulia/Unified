@@ -49,6 +49,8 @@ commit message or the document.
 | `docs/architecture/overview.md` | Components and boundaries |
 | `docs/architecture/configuration.md` | Configuration and data policy |
 | `docs/specifications/` | One spec per milestone or feature |
+| `docs/development/versioning.md` | Versioning, release and changelog policy |
+| `CHANGELOG.md` | User-relevant changes |
 
 ## Engineering rules
 
@@ -79,6 +81,17 @@ commit message or the document.
 - Small, focused commits. Run `git diff --check` before committing.
 - Do not create GitHub Issues, milestones or releases unless the task asks.
 - Push only when the task says so and validation passed.
+
+## Versioning and changelog [Approved]
+
+Full policy: [docs/development/versioning.md](docs/development/versioning.md).
+
+- Versions are `MC_MAJOR.MC_MINOR.MOD_REVISION[-PRERELEASE]`; published
+  versions are immutable and never reused.
+- Never create tags or releases unless the task explicitly asks.
+- Record meaningful changes under `[Unreleased]` in
+  [CHANGELOG.md](CHANGELOG.md), including breaking changes, configuration
+  migrations and removals. Never invent versions or dates.
 
 ## Task completion
 
