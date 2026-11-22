@@ -7,10 +7,10 @@ inventory tools, controls, chat, networking and navigation) into a single
 client-side mod. Each feature can be enabled or disabled individually from a
 central settings screen.
 
-> **Status:** early development (milestone M0). The Core platform is in
+> **Status:** early development (milestone M1). The Core platform is in
 > place: feature registry and lifecycle, configuration file, conflict
-> detection and a settings screen. No gameplay features exist yet, and
-> nothing has been released.
+> detection and a settings screen. The first feature, Food HUD, is
+> implemented. Nothing has been released.
 
 ## Initial target
 
@@ -63,7 +63,10 @@ with sample features:
 - `runFixtureClient` starts a manual QA client in `run-fixtures/`.
 - `runGameTestMain`, then `runGameTestRestart`, `runGameTestNewer` and
   `runGameTestCorrupt`, run automated client tests in `build/run-gametest*`.
-  Screenshots are saved there.
+  `runGameTestFoodhud` covers Food HUD in a disposable world. With
+  `-PappleSkinJar=<path to a downloaded AppleSkin JAR>`, `runGameTestAppleskin`
+  captures the same situations with AppleSkin for comparison. Screenshots are
+  saved there.
 
 Neither affects the distributable JAR.
 
@@ -75,7 +78,13 @@ or on the title screen to open the settings. Changes apply only when you
 press **Done**; **Cancel** or Escape discards them. Settings are stored in
 `config/qol_unified/config.json`.
 
-No features are available yet, so the screen currently shows an empty state.
+The first feature is **Food HUD** (HUD & Information). It shows your
+saturation on the hunger bar, and blinking previews of what held food would
+restore. It can also add food values to tooltips and a food line to the F3
+screen; turn that line on in the F3 options (F3 + F6). Previews are
+estimates, and it never shows exhaustion. It turns itself off by default when
+AppleSkin is installed. See the
+[specification](docs/specifications/food-hud-v1.md).
 
 ## Documentation
 

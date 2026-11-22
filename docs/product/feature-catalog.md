@@ -31,7 +31,7 @@ assets may be copied.
 
 | Feature | Category | Proposed id | Milestone | Inspiration / notes |
 | --- | --- | --- | --- | --- |
-| Food information | HUD & Information | `food_hud` | M1 [Approved: first feature after Core] | AppleSkin; spec: [Food HUD V1](../specifications/food-hud-v1.md) [Proposed] |
+| Food information | HUD & Information | `food_hud` | M1 [Approved: first feature after Core] | AppleSkin; spec: [Food HUD V1](../specifications/food-hud-v1.md) [Approved 2026-11-22]; implemented |
 | Block and entity inspector | HUD & Information | `inspector` | M2 [Proposed] | Jade |
 | Inventory sorting | Inventory | `inventory_sort` | M2 [Proposed] | Must use vanilla click actions only |
 | Item transfer | Inventory | `item_transfer` | M2 [Proposed] | Must use vanilla click actions only |

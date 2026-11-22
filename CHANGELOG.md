@@ -35,3 +35,11 @@ released yet.
   configurable key binding (no default key): categories, search, per-feature
   settings, status and conflict indicators, and Done/Cancel. English and
   Brazilian Portuguese.
+- Food HUD (`food_hud`), the first feature: a saturation overlay on the
+  hunger bar; blinking previews of the hunger, saturation and estimated
+  health that held food would restore (main or off-hand, following vanilla's
+  item-use order); food values as icons in tooltips (off, while holding
+  Shift, or always); and food and saturation in an optional F3 line. It
+  follows the vanilla icon animations, applies settings without a restart,
+  and is disabled by default when AppleSkin is installed. It is client-only
+  and never shows exhaustion, which the server does not send.

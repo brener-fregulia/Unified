@@ -67,7 +67,7 @@ capped at missing health. It assumes the following, so it is an
 **estimate**:
 
 - Exhaustion is 0 (it is unavailable).
-- The game rule is on, unless the client has received a value for it.
+- The game rule is on. Even an operator's client does not keep the value after the game-rules screen closes, so V1 always assumes it is on (§11.5).
 - There is no other exhaustion, such as sprinting or taking damage.
 - Food effects are ignored, for example Regeneration from a golden apple.
 
@@ -220,3 +220,93 @@ Use disposable profiles and worlds only, never your main installation.
 - **D-3** Differences found in the AppleSkin comparison that stay inside the §4 parity matrix may be corrected without a new approval.
 - **D-4** Off-hand selection follows vanilla 26.3 item-use order as closely as client-visible data allows. It does not simply ignore the off-hand whenever the main hand holds food (§11).
 - **D-5** No unrelated Mixins, dependencies or architecture changes.
+
+## 11. Implementation notes [Implemented 2026-11-22]
+
+What was built, where it differs from the text above, and the evidence.
+
+### 11.1 Code
+
+- `feature/foodhud/FoodHudSettings` (descriptor), `FoodHudFeature` (lifecycle), `FoodMath` and `HandSelection` (pure Java, unit tested), `HeldFood`, `FoodHudRenderer`, `FoodTooltip` and `FoodTooltipComponent`, `FoodDebugEntry`, and `FoodHudHooks`.
+- Mixins in `qol_unified.mixins.json`, all client-only, with `defaultRequire: 1`: `HudFoodMixin` (M-1), `HudHeartsMixin` (M-2) and `ItemStackTooltipMixin` (M-3).
+- Original saturation sprites, 9×9, in four quarter steps: `textures/gui/sprites/food_hud/saturation_1..4.png`, generated pixel by pixel. Previews reuse vanilla's own food and heart sprites.
+- No Fabric HUD element is used. The Mixins already run inside the vanilla bar drawing, so TA-2's HUD element was not needed.
+
+### 11.2 Mixins as built
+
+- **M-1** `@Inject` at `HEAD` and `RETURN` of `Hud.extractFood`, plus a MixinExtras `@WrapOperation` on the first `blitSprite` call (the icon background). The wrap calls the original and records its `y`. MixinExtras ships with Fabric Loader 0.20.1, so no dependency was added. Unlike a redirect, `@WrapOperation` composes with other mods' wraps.
+- **M-2** `@Inject` at `HEAD` and `RETURN` of `Hud.extractHearts`, plus `@WrapOperation` on the single `blitSprite` call in `Hud.extractHeart`. Positions are recorded only while `extractHearts` runs, and only for the vanilla `hud/heart/container*` sprites (one per heart). `@ModifyArgs` on the `extractHeart` call was tried first and failed at runtime with an `IllegalAccessError`: its generated argument class cannot see the package-private `Hud.HeartType`.
+- **M-3** `@Inject` at `RETURN` of `ItemStack.getTooltipImage()`, which is public and one line in vanilla. A food stack that has no other tooltip image gets a `FoodTooltip`, and Fabric's `ClientTooltipComponentCallback` turns it into the icon rows. This is narrow and reliable, so the text fallback was **not** needed (D-2). Vanilla inserts tooltip images after the item name, which is where AppleSkin draws its rows too (§11.6).
+- Recorded positions live in fixed arrays that are reset at each `HEAD` and consumed at `RETURN`. An incomplete record (other than all 10 hunger icons, or no hearts) draws nothing, so positions never go stale and overlays are never drawn twice.
+- While the feature is off, the injections only check one volatile field.
+
+### 11.3 LIVE behavior
+
+`enable` installs the tooltip callback and debug entry once, then publishes
+the feature's live settings. `disable` clears them and cannot fail. Every
+hook reads the current effective settings each frame, so all seven settings
+and the toggle apply in the next frame. This is checked in unit tests and the
+game test.
+
+### 11.4 Off-hand selection (D-4)
+
+Vanilla 26.3 `Minecraft.startUseItem` tries the main hand, then the
+off-hand, and stops at the first hand whose use succeeds.
+`Item.use` → `Consumable.startConsuming` fails when `Player.canEat` is false
+(food 20, not "can always eat", not invulnerable), so the off-hand is tried
+next. V1 sorts each held stack using only what the client can see:
+
+| Held stack | Effect on the off-hand |
+| --- | --- |
+| Empty, or an item with no known use | The off-hand is reached. |
+| Food that can be eaten now | Previewed. The main hand wins. |
+| Food that cannot be eaten now | The off-hand is reached (for example a golden apple behind full-hunger bread). |
+| Any other consumable (potion, milk), or an item with a use animation (bow, shield, spyglass, …) | The off-hand is not reached. |
+| A block item while looking at a block | The off-hand is not reached (the block is placed). |
+
+**Cannot be predicted exactly:**
+- Using an item on a block or an entity first runs that interaction, for example opening a chest or feeding or trading with a mob.
+- Items whose use the client can't see without running it (throwables, buckets, fishing rods, flint and steel) count as "no known use", so the off-hand food may be previewed even though vanilla would use the main-hand item.
+- Server-side mods can change any of this.
+
+The AppleSkin comparison showed AppleSkin also previews the off-hand golden
+apple behind full-hunger bread.
+
+### 11.5 Data findings during implementation
+
+- The `natural_health_regeneration` value an operator receives is only shown in the game-rules screen and is not kept by the client, so V1 assumes regeneration is on.
+- New debug entries start as `NEVER` in vanilla's debug options. Players turn the "qol_unified:food_hud" line on in the F3 options screen (F3 + F6). V1 never changes the player's debug profile. AppleSkin's entry works the same way.
+- In Peaceful, V1 shows no health preview, because regeneration there does not depend on food.
+
+### 11.6 AppleSkin comparison (FH-AC-15)
+
+Method: `runGameTestAppleskin -PappleSkinJar=<path>` loads the downloaded
+AppleSkin `3.0.10+mc26.3` JAR into a separate disposable game directory
+(`build/run-gametest-appleskin`) through Fabric's `fabric.addMods`. Its
+SHA-512 matched Modrinth's published hash. The same world settings, foods,
+food levels, window (854×480) and GUI scale (2) are used as in the `foodhud`
+scenario, and screenshots are compared by eye. AppleSkin is not added to the
+build.
+
+| Situation | Result |
+| --- | --- |
+| Saturation overlay, food 20 and saturation 5 | **Matches** in coverage (2.5 icons). The art differs: AppleSkin uses a yellow shank outline, Food HUD a gold frame (original art, by rule). |
+| Bread, steak and golden-apple previews | **Matches**: the same icons blink, and saturation outlines blink up to the predicted value. |
+| Health preview (steak at 8 HP) | **Matches**: hearts blink up to the estimate. |
+| Off-hand golden apple behind full-hunger bread | **Matches**. |
+| Hunger effect at saturation 0 | **Matches**: the preview uses the green hunger sprites. |
+| Tooltip (bread, rotten flesh) | **Matches** the layout: name, then a hunger row and a saturation row. Food HUD drew empty-shank backgrounds behind the icons and AppleSkin does not; this was **corrected** (D-3). Rotten flesh shows like normal food in both. |
+| F3 | **Differs on purpose**: AppleSkin shows `exh: 0.19/4` from the client's unsynchronized exhaustion. Food HUD shows only food and saturation (R-8). |
+| Conflict (FH-AC-16) | With AppleSkin loaded, `food_hud` starts disabled with the conflict status. An explicit enable makes it active and is recorded. Keeping it across a restart is covered by unit tests. |
+
+**Pending:** the exact blink timing and opacity curve, and following the
+shake frame by frame. Single screenshots can't show these reliably; they are
+on the manual QA list.
+
+### 11.7 Known limitations
+
+- §7 applies in full: no exhaustion, saturation may be stale, the health estimate has its stated assumptions, and food effects are not predicted.
+- The off-hand cases in §11.4.
+- FH-AC-13 (dedicated server) is automated, but the step only runs once the developer accepts the Minecraft EULA in `build/run-gametest-foodhud/eula.txt`. The test never accepts it. It was not run for this implementation.
+- The F3 line must be turned on in vanilla's F3 options.
+- GUI scale 4 could not be shown at the 854×480 test window, where vanilla caps the scale at 2. Scales 1 and 2 were captured.
