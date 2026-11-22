@@ -48,6 +48,7 @@ public final class CoreGameTest implements FabricClientGameTest {
             case "newer" -> newer();
             case "corrupt" -> corrupt();
             case "foodhud" -> foodHud();
+            case "appleskin" -> new FoodHudGameTest(ctx).compareWithAppleSkin();
             default -> throw new AssertionError("Unknown scenario " + scenario);
         }
         ctx.setScreen(TitleScreen::new);

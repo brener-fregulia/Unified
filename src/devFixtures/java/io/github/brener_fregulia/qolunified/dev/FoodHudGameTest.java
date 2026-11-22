@@ -73,6 +73,63 @@ final class FoodHudGameTest {
         }
     }
 
+    /**
+     * FH-AC-15 / FH-AC-16, with AppleSkin loaded: Food HUD starts disabled by the conflict, and the same situations
+     * as {@link #singleplayer()} are captured with AppleSkin drawing, for side-by-side review. An explicit enable then
+     * wins over the conflict default.
+     */
+    void compareWithAppleSkin() {
+        check(net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("appleskin"), "AppleSkin loaded");
+        on(core -> {
+            check(core.lifecycle().state("food_hud") == FeatureState.INACTIVE, "conflict default disables");
+            check(core.compatibility("food_hud").defaultSuppressed(), "suppressed by AppleSkin");
+        });
+        try (TestSingleplayerContext world = ctx.worldBuilder().create()) {
+            server = world.getServer();
+            world.getConnection().waitForChunksRender();
+            server.runCommand("gamemode survival @a");
+            server.runCommand("difficulty easy");
+            server.runCommand("time set noon");
+            setFood(20, 5.0f, 20.0f);
+            hold(ItemStack.EMPTY, ItemStack.EMPTY);
+            shot("01-saturation-5");
+            setFood(10, 0.0f, 20.0f);
+            hold(new ItemStack(Items.BREAD), ItemStack.EMPTY);
+            burst("02-bread-preview");
+            setFood(16, 0.0f, 8.0f);
+            hold(new ItemStack(Items.COOKED_BEEF), ItemStack.EMPTY);
+            burst("03-steak-health-preview");
+            setFood(20, 0.0f, 20.0f);
+            hold(new ItemStack(Items.GOLDEN_APPLE), ItemStack.EMPTY);
+            burst("04-golden-apple-full");
+            hold(new ItemStack(Items.BREAD), new ItemStack(Items.GOLDEN_APPLE));
+            burst("05-full-bread-offhand-apple");
+            server.runCommand("effect give @a hunger 30 0 true");
+            hold(new ItemStack(Items.BREAD), ItemStack.EMPTY);
+            setFood(6, 0.0f, 20.0f);
+            burst("06-hunger-effect-shaking");
+            server.runCommand("effect clear @a");
+            hoverHotbarSlot(new ItemStack(Items.BREAD));
+            shot("07-tooltip-always");
+            hoverHotbarSlot(new ItemStack(Items.ROTTEN_FLESH));
+            shot("07b-tooltip-rotten-flesh");
+            ctx.setScreen(() -> null);
+            setFood(14, 3.5f, 20.0f);
+            ctx.runOnClient(mc -> {
+                mc.debugEntries.setStatus(Identifier.fromNamespaceAndPath("appleskin", "food_stats"),
+                        DebugScreenEntryStatus.IN_OVERLAY);
+                mc.debugEntries.setOverlayVisible(true);
+            });
+            shot("09-f3");
+            ctx.runOnClient(mc -> mc.debugEntries.setOverlayVisible(false));
+
+            // FH-AC-16: the player's explicit enable wins over the conflict default.
+            setEnabled(true);
+            on(core -> check(core.choices().get("food_hud").explicitEnabled(), "explicit choice recorded"));
+            shot("20-both-enabled");
+        }
+    }
+
     private void singleplayer() {
         // FH-AC-1: food 20, saturation 5 covers 2.5 icons; no held food.
         setFood(20, 5.0f, 20.0f);
@@ -105,6 +162,7 @@ final class FoodHudGameTest {
         // FH-AC-5 / D-4: main-hand food that cannot be eaten passes to the off-hand.
         hold(new ItemStack(Items.BREAD), new ItemStack(Items.GOLDEN_APPLE));
         check(isPreviewed(Items.GOLDEN_APPLE), "off-hand golden apple behind full-food bread");
+        burst("05-full-bread-offhand-apple");
         setFood(10, 0.0f, 20.0f);
         check(isPreviewed(Items.BREAD), "edible main-hand bread wins");
         hold(ItemStack.EMPTY, new ItemStack(Items.BREAD));
@@ -133,6 +191,8 @@ final class FoodHudGameTest {
         check(ctx.computeOnClient(mc -> ClientTooltipComponent.create(bread.getTooltipImage().orElseThrow())
                 .getClass().getSimpleName()).equals("FoodTooltipComponent"), "Fabric callback draws the icons");
         check(ctx.computeOnClient(mc -> new ItemStack(Items.STICK).getTooltipImage().isEmpty()), "non-food: none");
+        hoverHotbarSlot(new ItemStack(Items.ROTTEN_FLESH));
+        shot("07b-tooltip-rotten-flesh");
         hoverHotbarSlot(bread);
         shot("07-tooltip-always");
         apply(s -> s.with("tooltip", "shift"));

@@ -51,6 +51,21 @@ loom {
                 ideConfigGenerated(false)
             }
         }
+        // Optional side-by-side comparison with AppleSkin (FH-AC-15), in its own disposable game directory.
+        // Runs only when a downloaded AppleSkin JAR is passed: -PappleSkinJar=<path>. Nothing is added to the build.
+        providers.gradleProperty("appleSkinJar").orNull?.let { jar ->
+            register("gameTestAppleskin") {
+                client()
+                name("Game Test (AppleSkin comparison)")
+                source(devFixtures)
+                runDir("build/run-gametest-appleskin")
+                property("fabric.client.gametest")
+                property("fabric.client.gametest.modid", "qol_unified_dev")
+                property("qol_unified.dev.scenario", "appleskin")
+                property("fabric.addMods", file(jar).absolutePath)
+                ideConfigGenerated(false)
+            }
+        }
     }
 }
 
