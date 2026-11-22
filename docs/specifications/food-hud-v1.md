@@ -244,10 +244,22 @@ real numbers. Icons keep the 2-points-per-icon scale: 1 point is half a
 drumstick. In each row the partial icon comes first (leftmost), followed by
 the full icons; for example bread (+5) shows a half shank, then two full
 ones. A partial icon shows the whole drumstick silhouette with its exact
-fraction filled from the left:
+fraction filled (see the final polish below for the direction):
 - for hunger, vanilla's empty shank with the full shank clipped on top;
 - for saturation, an original dim golden-drumstick silhouette
-  (`saturation_empty.png`) with the golden drumstick clipped on top.
+  with the golden drumstick clipped on top.
+
+**[Approved 2026-11-22] Final polish.** The fill **direction** is
+right-to-left: a partial icon keeps the full silhouette, and its colored
+fill is anchored to the right edge (0.5 fills the right 5 of 9 columns, 0.25
+the right 2, 0.75 the right 7). The **order** is unchanged: the partial icon
+stays leftmost in tooltip rows. The same rule applies to the HUD half-shank
+and saturation previews and the HUD saturation overlay
+(`saturation_1..3.png` keep their right side). Vanilla's own hunger and heart
+bars are not changed. Tooltip saturation icons use dedicated original
+sprites (`saturation_tooltip.png` and `saturation_tooltip_empty.png`) drawn
+in the vanilla shank's 7×7 footprint, so both rows have the same height and
+weight. The HUD overlay keeps the 9×9 drumstick.
 
 Clipping is kept on purpose, because it shows any fraction in proportion
 (saturation 0.3 shows a one-pixel sliver, 1.2 shows 5 of 9 columns).

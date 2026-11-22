@@ -20,7 +20,6 @@ public final class FoodHudRenderer {
     private static final int ICONS = 10;
     private static final int ICON_SIZE = 9;
     private static final int ICON_SPACING = 8;
-    private static final int HALF_ICON_WIDTH = 5;
 
     private static final Identifier[] SATURATION = {
             null,
@@ -193,15 +192,15 @@ public final class FoodHudRenderer {
     }
 
     /**
-     * Draws a full (2) or half (1) shank. Half shanks show the left side of the full sprite, so partial hunger
-     * icons fill from left to right, the same way as the partial saturation sprites.
+     * Draws a full (2) or half (1) shank. Half shanks show the right side of the full sprite, so partial hunger
+     * icons fill from the right edge, the same way as the partial saturation sprites.
      */
     static void blitFood(GuiGraphicsExtractor graphics, Identifier fullSprite, int halves, int x, int y,
             float alpha) {
         if (halves >= 2) {
             blit(graphics, fullSprite, x, y, alpha);
         } else if (halves == 1) {
-            graphics.enableScissor(x, y, x + HALF_ICON_WIDTH, y + ICON_SIZE);
+            graphics.enableScissor(x + TooltipIcons.fillStart(0.5f), y, x + ICON_SIZE, y + ICON_SIZE);
             blit(graphics, fullSprite, x, y, alpha);
             graphics.disableScissor();
         }

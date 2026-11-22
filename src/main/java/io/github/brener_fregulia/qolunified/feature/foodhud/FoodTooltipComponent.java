@@ -8,7 +8,7 @@ import net.minecraft.resources.Identifier;
 
 /**
  * Two rows: hunger restored, then saturation restored, each as icons (2 points per icon; a partial icon comes first
- * and shows its silhouette with the exact fraction filled from the left) followed by the exact value, for example {@code +5} and {@code +6.0}. The values come from the
+ * and shows its silhouette with the exact fraction filled from the right) followed by the exact value, for example {@code +5} and {@code +6.0}. The values come from the
  * stack's own food component, so custom foods show their real numbers.
  */
 final class FoodTooltipComponent implements ClientTooltipComponent {
@@ -20,10 +20,11 @@ final class FoodTooltipComponent implements ClientTooltipComponent {
     private static final int SATURATION_TEXT = 0xFFFFD45A;
     private static final Identifier FOOD_FULL = Identifier.withDefaultNamespace("hud/food_full");
     private static final Identifier FOOD_EMPTY = Identifier.withDefaultNamespace("hud/food_empty");
+    // Tooltip drumsticks use the vanilla shank's 7x7 footprint so both rows have the same height.
     private static final Identifier SATURATION_FULL = Identifier.fromNamespaceAndPath("qol_unified",
-            "food_hud/saturation_4");
+            "food_hud/saturation_tooltip");
     private static final Identifier SATURATION_EMPTY = Identifier.fromNamespaceAndPath("qol_unified",
-            "food_hud/saturation_empty");
+            "food_hud/saturation_tooltip_empty");
 
     private final FoodTooltip food;
     private final String hungerText;
@@ -52,7 +53,7 @@ final class FoodTooltipComponent implements ClientTooltipComponent {
 
     /**
      * Draws one row left to right. A partial icon (always first) shows the whole silhouette, then the filled sprite
-     * clipped to its exact fraction from the left, so the unfilled part stays visible.
+     * clipped to its exact fraction from the right edge, so the unfilled left part stays visible.
      */
     private static void row(GuiGraphicsExtractor graphics, float[] fills, Identifier empty, Identifier full, int x,
             int y) {
@@ -63,7 +64,7 @@ final class FoodTooltipComponent implements ClientTooltipComponent {
                 continue;
             }
             FoodHudRenderer.blit(graphics, empty, px, y, 1.0f);
-            graphics.enableScissor(px, y, px + TooltipIcons.filledColumns(fills[i]), y + SIZE);
+            graphics.enableScissor(px + TooltipIcons.fillStart(fills[i]), y, px + SIZE, y + SIZE);
             FoodHudRenderer.blit(graphics, full, px, y, 1.0f);
             graphics.disableScissor();
         }

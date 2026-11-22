@@ -263,7 +263,8 @@ final class FoodHudGameTest {
         custom.set(net.minecraft.core.component.DataComponents.FOOD,
                 new FoodProperties(7, 0.3f, false));
         java.util.List<ItemStack> foods = java.util.List.of(new ItemStack(Items.BREAD),
-                new ItemStack(Items.COOKED_BEEF), new ItemStack(Items.BEETROOT), new ItemStack(Items.GOLDEN_CARROT),
+                new ItemStack(Items.COOKED_BEEF), new ItemStack(Items.BEETROOT), new ItemStack(Items.MELON_SLICE),
+                new ItemStack(Items.GOLDEN_CARROT),
                 custom);
         for (String language : new String[] {"en_us", "pt_br"}) {
             setLanguage(language);

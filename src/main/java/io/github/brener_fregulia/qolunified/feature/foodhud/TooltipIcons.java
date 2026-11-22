@@ -1,7 +1,8 @@
 package io.github.brener_fregulia.qolunified.feature.foodhud;
 
 /**
- * Tooltip icon layout (food-hud-v1.md §11.1a): 2 points per icon, a partial icon first (leftmost), then full icons.
+ * Partial-icon layout (food-hud-v1.md §11.1a): 2 points per icon; in tooltips a partial icon comes first (leftmost),
+ * then full icons. Partial icons are filled from the right edge, in tooltips and on the HUD.
  * No Minecraft types.
  */
 public final class TooltipIcons {
@@ -37,11 +38,16 @@ public final class TooltipIcons {
         return fills;
     }
 
-    /** Filled pixel columns from the left for a fill fraction; any value above zero shows at least one column. */
+    /** Filled pixel columns for a fill fraction; any value above zero shows at least one column. */
     public static int filledColumns(float fill) {
         if (!(fill > 0.0f)) {
             return 0;
         }
         return Math.clamp(Math.round(fill * SPRITE_WIDTH), 1, SPRITE_WIDTH);
+    }
+
+    /** First filled column: partial icons fill from the RIGHT edge, leaving the left part as silhouette. */
+    public static int fillStart(float fill) {
+        return SPRITE_WIDTH - filledColumns(fill);
     }
 }

@@ -11,6 +11,7 @@ class TooltipIconsTest {
     @Test
     void hungerPartialIconComesFirst() {
         assertArrayEquals(new float[] {0.5f}, TooltipIcons.fills(1), EPSILON);
+        assertArrayEquals(new float[] {1.0f}, TooltipIcons.fills(2), EPSILON);
         assertArrayEquals(new float[] {0.5f, 1.0f}, TooltipIcons.fills(3), EPSILON);
         assertArrayEquals(new float[] {0.5f, 1.0f, 1.0f}, TooltipIcons.fills(5), EPSILON);
         assertArrayEquals(new float[] {1.0f, 1.0f, 1.0f, 1.0f}, TooltipIcons.fills(8), EPSILON);
@@ -30,8 +31,13 @@ class TooltipIconsTest {
     }
 
     @Test
-    void partialIconsFillFromTheLeftAndStayVisible() {
-        assertEquals(5, TooltipIcons.filledColumns(0.5f), "half shank: left 5 of 9 columns");
+    void partialIconsFillFromTheRightAndStayVisible() {
+        assertEquals(5, TooltipIcons.filledColumns(0.5f), "half shank: 5 of 9 columns");
+        assertEquals(4, TooltipIcons.fillStart(0.5f), "half: filled columns 4-8, left part unfilled");
+        assertEquals(7, TooltipIcons.fillStart(0.25f), "quarter: only the right 2 columns");
+        assertEquals(2, TooltipIcons.fillStart(0.75f), "three quarters: right 7 columns");
+        assertEquals(0, TooltipIcons.fillStart(1.0f), "full icon unchanged");
+        assertEquals(8, TooltipIcons.fillStart(0.15f), "saturation 0.3: right-edge sliver");
         assertEquals(1, TooltipIcons.filledColumns(0.15f), "saturation 0.3 still shows a sliver");
         assertEquals(5, TooltipIcons.filledColumns(0.6f));
         assertEquals(9, TooltipIcons.filledColumns(1.0f));
