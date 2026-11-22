@@ -34,6 +34,17 @@ public final class FoodHudRenderer {
     private static final int[] foodY = new int[ICONS];
     private static int foodIcons = -1;
 
+    private static final Identifier HEART_FULL = Identifier.withDefaultNamespace("hud/heart/full");
+    private static final Identifier HEART_HALF = Identifier.withDefaultNamespace("hud/heart/half");
+    private static final Identifier HEART_HARDCORE_FULL = Identifier.withDefaultNamespace("hud/heart/hardcore_full");
+    private static final Identifier HEART_HARDCORE_HALF = Identifier.withDefaultNamespace("hud/heart/hardcore_half");
+    private static final int MAX_HEARTS = 512;
+
+    // Heart container positions recorded during the current Hud.extractHearts call, in drawing order (last first).
+    private static final int[] heartX = new int[MAX_HEARTS];
+    private static final int[] heartY = new int[MAX_HEARTS];
+    private static int hearts = -1;
+
     private FoodHudRenderer() {
     }
 
@@ -97,6 +108,67 @@ public final class FoodHudRenderer {
             if (saturationOverlay && saturationAfter > current) {
                 blit(graphics, SATURATION[saturationAfter], x, y, flash);
             }
+        }
+    }
+
+    // ---- Hearts (Mixin M-2) ----
+
+    public static void beginHearts() {
+        hearts = FoodHudFeature.activeSettings() == null ? -1 : 0;
+    }
+
+    public static void recordHeart(int x, int y) {
+        if (hearts >= 0 && hearts < MAX_HEARTS) {
+            heartX[hearts] = x;
+            heartY[hearts] = y;
+            hearts++;
+        }
+    }
+
+    public static void endHearts(GuiGraphicsExtractor graphics, Player player, int left, int top, int rowHeight) {
+        int recorded = hearts;
+        hearts = -1;
+        SettingsSnapshot settings = FoodHudFeature.activeSettings();
+        if (settings == null || recorded <= 0 || player == null
+                || !settings.getBoolean(FoodHudSettings.HEALTH_PREVIEW)
+                || !settings.getBoolean(FoodHudSettings.FOOD_PREVIEW)) {
+            return;
+        }
+        FoodProperties held = HeldFood.previewed(player, settings.getBoolean(FoodHudSettings.OFFHAND_PREVIEW));
+        if (held == null) {
+            return;
+        }
+        FoodData data = player.getFoodData();
+        Prediction prediction = FoodMath.afterEating(data.getFoodLevel(), data.getSaturationLevel(),
+                held.nutrition(), held.saturation());
+        float health = player.getHealth();
+        float maxHealth = player.getMaxHealth();
+        boolean peaceful = player.level().getDifficulty() == net.minecraft.world.Difficulty.PEACEFUL;
+        // The natural_health_regeneration rule is not sent to most clients (§3); it is assumed on.
+        float gain = FoodMath.estimateHealthGain(prediction.food(), prediction.saturation(), health, maxHealth,
+                peaceful, true);
+        if (gain <= 0.0f) {
+            return;
+        }
+        boolean hardcore = player.level().getLevelData().isHardcore();
+        boolean animate = settings.getBoolean(FoodHudSettings.MATCH_ANIMATIONS);
+        float flash = flashAlpha();
+        int healthHearts = Math.min(recorded, Mth.ceil(maxHealth / FoodMath.POINTS_PER_ICON));
+        float after = health + gain;
+        float shown = Mth.ceil(health);
+        for (int heart = 0; heart < healthHearts; heart++) {
+            int now = FoodMath.iconHalves(shown, heart);
+            int later = FoodMath.iconHalves(after, heart);
+            if (later <= now) {
+                continue;
+            }
+            // Vanilla draws the last heart first, so recorded index 0 is the highest heart.
+            int slot = recorded - 1 - heart;
+            int x = animate ? heartX[slot] : left + (heart % 10) * ICON_SPACING;
+            int y = animate ? heartY[slot] : top - (heart / 10) * rowHeight;
+            Identifier id = later == 2 ? (hardcore ? HEART_HARDCORE_FULL : HEART_FULL)
+                    : (hardcore ? HEART_HARDCORE_HALF : HEART_HALF);
+            blit(graphics, id, x, y, flash);
         }
     }
 
