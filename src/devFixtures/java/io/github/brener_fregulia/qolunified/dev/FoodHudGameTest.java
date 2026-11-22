@@ -205,6 +205,7 @@ final class FoodHudGameTest {
         apply(s -> s.with("tooltip", "off"));
         check(ctx.computeOnClient(mc -> bread.getTooltipImage().isEmpty()), "off: never");
         apply(s -> s.with("tooltip", "always"));
+        tooltipGallery();
         ctx.setScreen(() -> null);
 
         // FH-AC-8: F3 line (the vanilla entry status is set only in this disposable game directory).
@@ -254,6 +255,46 @@ final class FoodHudGameTest {
         }
         check(ctx.computeOnClient(mc -> bread.getTooltipImage().isPresent()), "tooltip in Creative");
         server.runCommand("gamemode survival @a");
+    }
+
+    /** Tooltip values next to the icons, for several foods, both languages and GUI scales 1 and 2. */
+    private void tooltipGallery() {
+        ItemStack custom = new ItemStack(Items.APPLE);
+        custom.set(net.minecraft.core.component.DataComponents.FOOD,
+                new FoodProperties(7, 0.3f, false));
+        java.util.List<ItemStack> foods = java.util.List.of(new ItemStack(Items.BREAD),
+                new ItemStack(Items.COOKED_BEEF), new ItemStack(Items.BEETROOT), new ItemStack(Items.GOLDEN_CARROT),
+                custom);
+        for (String language : new String[] {"en_us", "pt_br"}) {
+            setLanguage(language);
+            for (int scale : new int[] {2, 1}) {
+                ctx.runOnClient(mc -> {
+                    mc.options.guiScale().set(scale);
+                    mc.resizeGui();
+                });
+                for (ItemStack food : foods) {
+                    hoverHotbarSlot(food);
+                    shot("08b-tooltip-" + language + "-scale" + scale + "-"
+                            + net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(food.getItem()).getPath()
+                            + (food == custom ? "-custom" : ""));
+                }
+            }
+        }
+        setLanguage("en_us");
+        ctx.runOnClient(mc -> {
+            mc.options.guiScale().set(2);
+            mc.resizeGui();
+        });
+    }
+
+    private void setLanguage(String code) {
+        ctx.runOnClient(mc -> {
+            mc.options.languageCode = code;
+            mc.getLanguageManager().setSelected(code);
+        });
+        java.util.concurrent.CompletableFuture<Void> reload = ctx.computeOnClient(mc -> mc.reloadResourcePacks());
+        ctx.waitFor(mc -> reload.isDone(), 1200);
+        ctx.waitTicks(5);
     }
 
     private void dedicatedServer() {

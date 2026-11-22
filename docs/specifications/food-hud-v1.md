@@ -232,6 +232,19 @@ What was built, where it differs from the text above, and the evidence.
 - Original saturation sprites, 9×9, in four quarter steps: `textures/gui/sprites/food_hud/saturation_1..4.png`. Each is a hand-drawn golden drumstick (meat top-left, bone bottom-right, like the vanilla hunger icon), with partial steps keeping the left side. Refined 2026-11-22 after PO review; the first version was a gold frame. At the PO's request, partial icons fill from left to right: half hunger shanks in previews and tooltips are vanilla's full shank clipped to its left 5 pixels, and saturation quarters keep the left 3, 5, 7 or 9 pixels. Vanilla's own half shank on the bar keeps its right side and is not changed. Previews reuse vanilla's own food and heart sprites.
 - No Fabric HUD element is used. The Mixins already run inside the vanilla bar drawing, so TA-2's HUD element was not needed.
 
+### 11.1a Tooltip values [Approved 2026-11-22]
+
+At the PO's request, the tooltip shows the exact values next to the icons, in
+one aligned column after the wider icon row:
+- hunger as a signed whole number (`+5`);
+- saturation with one decimal in the game language's separator (`+1.2` in English, `+1,2` in Portuguese), in gold.
+
+Values come from the stack's own food component, so custom foods show their
+real numbers. Icons keep the 2-points-per-icon scale: 1 point is half a
+drumstick, and partial icons fill from left to right. Icons stop at 10 per
+row; the number always shows the full value. The visibility modes are
+unchanged. Formatting is in the pure `FoodTooltipText`, which has unit tests.
+
 ### 11.2 Mixins as built
 
 - **M-1** `@Inject` at `HEAD` and `RETURN` of `Hud.extractFood`, plus a MixinExtras `@WrapOperation` on the first `blitSprite` call (the icon background). The wrap calls the original and records its `y`. MixinExtras ships with Fabric Loader 0.20.1, so no dependency was added. Unlike a redirect, `@WrapOperation` composes with other mods' wraps.
