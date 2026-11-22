@@ -21,6 +21,9 @@ public final class FoodHudSettings {
     public static final String MATCH_ANIMATIONS = "match_animations";
     public static final String DEBUG_INFO = "debug_info";
 
+    /** Translation key of the F3 line (food, saturation). */
+    public static final String DEBUG_LINE_KEY = "qol_unified.food_hud.debug";
+
     public static final String TOOLTIP_OFF = "off";
     public static final String TOOLTIP_SHIFT = "shift";
     public static final String TOOLTIP_ALWAYS = "always";

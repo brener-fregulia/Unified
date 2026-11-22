@@ -10,6 +10,7 @@ import io.github.brener_fregulia.qolunified.core.Feature;
 import io.github.brener_fregulia.qolunified.core.FeatureCategory;
 import io.github.brener_fregulia.qolunified.core.FeatureDescriptor;
 import io.github.brener_fregulia.qolunified.core.SettingDescriptor;
+import io.github.brener_fregulia.qolunified.feature.foodhud.FoodHudSettings;
 import java.io.InputStreamReader;
 import java.lang.reflect.Modifier;
 import java.nio.charset.StandardCharsets;
@@ -51,6 +52,7 @@ class LocalizationTest {
                 }
             }
         }
+        keys.add(FoodHudSettings.DEBUG_LINE_KEY);
         return keys;
     }
 

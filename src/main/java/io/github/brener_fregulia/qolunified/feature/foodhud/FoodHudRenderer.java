@@ -172,6 +172,10 @@ public final class FoodHudRenderer {
         }
     }
 
+    static Identifier saturationSprite(int quarters) {
+        return SATURATION[Math.clamp(quarters, 1, 4)];
+    }
+
     static void blit(GuiGraphicsExtractor graphics, Identifier sprite, int x, int y, float alpha) {
         graphics.blitSprite(RenderPipelines.GUI_TEXTURED, sprite, x, y, ICON_SIZE, ICON_SIZE, alpha);
     }

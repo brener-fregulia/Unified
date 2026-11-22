@@ -5,7 +5,8 @@
   "compatibilityLevel": "JAVA_25",
   "client": [
     "HudFoodMixin",
-    "HudHeartsMixin"
+    "HudHeartsMixin",
+    "ItemStackTooltipMixin"
   ],
   "injectors": {
     "defaultRequire": 1
