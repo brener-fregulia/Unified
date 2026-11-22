@@ -1,0 +1,12 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "io.github.brener_fregulia.qolunified.mixin",
+  "compatibilityLevel": "JAVA_25",
+  "client": [
+    "HudFoodMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
