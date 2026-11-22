@@ -2,8 +2,9 @@
 
 Status labels follow [AGENTS.md](../../AGENTS.md#decision-status-labels).
 
-This is a specification only. No code is written until the PO approves the
-[Proposed] parts.
+**[Approved 2026-11-22]** The technical lead approved this specification,
+including the configuration and acceptance criteria FH-AC-1 to FH-AC-18,
+with the clarifications recorded in §10. Implementation notes are in §11.
 
 ## 1. Goal and approved requirements
 
@@ -52,7 +53,7 @@ be checked against AppleSkin in game (FH-AC-15).
 | Food and saturation after eating | **Calculated** from known values | `FoodData.add`: `food = clamp(food + nutrition, 0, 20)`, then `saturation = clamp(saturation + foodSaturation, 0, food)`. |
 | Health after eating | **Estimated with limitations** | See §3.1. |
 
-### 3.1 Health restoration estimate [Proposed]
+### 3.1 Health restoration estimate [Approved 2026-11-22]
 
 Vanilla regeneration (`FoodData.tick`, S-1) works like this:
 
@@ -82,7 +83,7 @@ high.
 
 ## 4. AppleSkin parity matrix
 
-| Behavior | AppleSkin 3.0.10 (status) | QoL: Unified V1 [Proposed] |
+| Behavior | AppleSkin 3.0.10 (status) | QoL: Unified V1 [Approved 2026-11-22] |
 | --- | --- | --- |
 | Saturation HUD overlay | Option `showSaturationHudOverlay`, default on (confirmed). Outline over the hunger icons (assumed). | Same. Original sprites. Uses the client saturation, which may be stale (§3). |
 | Hunger restoration preview | `showFoodValuesHudOverlay`, default on (confirmed). Icons blink, up to a peak opacity of 0.65 (`maxHudOverlayFlashAlpha`, confirmed). | Same, with fixed blinking that looks similar. No opacity option. |
@@ -96,11 +97,11 @@ high.
 | Game modes | Assumed: nothing where vanilla hides the hunger and health bars (Creative, Spectator). | Same. The tooltip shows in every mode. |
 | Off-hand | `showFoodValuesHudOverlayWhenOffhand`, default on (confirmed). | Same. The main hand comes first, as in vanilla eating. |
 | Food that can't be eaten now | `FoodHelper.canConsume` exists (confirmed). Assumed: no preview when the player could not eat. | No preview unless food < 20 or the food can always be eaten. |
-| Rotten food | `FoodHelper.isRotten` exists (confirmed). How it is shown is assumed. | Shown like normal food. Checked against AppleSkin in QA (FH-AC-15), and adopted if different (Q-FH2). |
+| Rotten food | `FoodHelper.isRotten` exists (confirmed). How it is shown is assumed. | Shown like normal food. Checked against AppleSkin in QA (FH-AC-15), and adopted if different (§10). |
 | Real-time saturation and the regeneration game rule | `SaturationSyncPayload` and `NaturalRegenerationSyncPayload` (confirmed), only with AppleSkin on the server. | Not possible (R-4). |
 | Other mods' API | `AppleSkinApi`, events (confirmed). | Not offered (R-9). |
 
-## 5. Technical approach [Proposed]
+## 5. Technical approach [Approved 2026-11-22]
 
 - **TA-1 Registration.** Registered through `Features.createRegistry`, in category `HUD_INFORMATION`, enabled by default, with toggle mode `LIVE`, and the `appleskin` conflict (R-5).
 - **TA-2 LIVE design.** All hooks (Mixins, the HUD element, the debug entry) are installed once and stay. Each one checks a volatile enabled flag and the matching setting before doing anything. `enable` and `disable` only flip flags on the client thread, so `disable` cannot fail.
@@ -118,7 +119,7 @@ high.
 | Map tooltip data to a drawn component | `ClientTooltipComponentCallback` | Only for a `TooltipComponent` the item provides, and food items provide none. |
 | F3 entry | Vanilla `DebugScreenEntries.register` (public) | Yes. No Mixin needed. |
 
-### 5.2 Proposed Mixins
+### 5.2 Mixins
 
 **M-1 `Hud.extractFood(GuiGraphicsExtractor, Player, int, int)`** (private)
 - *Why:* vanilla picks each icon's shake offset from `Hud`'s seeded `random` while drawing. Rebuilding that sequence outside the method is fragile, because the hearts use the same random source first. The shake is not cosmetic noise: it happens at saturation 0, which is exactly when players look at the preview. AppleSkin has a default-on option just for this.
@@ -140,7 +141,7 @@ high.
 No Mixin touches gameplay classes (`FoodData`, `Player`, `ServerPlayer`) or
 networking.
 
-## 6. Configuration [Proposed]
+## 6. Configuration [Approved 2026-11-22]
 
 All settings apply live. None needs a restart.
 
@@ -173,7 +174,7 @@ the packets from §3. They cannot be fixed without a server-side component:
 AppleSkin running only on the client has the same limits. It avoids them only
 when it is also installed on the server.
 
-## 8. Acceptance criteria [Proposed]
+## 8. Acceptance criteria [Approved 2026-11-22]
 
 | Id | Criterion |
 | --- | --- |
@@ -196,7 +197,7 @@ when it is also installed on the server.
 | **FH-AC-17** | The Mixins apply (`require = 1`) and the game tests pass. |
 | **FH-AC-18** | All new text is correct in English and Brazilian Portuguese. |
 
-## 9. In-game QA checklist [Proposed]
+## 9. In-game QA checklist [Approved 2026-11-22]
 
 Use disposable profiles and worlds only, never your main installation.
 
@@ -212,7 +213,10 @@ Use disposable profiles and worlds only, never your main installation.
 10. Run the AppleSkin comparison (FH-AC-15), then put AppleSkin and QoL: Unified in one profile (FH-AC-16).
 11. Switch to Português (Brasil) (FH-AC-18).
 
-## 10. Blocking questions
+## 10. Decisions [Approved 2026-11-22]
 
-- **Q-FH1 [Open]** Do you accept the three Mixins M-1 to M-3 as justified (R-7)? If not, `match_animations` and the icon tooltip drop out, and the health preview becomes less accurate.
-- **Q-FH2 [Open]** Should differences found in FH-AC-15 that this spec did not predict, such as how rotten food is shown, be adopted without a new approval as long as they stay inside §4? Or should each one come back to you?
+- **D-1** Mixins M-1 and M-2 are approved.
+- **D-2** M-3 is approved on condition that a narrow, reliable injection point exists. Otherwise the text fallback is used and the parity gap is reported.
+- **D-3** Differences found in the AppleSkin comparison that stay inside the §4 parity matrix may be corrected without a new approval.
+- **D-4** Off-hand selection follows vanilla 26.3 item-use order as closely as client-visible data allows. It does not simply ignore the off-hand whenever the main hand holds food (§11).
+- **D-5** No unrelated Mixins, dependencies or architecture changes.
