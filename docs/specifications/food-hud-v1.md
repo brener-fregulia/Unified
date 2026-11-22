@@ -229,7 +229,7 @@ What was built, where it differs from the text above, and the evidence.
 
 - `feature/foodhud/FoodHudSettings` (descriptor), `FoodHudFeature` (lifecycle), `FoodMath` and `HandSelection` (pure Java, unit tested), `HeldFood`, `FoodHudRenderer`, `FoodTooltip` and `FoodTooltipComponent`, `FoodDebugEntry`, and `FoodHudHooks`.
 - Mixins in `qol_unified.mixins.json`, all client-only, with `defaultRequire: 1`: `HudFoodMixin` (M-1), `HudHeartsMixin` (M-2) and `ItemStackTooltipMixin` (M-3).
-- Original saturation sprites, 9×9, in four quarter steps: `textures/gui/sprites/food_hud/saturation_1..4.png`, generated pixel by pixel. Previews reuse vanilla's own food and heart sprites.
+- Original saturation sprites, 9×9, in four quarter steps: `textures/gui/sprites/food_hud/saturation_1..4.png`. Each is a hand-drawn golden drumstick (meat top-left, bone bottom-right, like the vanilla hunger icon), with partial steps keeping the right side, as vanilla's half icon does. Refined 2026-11-22 after PO review; the first version was a gold frame. Previews reuse vanilla's own food and heart sprites.
 - No Fabric HUD element is used. The Mixins already run inside the vanilla bar drawing, so TA-2's HUD element was not needed.
 
 ### 11.2 Mixins as built
@@ -290,7 +290,7 @@ build.
 
 | Situation | Result |
 | --- | --- |
-| Saturation overlay, food 20 and saturation 5 | **Matches** in coverage (2.5 icons). The art differs: AppleSkin uses a yellow shank outline, Food HUD a gold frame (original art, by rule). |
+| Saturation overlay, food 20 and saturation 5 | **Matches** in coverage (2.5 icons). Both read as golden shanks. AppleSkin draws an outline that lets the shank show through; Food HUD draws an original filled golden drumstick over it (original art, by rule). |
 | Bread, steak and golden-apple previews | **Matches**: the same icons blink, and saturation outlines blink up to the predicted value. |
 | Health preview (steak at 8 HP) | **Matches**: hearts blink up to the estimate. |
 | Off-hand golden apple behind full-hunger bread | **Matches**. |
