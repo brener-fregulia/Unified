@@ -241,8 +241,18 @@ one aligned column after the wider icon row:
 
 Values come from the stack's own food component, so custom foods show their
 real numbers. Icons keep the 2-points-per-icon scale: 1 point is half a
-drumstick, and partial icons fill from left to right. Icons stop at 10 per
-row; the number always shows the full value. The visibility modes are
+drumstick. In each row the partial icon comes first (leftmost), followed by
+the full icons; for example bread (+5) shows a half shank, then two full
+ones. A partial icon shows the whole drumstick silhouette with its exact
+fraction filled from the left:
+- for hunger, vanilla's empty shank with the full shank clipped on top;
+- for saturation, an original dim golden-drumstick silhouette
+  (`saturation_empty.png`) with the golden drumstick clipped on top.
+
+Clipping is kept on purpose, because it shows any fraction in proportion
+(saturation 0.3 shows a one-pixel sliver, 1.2 shows 5 of 9 columns).
+Dedicated half sprites would only show fixed steps. Icons stop at 10 per
+row; the number always shows the full value. The HUD overlay is unchanged. The visibility modes are
 unchanged. Formatting is in the pure `FoodTooltipText`, which has unit tests.
 
 ### 11.2 Mixins as built

@@ -7,12 +7,11 @@ import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipComponent
 import net.minecraft.resources.Identifier;
 
 /**
- * Two rows: hunger restored, then saturation restored, each as icons (2 points per icon, partial icons filling from
- * left to right) followed by the exact value, for example {@code +5} and {@code +6.0}. The values come from the
+ * Two rows: hunger restored, then saturation restored, each as icons (2 points per icon; a partial icon comes first
+ * and shows its silhouette with the exact fraction filled from the left) followed by the exact value, for example {@code +5} and {@code +6.0}. The values come from the
  * stack's own food component, so custom foods show their real numbers.
  */
 final class FoodTooltipComponent implements ClientTooltipComponent {
-    private static final int MAX_ICONS = 10;
     private static final int SPACING = 8;
     private static final int SIZE = 9;
     private static final int ROW = 10;
@@ -20,6 +19,11 @@ final class FoodTooltipComponent implements ClientTooltipComponent {
     private static final int HUNGER_TEXT = 0xFFE0E0E0;
     private static final int SATURATION_TEXT = 0xFFFFD45A;
     private static final Identifier FOOD_FULL = Identifier.withDefaultNamespace("hud/food_full");
+    private static final Identifier FOOD_EMPTY = Identifier.withDefaultNamespace("hud/food_empty");
+    private static final Identifier SATURATION_FULL = Identifier.fromNamespaceAndPath("qol_unified",
+            "food_hud/saturation_4");
+    private static final Identifier SATURATION_EMPTY = Identifier.fromNamespaceAndPath("qol_unified",
+            "food_hud/saturation_empty");
 
     private final FoodTooltip food;
     private final String hungerText;
@@ -33,7 +37,7 @@ final class FoodTooltipComponent implements ClientTooltipComponent {
     }
 
     private static int icons(float points) {
-        return Math.min(MAX_ICONS, Math.max(0, (int) Math.ceil(points / FoodMath.POINTS_PER_ICON - 1.0e-4f)));
+        return TooltipIcons.fills(points).length;
     }
 
     private boolean saturationRow() {
@@ -44,6 +48,25 @@ final class FoodTooltipComponent implements ClientTooltipComponent {
     private int textX() {
         int icons = Math.max(icons(food.nutrition()), saturationRow() ? icons(food.saturation()) : 0);
         return icons == 0 ? 0 : (icons - 1) * SPACING + SIZE + TEXT_GAP;
+    }
+
+    /**
+     * Draws one row left to right. A partial icon (always first) shows the whole silhouette, then the filled sprite
+     * clipped to its exact fraction from the left, so the unfilled part stays visible.
+     */
+    private static void row(GuiGraphicsExtractor graphics, float[] fills, Identifier empty, Identifier full, int x,
+            int y) {
+        for (int i = 0; i < fills.length; i++) {
+            int px = x + i * SPACING;
+            if (fills[i] >= 1.0f) {
+                FoodHudRenderer.blit(graphics, full, px, y, 1.0f);
+                continue;
+            }
+            FoodHudRenderer.blit(graphics, empty, px, y, 1.0f);
+            graphics.enableScissor(px, y, px + TooltipIcons.filledColumns(fills[i]), y + SIZE);
+            FoodHudRenderer.blit(graphics, full, px, y, 1.0f);
+            graphics.disableScissor();
+        }
     }
 
     @Override
@@ -63,19 +86,13 @@ final class FoodTooltipComponent implements ClientTooltipComponent {
     @Override
     public void extractImage(Font font, int x, int y, int width, int height, GuiGraphicsExtractor graphics) {
         int textX = x + textX();
-        for (int i = 0; i < icons(food.nutrition()); i++) {
-            FoodHudRenderer.blitFood(graphics, FOOD_FULL, FoodMath.iconHalves(food.nutrition(), i),
-                    x + i * SPACING, y, 1.0f);
-        }
+        row(graphics, TooltipIcons.fills(food.nutrition()), FOOD_EMPTY, FOOD_FULL, x, y);
         graphics.text(font, hungerText, textX, y + 1, HUNGER_TEXT, true);
         if (!saturationRow()) {
             return;
         }
         int sy = y + ROW;
-        for (int i = 0; i < icons(food.saturation()); i++) {
-            FoodHudRenderer.blit(graphics, FoodHudRenderer.saturationSprite(
-                    FoodMath.saturationQuarters(food.saturation(), i)), x + i * SPACING, sy, 1.0f);
-        }
+        row(graphics, TooltipIcons.fills(food.saturation()), SATURATION_EMPTY, SATURATION_FULL, x, sy);
         graphics.text(font, saturationText, textX, sy + 1, SATURATION_TEXT, true);
     }
 }

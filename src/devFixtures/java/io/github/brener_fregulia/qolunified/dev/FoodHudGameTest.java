@@ -293,7 +293,7 @@ final class FoodHudGameTest {
             mc.getLanguageManager().setSelected(code);
         });
         java.util.concurrent.CompletableFuture<Void> reload = ctx.computeOnClient(mc -> mc.reloadResourcePacks());
-        ctx.waitFor(mc -> reload.isDone(), 1200);
+        ctx.waitFor(mc -> reload.isDone() && mc.gui.overlay() == null, 1200);
         ctx.waitTicks(5);
     }
 
