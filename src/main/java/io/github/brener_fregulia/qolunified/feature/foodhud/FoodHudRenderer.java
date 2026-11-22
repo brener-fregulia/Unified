@@ -25,8 +25,11 @@ public final class FoodHudRenderer {
             null,
             sprite("food_hud/saturation_1"), sprite("food_hud/saturation_2"),
             sprite("food_hud/saturation_3"), sprite("food_hud/saturation_4")};
-    private static final Identifier FOOD_FULL = Identifier.withDefaultNamespace("hud/food_full");
-    private static final Identifier FOOD_FULL_HUNGER = Identifier.withDefaultNamespace("hud/food_full_hunger");
+    private static final java.util.Map<String, Identifier> FOOD_SPRITES = java.util.Map.of(
+            "hud/food_full", Identifier.withDefaultNamespace("hud/food_full"),
+            "hud/food_half", Identifier.withDefaultNamespace("hud/food_half"),
+            "hud/food_full_hunger", Identifier.withDefaultNamespace("hud/food_full_hunger"),
+            "hud/food_half_hunger", Identifier.withDefaultNamespace("hud/food_half_hunger"));
 
     // Food icon positions recorded during the current Hud.extractFood call (render thread only).
     private static final int[] foodY = new int[ICONS];
@@ -89,6 +92,8 @@ public final class FoodHudRenderer {
         }
         boolean hunger = player.hasEffect(MobEffects.HUNGER);
         float flash = flashAlpha();
+        HungerPreview.Icon[] hungerPreview = HungerPreview.icons(true, prediction != null, food,
+                prediction == null ? null : prediction.food());
 
         for (int icon = 0; icon < ICONS; icon++) {
             int x = right - icon * ICON_SPACING - ICON_SIZE;
@@ -97,13 +102,13 @@ public final class FoodHudRenderer {
             if (saturationOverlay && current > 0) {
                 blit(graphics, SATURATION[current], x, y, 1.0f);
             }
+            // Vanilla's own full or half shank for the predicted level in this slot; a full one completes an
+            // existing half drawn by vanilla underneath.
+            if (hungerPreview[icon] != HungerPreview.Icon.NONE) {
+                blit(graphics, FOOD_SPRITES.get(HungerPreview.spritePath(hungerPreview[icon], hunger)), x, y, flash);
+            }
             if (prediction == null) {
                 continue;
-            }
-            int foodNow = FoodMath.iconHalves(food, icon);
-            int foodAfter = FoodMath.iconHalves(prediction.food(), icon);
-            if (foodAfter > foodNow) {
-                blitFood(graphics, hunger ? FOOD_FULL_HUNGER : FOOD_FULL, foodAfter, x, y, flash);
             }
             int saturationAfter = FoodMath.saturationQuarters(prediction.saturation(), icon);
             if (saturationOverlay && saturationAfter > current) {
@@ -189,21 +194,6 @@ public final class FoodHudRenderer {
 
     static Identifier saturationSprite(int quarters) {
         return SATURATION[Math.clamp(quarters, 1, 4)];
-    }
-
-    /**
-     * Draws a full (2) or half (1) shank. Half shanks show the right side of the full sprite, so partial hunger
-     * icons fill from the right edge, the same way as the partial saturation sprites.
-     */
-    static void blitFood(GuiGraphicsExtractor graphics, Identifier fullSprite, int halves, int x, int y,
-            float alpha) {
-        if (halves >= 2) {
-            blit(graphics, fullSprite, x, y, alpha);
-        } else if (halves == 1) {
-            graphics.enableScissor(x + TooltipIcons.fillStart(0.5f), y, x + ICON_SIZE, y + ICON_SIZE);
-            blit(graphics, fullSprite, x, y, alpha);
-            graphics.disableScissor();
-        }
     }
 
     static void blit(GuiGraphicsExtractor graphics, Identifier sprite, int x, int y, float alpha) {

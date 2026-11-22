@@ -279,6 +279,21 @@ Dedicated half sprites would only show fixed steps. Icons stop at 10 per
 row; the number always shows the full value. The HUD overlay is unchanged. The visibility modes are
 unchanged. Formatting is in the pure `FoodTooltipText`, which has unit tests.
 
+### 11.1b HUD hunger preview [Approved 2026-11-22]
+
+The hunger preview over the vanilla bar uses vanilla's own sprites:
+`hud/food_full` and `hud/food_half`, or their `_hunger` variants under the
+Hunger effect. Each slot's sprite is chosen from the absolute predicted
+hunger (clamped to 20), not from the restoration alone:
+- a slot that would hold one point gets a half shank;
+- a slot that would hold two gets a full shank, which also completes a half
+  that vanilla already drew there.
+
+Examples: 10 + 1 → half in the next slot; 11 + 1 → the existing half
+completed; 11 + 2 → completed, then a half; 19 + 5 → only the last half
+completed. Positions, shake alignment, blinking and opacity are unchanged.
+The pure `HungerPreview` makes the decision and has unit tests.
+
 ### 11.2 Mixins as built
 
 - **M-1** `@Inject` at `HEAD` and `RETURN` of `Hud.extractFood`, plus a MixinExtras `@WrapOperation` on the first `blitSprite` call (the icon background). The wrap calls the original and records its `y`. MixinExtras ships with Fabric Loader 0.20.1, so no dependency was added. Unlike a redirect, `@WrapOperation` composes with other mods' wraps.

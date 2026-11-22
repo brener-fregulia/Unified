@@ -145,6 +145,17 @@ final class FoodHudGameTest {
                 "bread previewed");
         burst("02-bread-preview");
 
+        // Hunger preview with vanilla half shanks, at even and odd hunger (food-hud-v1.md §11.1b).
+        hold(new ItemStack(Items.BEETROOT), ItemStack.EMPTY);
+        setFood(10, 0.0f, 20.0f);
+        burst("02b-even10-beetroot-half");
+        setFood(11, 0.0f, 20.0f);
+        burst("02c-odd11-beetroot-completes-half");
+        hold(new ItemStack(Items.BREAD), ItemStack.EMPTY);
+        burst("02d-odd11-bread");
+        setFood(19, 0.0f, 20.0f);
+        burst("02e-odd19-bread-clamped");
+
         // FH-AC-2 steak and FH-AC-4: steak at food 16 previews food 20 and an estimated health gain.
         setFood(16, 0.0f, 8.0f);
         hold(new ItemStack(Items.COOKED_BEEF), ItemStack.EMPTY);
