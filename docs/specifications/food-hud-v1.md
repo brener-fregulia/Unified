@@ -245,7 +245,7 @@ drumstick. In each row the partial icon comes first (leftmost), followed by
 the full icons; for example bread (+5) shows a half shank, then two full
 ones. A partial icon shows the whole drumstick silhouette with its exact
 fraction filled (see the final polish below for the direction):
-- for hunger, vanilla's empty shank with the full shank clipped on top;
+- for hunger, vanilla's empty shank with vanilla's own half-shank sprite (`hud/food_half`, filled on its right side) on top; hunger partials are always exactly half;
 - for saturation, an original dim golden-drumstick silhouette
   with the golden drumstick clipped on top.
 
@@ -271,9 +271,9 @@ icon). They are drawn with hand-made original partial sprites
 the golden meat from its right edge leftward and leaves the bone out, so
 even ¼ reads as a golden drumstick. The HUD's `saturation_1..3.png` were
 redrawn the same way. The shown numbers stay exact, and HUD values and all
-calculations are unchanged. Hunger icons keep the clipping below.
+calculations are unchanged.
 
-For hunger icons, clipping is kept on purpose, because it shows any fraction in proportion
+Clipping was first chosen on purpose, because it shows any fraction in proportion
 (saturation 0.3 shows a one-pixel sliver, 1.2 shows 5 of 9 columns).
 Dedicated half sprites would only show fixed steps. Icons stop at 10 per
 row; the number always shows the full value. The HUD overlay is unchanged. The visibility modes are

@@ -20,6 +20,7 @@ final class FoodTooltipComponent implements ClientTooltipComponent {
     private static final int SATURATION_TEXT = 0xFFFFD45A;
     private static final Identifier FOOD_FULL = Identifier.withDefaultNamespace("hud/food_full");
     private static final Identifier FOOD_EMPTY = Identifier.withDefaultNamespace("hud/food_empty");
+    private static final Identifier FOOD_HALF = Identifier.withDefaultNamespace("hud/food_half");
     // Tooltip drumsticks use the vanilla shank's 7x7 footprint so both rows have the same height.
     private static final Identifier SATURATION_FULL = Identifier.fromNamespaceAndPath("qol_unified",
             "food_hud/saturation_tooltip");
@@ -56,21 +57,18 @@ final class FoodTooltipComponent implements ClientTooltipComponent {
     }
 
     /**
-     * Draws one row left to right. A partial icon (always first) shows the whole silhouette, then the filled sprite
-     * clipped to its exact fraction from the right edge, so the unfilled left part stays visible.
+     * Hunger row, left to right: a half shank (odd hunger) comes first and is vanilla's empty shank with vanilla's own
+     * half-shank sprite on top (filled on its right side), followed by full shanks.
      */
-    private static void row(GuiGraphicsExtractor graphics, float[] fills, Identifier empty, Identifier full, int x,
-            int y) {
+    private static void hungerRow(GuiGraphicsExtractor graphics, float[] fills, int x, int y) {
         for (int i = 0; i < fills.length; i++) {
             int px = x + i * SPACING;
             if (fills[i] >= 1.0f) {
-                FoodHudRenderer.blit(graphics, full, px, y, 1.0f);
-                continue;
+                FoodHudRenderer.blit(graphics, FOOD_FULL, px, y, 1.0f);
+            } else {
+                FoodHudRenderer.blit(graphics, FOOD_EMPTY, px, y, 1.0f);
+                FoodHudRenderer.blit(graphics, FOOD_HALF, px, y, 1.0f);
             }
-            FoodHudRenderer.blit(graphics, empty, px, y, 1.0f);
-            graphics.enableScissor(px + TooltipIcons.fillStart(fills[i]), y, px + SIZE, y + SIZE);
-            FoodHudRenderer.blit(graphics, full, px, y, 1.0f);
-            graphics.disableScissor();
         }
     }
 
@@ -108,7 +106,7 @@ final class FoodTooltipComponent implements ClientTooltipComponent {
     @Override
     public void extractImage(Font font, int x, int y, int width, int height, GuiGraphicsExtractor graphics) {
         int textX = x + textX();
-        row(graphics, TooltipIcons.fills(food.nutrition()), FOOD_EMPTY, FOOD_FULL, x, y);
+        hungerRow(graphics, TooltipIcons.fills(food.nutrition()), x, y);
         graphics.text(font, hungerText, textX, y + 1, HUNGER_TEXT, true);
         if (!saturationRow()) {
             return;
