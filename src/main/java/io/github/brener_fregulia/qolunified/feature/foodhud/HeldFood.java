@@ -13,12 +13,12 @@ import net.minecraft.world.item.ItemUseAnimation;
 import net.minecraft.world.phys.HitResult;
 
 /** Reads, without changing anything, which held food the player would eat on "use" (§11). */
-final class HeldFood {
+public final class HeldFood {
     private HeldFood() {
     }
 
     /** The food that would be eaten, or {@code null} if none would be. */
-    static FoodProperties previewed(Player player, boolean offhandPreview) {
+    public static FoodProperties previewed(Player player, boolean offhandPreview) {
         ItemStack main = player.getItemInHand(InteractionHand.MAIN_HAND);
         ItemStack off = player.getItemInHand(InteractionHand.OFF_HAND);
         Hand hand = HandSelection.select(use(player, main, true), use(player, off, false), offhandPreview);

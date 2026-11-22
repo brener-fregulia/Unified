@@ -45,6 +45,10 @@ public final class FoodHudRenderer {
     private static final int[] heartY = new int[MAX_HEARTS];
     private static int hearts = -1;
 
+    // Frames in which an overlay pass ran; read by the development game tests to confirm the Mixins work.
+    private static long foodFrames;
+    private static long heartFrames;
+
     private FoodHudRenderer() {
     }
 
@@ -71,6 +75,7 @@ public final class FoodHudRenderer {
         if (settings == null || recorded != ICONS || player == null) {
             return;
         }
+        foodFrames++;
         boolean animate = settings.getBoolean(FoodHudSettings.MATCH_ANIMATIONS);
         boolean saturationOverlay = settings.getBoolean(FoodHudSettings.SATURATION_OVERLAY);
         FoodData data = player.getFoodData();
@@ -117,8 +122,11 @@ public final class FoodHudRenderer {
         hearts = FoodHudFeature.activeSettings() == null ? -1 : 0;
     }
 
-    public static void recordHeart(int x, int y) {
-        if (hearts >= 0 && hearts < MAX_HEARTS) {
+    /** Records a heart sprite drawn by vanilla; only heart containers (one per heart) during extractHearts count. */
+    public static void recordHeartSprite(Identifier sprite, int x, int y) {
+        if (hearts >= 0 && hearts < MAX_HEARTS && sprite != null
+                && Identifier.DEFAULT_NAMESPACE.equals(sprite.getNamespace())
+                && sprite.getPath().startsWith("hud/heart/container")) {
             heartX[hearts] = x;
             heartY[hearts] = y;
             hearts++;
@@ -134,6 +142,7 @@ public final class FoodHudRenderer {
                 || !settings.getBoolean(FoodHudSettings.FOOD_PREVIEW)) {
             return;
         }
+        heartFrames++;
         FoodProperties held = HeldFood.previewed(player, settings.getBoolean(FoodHudSettings.OFFHAND_PREVIEW));
         if (held == null) {
             return;
@@ -170,6 +179,16 @@ public final class FoodHudRenderer {
                     : (hardcore ? HEART_HARDCORE_HALF : HEART_HALF);
             blit(graphics, id, x, y, flash);
         }
+    }
+
+    /** Hunger-bar overlay passes so far (diagnostics for development tests). */
+    public static long foodOverlayFrames() {
+        return foodFrames;
+    }
+
+    /** Heart overlay passes so far (diagnostics for development tests). */
+    public static long heartOverlayFrames() {
+        return heartFrames;
     }
 
     static Identifier saturationSprite(int quarters) {

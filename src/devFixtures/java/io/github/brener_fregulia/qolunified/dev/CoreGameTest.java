@@ -47,10 +47,25 @@ public final class CoreGameTest implements FabricClientGameTest {
             case "restart" -> restart();
             case "newer" -> newer();
             case "corrupt" -> corrupt();
+            case "foodhud" -> foodHud();
             default -> throw new AssertionError("Unknown scenario " + scenario);
         }
         ctx.setScreen(TitleScreen::new);
         ctx.waitForScreen(TitleScreen.class);
+    }
+
+    private void foodHud() {
+        new FoodHudGameTest(ctx).run();
+        ctx.waitForScreen(TitleScreen.class);
+        // The Food HUD row is first in its category; its settings screen lists all seven settings.
+        open();
+        // Leaving a world leaves the cursor grabbed for a moment; let it settle before clicking.
+        ctx.waitTicks(10);
+        click(UiKeys.FEATURE_SETTINGS);
+        ctx.waitFor(mc -> !(mc.gui.screen() instanceof SettingsScreen), 40);
+        shot("food-hud-settings");
+        click(UiKeys.BACK);
+        closeIfOpen();
     }
 
     private void main() {
