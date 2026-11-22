@@ -40,7 +40,7 @@ assets may be copied.
 | Distinct potion identification | Visuals | `potion_identification` | [Open] | |
 | Keybinding search | Controls | `keybind_search` | [Open] | |
 | Keybinding conflict detection | Controls | `keybind_conflicts` | [Open] | |
-| Player heads in chat | Chat & Social | `chat_heads` | [Open] | Uses skin data already available to the client; see Q-F3 |
+| Player heads in chat | Chat & Social | `chat_heads` | M1.2 [Approved 2026-11-22] | Chat Heads; spec: [Chat Heads V1](../specifications/chat-heads-v1.md) [Proposed]. Uses vanilla's skin cache only; see Q-F3 |
 | Server ping optimization | Performance & Network | `server_ping` | M3 [Approved] | Likely restart-required |
 | Fast world exit | Performance & Network | `fast_world_exit` | M3 [Approved] | Must not compromise world data safety |
 | Minimap | Maps & Navigation | `minimap` | M4 [Approved] | |
@@ -58,6 +58,7 @@ M3 and M4 assignments follow directly from the milestone names in the
 - **Q-F2 [Open]** Is persistent exploration data a user-toggleable feature or
   a shared service owned by the map features?
 - **Q-F3 [Open]** May chat heads fetch skins from the network, or only use
-  skins the client already has?
+  skins the client already has? The Chat Heads V1 proposal uses only
+  vanilla's own skin pipeline and cache (no extra service).
 - **Q-F4 [Open]** Should inventory features be disabled by default on
   multiplayer servers (some servers forbid automated inventory actions)?
