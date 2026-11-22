@@ -5,13 +5,12 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipComponent;
 import net.minecraft.resources.Identifier;
 
-/** Two icon rows: hunger restored, then saturation restored (on empty hunger icons). */
+/** Two icon rows: hunger restored, then saturation restored. */
 final class FoodTooltipComponent implements ClientTooltipComponent {
     private static final int MAX_ICONS = 10;
     private static final int SPACING = 8;
     private static final int SIZE = 9;
     private static final int ROW = 10;
-    private static final Identifier FOOD_EMPTY = Identifier.withDefaultNamespace("hud/food_empty");
     private static final Identifier FOOD_FULL = Identifier.withDefaultNamespace("hud/food_full");
     private static final Identifier FOOD_HALF = Identifier.withDefaultNamespace("hud/food_half");
 
@@ -50,7 +49,6 @@ final class FoodTooltipComponent implements ClientTooltipComponent {
         int nutritionIcons = icons(food.nutrition());
         for (int i = 0; i < nutritionIcons; i++) {
             int px = x + i * SPACING;
-            FoodHudRenderer.blit(graphics, FOOD_EMPTY, px, y, 1.0f);
             int halves = FoodMath.iconHalves(food.nutrition(), i);
             FoodHudRenderer.blit(graphics, halves == 2 ? FOOD_FULL : FOOD_HALF, px, y, 1.0f);
         }
@@ -62,7 +60,6 @@ final class FoodTooltipComponent implements ClientTooltipComponent {
         int saturationIcons = icons(food.saturation());
         for (int i = 0; i < saturationIcons; i++) {
             int px = x + i * SPACING;
-            FoodHudRenderer.blit(graphics, FOOD_EMPTY, px, sy, 1.0f);
             FoodHudRenderer.blit(graphics, FoodHudRenderer.saturationSprite(
                     FoodMath.saturationQuarters(food.saturation(), i)), px, sy, 1.0f);
         }
