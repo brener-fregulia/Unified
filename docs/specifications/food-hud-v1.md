@@ -261,7 +261,19 @@ sprites (`saturation_tooltip.png` and `saturation_tooltip_empty.png`) drawn
 in the vanilla shank's 7×7 footprint, so both rows have the same height and
 weight. The HUD overlay keeps the 9×9 drumstick.
 
-Clipping is kept on purpose, because it shows any fraction in proportion
+**[Approved 2026-11-22] Quarter steps for tooltip saturation.** The
+earlier column clipping left a quarter as bone pixels only, so small values
+like the golden carrot's 0.4 were almost invisible. Tooltip saturation icons
+now round the partial remainder UP to a quarter icon (0.3 and 0.4 → ¼,
+1.0 → ½, 1.2 → ¾, 1.8 → a full icon; exact multiples of 2 never add an
+icon). They are drawn with hand-made original partial sprites
+(`saturation_tooltip_1..3.png`) over the dim silhouette. Each partial fills
+the golden meat from its right edge leftward and leaves the bone out, so
+even ¼ reads as a golden drumstick. The HUD's `saturation_1..3.png` were
+redrawn the same way. The shown numbers stay exact, and HUD values and all
+calculations are unchanged. Hunger icons keep the clipping below.
+
+For hunger icons, clipping is kept on purpose, because it shows any fraction in proportion
 (saturation 0.3 shows a one-pixel sliver, 1.2 shows 5 of 9 columns).
 Dedicated half sprites would only show fixed steps. Icons stop at 10 per
 row; the number always shows the full value. The HUD overlay is unchanged. The visibility modes are

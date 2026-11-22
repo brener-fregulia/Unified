@@ -45,6 +45,31 @@ class TooltipIconsTest {
     }
 
     @Test
+    void saturationIconsRoundUpToQuarters() {
+        assertArrayEquals(new float[] {0.25f}, TooltipIcons.saturationFills(0.3f), EPSILON);
+        assertArrayEquals(new float[] {0.25f}, TooltipIcons.saturationFills(0.4f), EPSILON);
+        assertArrayEquals(new float[] {0.5f}, TooltipIcons.saturationFills(1.0f), EPSILON);
+        assertArrayEquals(new float[] {0.75f}, TooltipIcons.saturationFills(1.2f), EPSILON);
+        assertArrayEquals(new float[] {1.0f}, TooltipIcons.saturationFills(1.8f), EPSILON);
+        float[] goldenCarrot = TooltipIcons.saturationFills(14.4f);
+        assertEquals(8, goldenCarrot.length);
+        assertEquals(0.25f, goldenCarrot[0], EPSILON);
+        for (int i = 1; i < goldenCarrot.length; i++) {
+            assertEquals(1.0f, goldenCarrot[i], EPSILON);
+        }
+    }
+
+    @Test
+    void exactMultiplesNeverAddAnIcon() {
+        assertArrayEquals(new float[] {1.0f, 1.0f, 1.0f}, TooltipIcons.saturationFills(6.0f), EPSILON);
+        assertArrayEquals(new float[] {1.0f}, TooltipIcons.saturationFills(2.0f), EPSILON);
+        assertEquals(0, TooltipIcons.saturationFills(0.0f).length);
+        assertEquals(1, TooltipIcons.quarters(0.25f));
+        assertEquals(3, TooltipIcons.quarters(0.75f));
+        assertEquals(4, TooltipIcons.quarters(1.0f));
+    }
+
+    @Test
     void emptyAndOverflowingValues() {
         assertEquals(0, TooltipIcons.fills(0.0f).length);
         assertEquals(0, TooltipIcons.fills(-2.0f).length);

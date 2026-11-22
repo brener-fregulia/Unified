@@ -38,6 +38,24 @@ public final class TooltipIcons {
         return fills;
     }
 
+    /**
+     * Saturation tooltip icons: like {@link #fills(float)}, but the partial icon is rounded UP to a quarter (0.25, 0.5,
+     * 0.75 or 1), so small remainders stay visible. A remainder that rounds up to a whole icon becomes a full icon;
+     * exact multiples of 2 points never add an icon. Only the icons are rounded; the shown number stays exact.
+     */
+    public static float[] saturationFills(float points) {
+        float[] fills = fills(points);
+        if (fills.length > 0 && fills[0] < 1.0f) {
+            fills[0] = Math.min(1.0f, (float) Math.ceil(fills[0] * 4.0f - 1.0e-4f) / 4.0f);
+        }
+        return fills;
+    }
+
+    /** Quarter step (1 to 4) of a quantized saturation fill. */
+    public static int quarters(float fill) {
+        return Math.clamp(Math.round(fill * 4.0f), 1, 4);
+    }
+
     /** Filled pixel columns for a fill fraction; any value above zero shows at least one column. */
     public static int filledColumns(float fill) {
         if (!(fill > 0.0f)) {

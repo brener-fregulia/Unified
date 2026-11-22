@@ -25,6 +25,10 @@ final class FoodTooltipComponent implements ClientTooltipComponent {
             "food_hud/saturation_tooltip");
     private static final Identifier SATURATION_EMPTY = Identifier.fromNamespaceAndPath("qol_unified",
             "food_hud/saturation_tooltip_empty");
+    private static final Identifier[] SATURATION_PARTIAL = {null,
+            Identifier.fromNamespaceAndPath("qol_unified", "food_hud/saturation_tooltip_1"),
+            Identifier.fromNamespaceAndPath("qol_unified", "food_hud/saturation_tooltip_2"),
+            Identifier.fromNamespaceAndPath("qol_unified", "food_hud/saturation_tooltip_3")};
 
     private final FoodTooltip food;
     private final String hungerText;
@@ -70,6 +74,23 @@ final class FoodTooltipComponent implements ClientTooltipComponent {
         }
     }
 
+    /**
+     * Saturation row: the partial icon (rounded up to a quarter) is the dim silhouette with a hand-drawn quarter, half
+     * or three-quarter golden fill that grows from the right edge of the meat.
+     */
+    private static void saturationRow(GuiGraphicsExtractor graphics, float[] fills, int x, int y) {
+        for (int i = 0; i < fills.length; i++) {
+            int px = x + i * SPACING;
+            int quarters = TooltipIcons.quarters(fills[i]);
+            if (quarters == 4) {
+                FoodHudRenderer.blit(graphics, SATURATION_FULL, px, y, 1.0f);
+            } else {
+                FoodHudRenderer.blit(graphics, SATURATION_EMPTY, px, y, 1.0f);
+                FoodHudRenderer.blit(graphics, SATURATION_PARTIAL[quarters], px, y, 1.0f);
+            }
+        }
+    }
+
     @Override
     public int getHeight(Font font) {
         return (saturationRow() ? 2 : 1) * ROW + 2;
@@ -93,7 +114,7 @@ final class FoodTooltipComponent implements ClientTooltipComponent {
             return;
         }
         int sy = y + ROW;
-        row(graphics, TooltipIcons.fills(food.saturation()), SATURATION_EMPTY, SATURATION_FULL, x, sy);
+        saturationRow(graphics, TooltipIcons.saturationFills(food.saturation()), x, sy);
         graphics.text(font, saturationText, textX, sy + 1, SATURATION_TEXT, true);
     }
 }
