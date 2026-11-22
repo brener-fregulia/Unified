@@ -41,5 +41,19 @@
   "qol_unified.category.controls": "Controles",
   "qol_unified.category.chat_social": "Chat e social",
   "qol_unified.category.performance_network": "Desempenho e rede",
-  "qol_unified.category.maps_navigation": "Mapas e navegação"
+  "qol_unified.category.maps_navigation": "Mapas e navegação",
+  "qol_unified.feature.food_hud.name": "HUD de Comida",
+  "qol_unified.feature.food_hud.description": "Mostra sua saturação e o que a comida na mão restauraria. As prévias são estimativas.",
+  "qol_unified.feature.food_hud.conflict.appleskin": "O AppleSkin mostra as mesmas informações de comida na HUD e nas dicas.",
+  "qol_unified.feature.food_hud.setting.saturation_overlay": "Sobreposição de saturação",
+  "qol_unified.feature.food_hud.setting.food_preview": "Prévia de fome e saturação",
+  "qol_unified.feature.food_hud.setting.health_preview": "Prévia estimada de vida",
+  "qol_unified.feature.food_hud.setting.offhand_preview": "Prévia da comida na mão secundária",
+  "qol_unified.feature.food_hud.setting.tooltip": "Valores de comida nas dicas",
+  "qol_unified.feature.food_hud.setting.tooltip.off": "Desligado",
+  "qol_unified.feature.food_hud.setting.tooltip.shift": "Ao segurar Shift",
+  "qol_unified.feature.food_hud.setting.tooltip.always": "Sempre",
+  "qol_unified.feature.food_hud.setting.match_animations": "Acompanhar animações dos ícones",
+  "qol_unified.feature.food_hud.setting.debug_info": "Valores de comida na tela de depuração",
+  "qol_unified.food_hud.debug": "Fome: %s, saturação: %s (último valor enviado pelo servidor)"
 }

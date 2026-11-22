@@ -2,6 +2,7 @@ package io.github.brener_fregulia.qolunified;
 
 import io.github.brener_fregulia.qolunified.core.Feature;
 import io.github.brener_fregulia.qolunified.core.FeatureRegistry;
+import io.github.brener_fregulia.qolunified.feature.foodhud.FoodHudFeature;
 import java.util.List;
 
 /** The production feature list. Features are registered here explicitly (M0 §3.5). */
@@ -16,7 +17,7 @@ public final class Features {
     /** Production features followed by development-only sample features (empty outside development). */
     public static FeatureRegistry createRegistry(List<Feature> developmentFeatures) {
         FeatureRegistry.Builder builder = FeatureRegistry.builder();
-        // No production features exist yet; Food HUD is the first, in M1.
+        builder.register(new FoodHudFeature());
         developmentFeatures.forEach(builder::register);
         return builder.build();
     }

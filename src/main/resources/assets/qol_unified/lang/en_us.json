@@ -41,5 +41,19 @@
   "qol_unified.category.controls": "Controls",
   "qol_unified.category.chat_social": "Chat & Social",
   "qol_unified.category.performance_network": "Performance & Network",
-  "qol_unified.category.maps_navigation": "Maps & Navigation"
+  "qol_unified.category.maps_navigation": "Maps & Navigation",
+  "qol_unified.feature.food_hud.name": "Food HUD",
+  "qol_unified.feature.food_hud.description": "Shows your saturation and what held food would restore. Previews are estimates.",
+  "qol_unified.feature.food_hud.conflict.appleskin": "AppleSkin shows the same food information on the HUD and in tooltips.",
+  "qol_unified.feature.food_hud.setting.saturation_overlay": "Saturation overlay",
+  "qol_unified.feature.food_hud.setting.food_preview": "Food and saturation preview",
+  "qol_unified.feature.food_hud.setting.health_preview": "Estimated health preview",
+  "qol_unified.feature.food_hud.setting.offhand_preview": "Preview off-hand food",
+  "qol_unified.feature.food_hud.setting.tooltip": "Food values in tooltips",
+  "qol_unified.feature.food_hud.setting.tooltip.off": "Off",
+  "qol_unified.feature.food_hud.setting.tooltip.shift": "While holding Shift",
+  "qol_unified.feature.food_hud.setting.tooltip.always": "Always",
+  "qol_unified.feature.food_hud.setting.match_animations": "Follow icon animations",
+  "qol_unified.feature.food_hud.setting.debug_info": "Food values in debug screen",
+  "qol_unified.food_hud.debug": "Food: %s, saturation: %s (last value sent by the server)"
 }
