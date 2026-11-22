@@ -12,7 +12,6 @@ final class FoodTooltipComponent implements ClientTooltipComponent {
     private static final int SIZE = 9;
     private static final int ROW = 10;
     private static final Identifier FOOD_FULL = Identifier.withDefaultNamespace("hud/food_full");
-    private static final Identifier FOOD_HALF = Identifier.withDefaultNamespace("hud/food_half");
 
     private final FoodTooltip food;
 
@@ -50,7 +49,7 @@ final class FoodTooltipComponent implements ClientTooltipComponent {
         for (int i = 0; i < nutritionIcons; i++) {
             int px = x + i * SPACING;
             int halves = FoodMath.iconHalves(food.nutrition(), i);
-            FoodHudRenderer.blit(graphics, halves == 2 ? FOOD_FULL : FOOD_HALF, px, y, 1.0f);
+            FoodHudRenderer.blitFood(graphics, FOOD_FULL, halves, px, y, 1.0f);
         }
         plus(font, graphics, x + nutritionIcons * SPACING + 1, y, overflow(food.nutrition()));
         if (rows() < 2) {

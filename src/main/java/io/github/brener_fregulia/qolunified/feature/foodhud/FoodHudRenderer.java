@@ -20,15 +20,14 @@ public final class FoodHudRenderer {
     private static final int ICONS = 10;
     private static final int ICON_SIZE = 9;
     private static final int ICON_SPACING = 8;
+    private static final int HALF_ICON_WIDTH = 5;
 
     private static final Identifier[] SATURATION = {
             null,
             sprite("food_hud/saturation_1"), sprite("food_hud/saturation_2"),
             sprite("food_hud/saturation_3"), sprite("food_hud/saturation_4")};
     private static final Identifier FOOD_FULL = Identifier.withDefaultNamespace("hud/food_full");
-    private static final Identifier FOOD_HALF = Identifier.withDefaultNamespace("hud/food_half");
     private static final Identifier FOOD_FULL_HUNGER = Identifier.withDefaultNamespace("hud/food_full_hunger");
-    private static final Identifier FOOD_HALF_HUNGER = Identifier.withDefaultNamespace("hud/food_half_hunger");
 
     // Food icon positions recorded during the current Hud.extractFood call (render thread only).
     private static final int[] foodY = new int[ICONS];
@@ -105,9 +104,7 @@ public final class FoodHudRenderer {
             int foodNow = FoodMath.iconHalves(food, icon);
             int foodAfter = FoodMath.iconHalves(prediction.food(), icon);
             if (foodAfter > foodNow) {
-                Identifier id = foodAfter == 2 ? (hunger ? FOOD_FULL_HUNGER : FOOD_FULL)
-                        : (hunger ? FOOD_HALF_HUNGER : FOOD_HALF);
-                blit(graphics, id, x, y, flash);
+                blitFood(graphics, hunger ? FOOD_FULL_HUNGER : FOOD_FULL, foodAfter, x, y, flash);
             }
             int saturationAfter = FoodMath.saturationQuarters(prediction.saturation(), icon);
             if (saturationOverlay && saturationAfter > current) {
@@ -193,6 +190,21 @@ public final class FoodHudRenderer {
 
     static Identifier saturationSprite(int quarters) {
         return SATURATION[Math.clamp(quarters, 1, 4)];
+    }
+
+    /**
+     * Draws a full (2) or half (1) shank. Half shanks show the left side of the full sprite, so partial hunger
+     * icons fill from left to right, the same way as the partial saturation sprites.
+     */
+    static void blitFood(GuiGraphicsExtractor graphics, Identifier fullSprite, int halves, int x, int y,
+            float alpha) {
+        if (halves >= 2) {
+            blit(graphics, fullSprite, x, y, alpha);
+        } else if (halves == 1) {
+            graphics.enableScissor(x, y, x + HALF_ICON_WIDTH, y + ICON_SIZE);
+            blit(graphics, fullSprite, x, y, alpha);
+            graphics.disableScissor();
+        }
     }
 
     static void blit(GuiGraphicsExtractor graphics, Identifier sprite, int x, int y, float alpha) {
