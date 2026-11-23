@@ -1,15 +1,40 @@
 # Target Info V1 (M1.4)
 
 Status labels follow [AGENTS.md](../../AGENTS.md#decision-status-labels).
-This document is specification and discovery only. Nothing in it is
-**[Approved]** until the Product Owner says so.
+Approved by the Product Owner on 2026-11-23 (§0). Proposals not listed in §0
+keep their label.
 
 A client-side overlay that names the block or entity under the crosshair and
 shows a small amount of useful context, inspired by the behavior of Jade and
 WTHIT (themselves descendants of WAILA). No third-party code, textures or
 translations are used.
 
-## 1. Feature identity [Proposed]
+## 0. Approval [Approved 2026-11-23]
+
+- Identity: `target_info`, HUD & Information, M1.4, enabled by default, LIVE,
+  100% client-side; no server mod, packets or gameplay changes.
+- Scope: every row marked **V1** in §3. TI-AC-1 to TI-AC-17 approved, with
+  the clarifications below.
+- Q-TI1 approved. Q-TI2 approved.
+- Q-TI3: smooth progress through a narrowly scoped, read-only accessor Mixin.
+- Q-TI4: on tier failure show the status mark and a short requirement text,
+  only when a reliable minimum tier is known; otherwise no tier text.
+- Q-TI5: fixed top-center, moved below boss bars.
+- Q-TI6: hearts up to 10 hearts (max health 20); numeric above.
+- Q-TI7: players show the name only, no health.
+- Q-TI8: friendly mod display name, namespace as fallback.
+- Q-TI9: Jade and WTHIT conflicts, after confirming their Fabric ids from the
+  published JARs.
+- Q-TI10: keep the eight boolean settings of §9, all LIVE.
+- Q-TI11: Future rows stay [Deferred].
+- Indicator rules: green check when the held tool suits the shown
+  mining/harvesting behavior; red cross only when it fails a verified
+  correct-drops requirement; no mark when no requirement exists or it cannot
+  be determined. A hand-harvestable block is never marked wrong just because
+  a faster tool exists. The game's own tool checks are the final authority;
+  a named tier never implies a custom tool's suitability.
+
+## 1. Feature identity [Approved 2026-11-23]
 
 | Item | Proposal |
 | --- | --- |
@@ -19,7 +44,7 @@ translations are used.
 | Lifecycle | LIVE enable/disable (rendering-only; nothing to restore) |
 | Side | 100% client-side; no packets, no server component, no gameplay change |
 
-### 1.1 Goals [Proposed]
+### 1.1 Goals [Approved 2026-11-23]
 
 - G-1 Identify the targeted block or entity, with icon, localized name and
   source namespace.
@@ -31,7 +56,7 @@ translations are used.
 - G-5 Show entity health and, for tamed animals, the owner when resolvable.
 - G-6 Look and feel close to Jade: compact, top-center, adaptive size.
 
-### 1.2 Non-goals [Proposed]
+### 1.2 Non-goals [Approved 2026-11-23]
 
 - Anything that needs data the server does not send to a vanilla client
   (container contents, furnace progress, bee occupants, hidden NBT).
@@ -348,25 +373,25 @@ authentication or world changes):
 6. Compare side-by-side with Jade 26.3.5 in a disposable profile.
 7. Confirm Food HUD, Chat Heads and Keyboard Map still work.
 
-## 15. Open decisions for the Product Owner
+## 15. Decisions (resolved in §0)
 
-- **Q-TI1 [Open]** Approve id `target_info` (replacing `inspector`),
+- **Q-TI1 [Approved 2026-11-23]** Approve id `target_info` (replacing `inspector`),
   milestone M1.4, default enabled.
-- **Q-TI2 [Open]** Approve the V1 scope in §3 (rows marked V1).
-- **Q-TI3 [Open]** Smooth progress via a read-only accessor Mixin, or
+- **Q-TI2 [Approved 2026-11-23]** Approve the V1 scope in §3 (rows marked V1).
+- **Q-TI3 [Approved 2026-11-23]** Smooth progress via a read-only accessor Mixin, or
   10-step progress from `getDestroyStage()` without a Mixin.
-- **Q-TI4 [Open]** Tool marks: ✔/✘ glyphs only, or also a short text
+- **Q-TI4 [Approved 2026-11-23]** Tool marks: ✔/✘ glyphs only, or also a short text
   ("Needs diamond") on tier failure.
-- **Q-TI5 [Open]** Fixed top-center position in V1, or add a vertical
+- **Q-TI5 [Approved 2026-11-23]** Fixed top-center position in V1, or add a vertical
   offset setting.
-- **Q-TI6 [Open]** Heart rows vs numeric health threshold (proposed: >10
+- **Q-TI6 [Approved 2026-11-23]** Heart rows vs numeric health threshold (proposed: >10
   hearts → numeric).
-- **Q-TI7 [Open]** Player targets: name only (proposed), or also health.
-- **Q-TI8 [Open]** Show the mod display name (Fabric Loader metadata) or the
+- **Q-TI7 [Approved 2026-11-23]** Player targets: name only (proposed), or also health.
+- **Q-TI8 [Approved 2026-11-23]** Show the mod display name (Fabric Loader metadata) or the
   raw namespace.
-- **Q-TI9 [Open]** Confirm Jade/WTHIT mod ids from their JARs and approve
+- **Q-TI9 [Approved 2026-11-23]** Confirm Jade/WTHIT mod ids from their JARs and approve
   the soft conflict declaration.
-- **Q-TI10 [Open]** Whether the setting list in §9 is small enough, or
+- **Q-TI10 [Approved 2026-11-23]** Whether the setting list in §9 is small enough, or
   merge `show_health`/`show_owner` into one entity-details toggle.
 - **Q-TI11 [Deferred]** Fluids, villagers, equipment, spawners, composter,
   cauldron, generic state dump.
