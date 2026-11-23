@@ -1,0 +1,319 @@
+# Keymap V1 (M1.3)
+
+Status labels follow [AGENTS.md](../../AGENTS.md#decision-status-labels).
+
+This is a specification and discovery document only. No code is written
+until the PO approves the [Proposed] parts. Nothing below is approved yet,
+including the feature identity: the PO's brief proposed it, and it is
+recorded here as [Proposed] until it is approved.
+
+## 1. Product goals and non-goals
+
+### 1.1 Goals (from the PO's brief) [Proposed]
+
+| Id | Goal |
+| --- | --- |
+| **G-1** | Understand assigned key bindings spatially, on a picture of a physical keyboard. |
+| **G-2** | Find unused keys and keys with more than one binding. |
+| **G-3** | Search and filter bindings quickly. |
+| **G-4** | Keep the Minecraft world visible behind the screen. |
+| **G-5** | Support common physical layouts: US ANSI and Brazilian ABNT2 first. |
+| **G-6** | Over time, offer a better configuration experience than vanilla's Key Binds screen. |
+
+### 1.2 Feature identity [Proposed]
+
+| Id | Proposal |
+| --- | --- |
+| **K-1** | Feature id `keymap`, category Controls, part of QoL: Unified. |
+| **K-2** | Enabled by default, LIVE toggle. |
+| **K-3** | Client-side only: no networking, no gameplay change. |
+| **K-4** | No change to Minecraft's key-binding storage (`options.txt`); no new persistence for bindings. |
+
+### 1.3 Non-goals for V1 [Proposed]
+
+- Modifier combinations (Ctrl+key and similar): vanilla has none (F-5). Adding them would change how input is dispatched.
+- Key-binding profiles or presets.
+- A HUD overlay of pressed keys.
+- Mod-specific hotkey systems that don't use vanilla `KeyMapping` (for example MaLiLib's).
+- Controller or gamepad bindings.
+- Replacing vanilla's Key Binds screen.
+
+## 2. Sources
+
+- **S-1** The unobfuscated Minecraft Java 26.3 client JAR used by this project, inspected with `javap`.
+- **S-2** Fabric API 0.166.2+26.3 (`fabric-key-mapping-api-v1`, `fabric-screen-api-v1`, `fabric-lifecycle-events-v1`), already a dependency.
+- **S-3** Reference mods for Fabric 26.3, downloaded from Modrinth on 2026-11-23 with their SHA-512 checked against Modrinth's. Only their metadata (`fabric.mod.json`), Mixin lists, resource file names and option texts (`en_us.json`), plus the Modrinth descriptions, were inspected. Their code, textures and translations were not read or copied.
+- **S-4** The PO's three reference screenshots: **not available in this session.** No image was attached to the brief or reached this environment, so nothing here claims to have inspected them. §6 is a representative design built from the brief's written description. It must be compared with the screenshots before approval (Q-KM1).
+
+## 3. Reference comparison (S-3)
+
+| Mod | Version for 26.3 | Mod id | License | Verified capabilities | Notes |
+| --- | --- | --- | --- | --- | --- |
+| [Controlling](https://modrinth.com/mod/controlling) | 26.3.4 (2026-10-09) | `controlling` | MIT | Search box in vanilla Key Binds; "Show All / Show Conflicts / Show Unbound"; "Available Keys"; sorting A→Z, Z→A, by key; "Toggle Free"; confirmation for reset (option texts). | About 43 M downloads. Requires Searchables and Fabric API. Its Mixins are accessors on the key-binds list, `InputConstants.Key`, `KeyBindsScreen`, `KeyMapping` and `OptionsSubScreen`. It augments vanilla's screen rather than replacing it. No keyboard picture. |
+| [Keyboard Wizard CE](https://modrinth.com/mod/keyboard-wizard-ce) | 1.1.1 (2026-11-17) | `keyboard_wizard_community_edition` | GPL-3.0-or-later | Visual keyboard; green = one binding, red = conflict, white = unbound; search and category filters; rebinding by clicking keys; clear, reset and reset-all; main, numpad and auxiliary layouts; filters for Ctrl, Shift, Alt and no modifier; opens with F7; one Mixin adds an entry to vanilla's Controls screen (description, option texts, Mixin list). | Only en_us and zh_cn. No layout selection by country is listed. |
+| [Keymap [Maintained]](https://modrinth.com/mod/keymap-maintained) | 0.11.3 (2026-10-04) | `keymap` | ISC | Visual remapping; layout files for en_us, en_us_colemak, en_us_dvorak, da_dk, de_de, fr_fr, fr_fr_afnor, fr_fr_bepo, ja_jp, no_no; a layout selection screen; Ctrl/Shift/Alt modifiers implemented by the mod; opens with the grave key; Ctrl+F focuses search (description, file names). | **Its mod id is `keymap`, the same as the proposed feature id** (Q-KM2). No ABNT2 layout. The description says its modifiers don't block the modifier keys' own use (Ctrl+Q also sprints). |
+| [KeyMap Viewer](https://modrinth.com/mod/keymap-viewer) | 1.0.2+26.3 (2026-10-02) | `keymapviewer` | All rights reserved | Keyboard view, conflict detection, a HUD of pressed keys, MaLiLib hotkeys (description). | Requires MaLiLib. Not studied further. |
+| [Visual Keymap](https://modrinth.com/mod/visual-keymap) | 1.4.0 for **26.2 only** | — | GPL-3.0-or-later | Keyboard layout view; reachable from "Controls → Visual Keymap"; MaLiLib and CommandKeys integration (description). | Not available for 26.3. |
+
+**Takeaways [Proposed]:**
+- Search, "conflicts only" and "unbound only" are the features players already expect from Controlling.
+- A keyboard picture with green, red and neutral key colors is established (Keyboard Wizard CE).
+- An entry point in vanilla's Controls screen is common (Keyboard Wizard CE, Visual Keymap).
+- Nobody verified here offers ABNT2.
+- Every visual reference treats "more than one binding" as a conflict. This spec doesn't (§8).
+- Modifier systems are done by replacing input handling, which V1 avoids.
+
+**Unverified:** what Controlling's "Available Keys" and "Toggle Free" look like, how Keyboard Wizard CE draws its keyboard and lists modifiers, and how Keymap [Maintained] stores modifiers. These come from option texts and descriptions only; the mods were not run.
+
+## 4. Minecraft 26.3 technical findings (S-1, S-2)
+
+| Id | Finding | Evidence |
+| --- | --- | --- |
+| **F-1** | Minecraft 26.3 reads input through **SDL3** (LWJGL's `org.lwjgl.sdl`), not GLFW. | `com.mojang.blaze3d.platform.SDLEventHandler`, `InputConstants$Type` calls `SDLKeyboard` |
+| **F-2** | Keyboard key values in `InputConstants.Key` are **SDL scancodes**, which are USB-HID physical key positions: `KEY_A = 4`, `KEY_Z = 29`, `KEY_ESCAPE = 41`, `KEY_GRAVE = 53`, `KEY_LSHIFT = 225`. The logical, layout-dependent key codes are separate (`KEYCODE_A = 97`, from `KeyEvent.keycode()`). **A bound key is therefore a physical position.** It is the same key on US and ABNT2 hardware, whatever the OS layout says. | `InputConstants` constants, `KeyEvent(key, keycode, modifiers)` |
+| **F-3** | A key's **label** comes from the OS layout at runtime: `SDL_GetKeyFromScancode` then `SDL_GetKeyName`, with a few overrides in `InputQuirks.keyboardTranslationKey`. On a Brazilian layout, scancode 51 (US `;`) shows `Ç`. Labels can change if the player switches the OS layout while playing. | `InputConstants$Key` bytecode |
+| **F-4** | Scancodes without a named constant still work. `InputConstants.Type.KEYBOARD.getOrCreate(int)` creates a key named `key.keyboard.<number>`. This covers the ABNT2 keys with no US counterpart: the extra key left of Z (HID `NonUS \|`, 100) and the `/?` key left of right Shift (HID International1, 135). | `InputConstants$Type.getOrCreate` |
+| **F-5** | `KeyMapping` binds **one key, no modifiers**. Its fields are name, `defaultKey`, `Category`, `key` and order. Mouse bindings use `InputConstants.Type.MOUSE` (left = 1). | `KeyMapping`, `InputConstants$Type` |
+| **F-6** | **Every** mapping bound to a pressed key receives it. `KeyMapping.click` and `set` go through `forAllKeyMappings(key, …)` over a `Map<Key, List<KeyMapping>>`. Duplicates are therefore not silently ignored: they all fire. Whether that is a real problem depends on context (§8). | `KeyMapping.MAP`, `forAllKeyMappings` |
+| **F-7** | Vanilla's only conflict check is `KeyMapping.same(other)` (same key). `KeyBindsList$KeyEntry` marks such entries in red and lists the others. It doesn't look at context. | `KeyBindsList$KeyEntry` |
+| **F-8** | Context is implicit in vanilla. Some mappings are read only in game (movement, attack), some by specific screens (`keyInventory`, hotbar keys inside containers), and F3 is itself a mapping (`keyDebugModifier`) used for hard-coded debug combinations in `KeyboardHandler`. Nothing in `KeyMapping` declares a context. | `Options`, `KeyboardHandler` |
+| **F-9** | All mappings, vanilla and modded, are in `Options.keyMappings`. Fabric's `KeyMappingHelper.registerKeyMapping` adds modded mappings there. `KeyMapping.Category` has a translated `label()`; modded categories register their own. | `Options.keyMappings`, S-2 |
+| **F-10** | Vanilla's own rebinding is public API: `KeyMapping.setKey(key)`, then `KeyMapping.resetMapping()`, then `Options.save()` (as `KeyBindsScreen.keyPressed` does). Bindings stay in `options.txt` through `saveString()`. | `KeyBindsScreen` bytecode |
+| **F-11** | Screens opened in a world already draw the world behind them. `Screen.extractBackground` uses `extractTransparentBackground` in game UI, otherwise vanilla's blur (`extractBlurredBackground`, strength from Options → Menu Background Blur) and the translucent in-world menu background. A screen therefore gets a visible, blurred world with no new rendering code. | `Screen.extractBackground` |
+| **F-12** | While a `Screen` is open, keyboard and mouse go to the screen; gameplay mappings aren't updated from input. Escape closes through `shouldCloseOnEsc` and `onClose`. | `Screen`, `KeyMapping.releaseAll` / `restoreToggleStatesOnScreenClosed` |
+| **F-13** | Fabric's `ScreenEvents.AFTER_INIT` and `Screens.getWidgets` can add a widget to any screen without a Mixin. The settings key binding already uses Fabric's screen events. Vanilla's `ControlsScreen` lays out its contents in `addOptions()` (an options list plus "Key Binds…"). A button placed **inside** that list needs a Mixin; one placed outside it doesn't. | `ControlsScreen`, S-2, `SettingsKeyBinding` |
+| **F-14** | Bindings change only when something calls `setKey` (vanilla screen, mods) or `options.txt` is loaded. There is no change event. | `KeyMapping` |
+
+**Consequence:** physical positions are reliable (F-2), and layout is mostly
+a matter of **geometry and labels**. US ANSI and ABNT2 differ in key shapes
+and in a few extra keys, not in what scancode a position sends. The OS
+supplies the labels (F-3).
+
+## 5. Keyboard-layout strategy [Proposed]
+
+- **KL-1 Model.** A layout is a static, hand-written list of keys: scancode, row, x, width, height, in quarter-key units. Two layouts ship with V1: **US ANSI** (104 keys) and **ABNT2** (107 keys). They are written from public HID tables and key geometry, not copied from any mod.
+- **KL-2 Labels.** A key's label is vanilla's display name for its scancode (F-3), so it follows the OS layout. A short fixed label is used only where the OS name is too long for a keycap: Shift, Ctrl, Alt, Super, Enter, Backspace, Tab, Caps, the arrows, and the numpad (for example "Num 7").
+- **KL-3 ABNT2 specifics.**
+  - Scancode 51 is labeled by the OS (`Ç` on a Brazilian layout).
+  - The extra key left of Z is scancode 100. The `/?` key left of right Shift is scancode 135. Both are drawn only on ABNT2 and are bindable through F-4.
+  - The key left of Enter on the home row (`]` on ABNT2) is scancode 50 (HID `NonUS #`); ANSI's backslash (49) isn't on ABNT2.
+  - ABNT2's Enter is drawn as a tall key, and left Shift is shorter.
+  - On the ABNT2 numpad, the extra separator key is scancode 133 (keypad comma).
+- **KL-4 Selection.** The player selects the layout; there is no automatic detection. SDL reports scancodes and OS key names, not the physical keyboard model, and USB doesn't report the printed layout reliably. Default: `us_ansi` (Q-KM3).
+- **KL-5 Bindings not on the drawn layout.** A binding whose scancode isn't on the selected layout (for example 100 while US ANSI is selected, or F13–F24) is still listed, with the note "Not on this keyboard". It is never hidden.
+- **KL-6 Layout change while playing.** Labels are read when the screen opens (§11). An OS layout switch shows on the next open. Geometry never changes on its own.
+- **KL-7 Sections.**
+  - The main block: Esc and function row, the alphanumeric block, the navigation cluster (Ins, Del, Home, End, PgUp, PgDn, arrows; PrtSc, ScrLk, Pause) and the numpad.
+  - Mouse buttons are drawn as a separate row of chips: Left, Right, Middle, 4, 5, and any other button that a binding uses.
+- **KL-8 Out of scope for V1:** ISO-UK, AZERTY, QWERTZ, JIS, Dvorak and Colemak drawings. Labels already follow the OS, so on these layouts US ANSI geometry shows the right labels; only the key shapes differ.
+
+## 6. Proposed UI layout [Proposed]
+
+Representative design. The PO's screenshots weren't available (S-4).
+
+```
+┌ Toolbar ────────────────────────────────────────────────────────────────┐
+│ [Search…………………]  Category [All ▾]  Show [All ▾]  Layout [US ▾]   ⓘ     │
+├ Keyboard (central) ───────────────────────────────┬ Bindings (side) ──────┤
+│ Esc  F1 F2 F3 F4  F5 F6 F7 F8  F9 F10 F11 F12    │ Movement              │
+│ `  1  2  3  4 …                     Bksp  Ins Hm │  Walk Forwards     W  │
+│ Tab  Q [W] E  R …                          Del … │  Strafe Left       A  │
+│ Caps  [A][S][D] …                 Enter          │ Gameplay              │
+│ Shift  Z  X  C …                   Shift   ↑     │ ⚠ Drop Item   Q  2×   │
+│ Ctrl Alt   [ Space ]    Alt Ctrl         ← ↓ →   │ …                     │
+│ Mouse: (Left) (Right) (Middle) (4) (5)           │ Unbound               │
+│  Legend: □ free  ■ 1 binding  ⚠ 2+ bindings      │  Spectator Outlines –  │
+└──────────────────────────────────────────────────┴───────────────────────┘
+```
+
+- **UI-1 Keyboard.** Keys are drawn as flat rectangles with text, using vanilla GUI primitives and the font. No textures are needed.
+- **UI-2 States, never by color alone:**
+
+| State | Fill | Marker |
+| --- | --- | --- |
+| No binding | gray, low opacity | none |
+| One binding | green | count dot `1` (optional, §12) |
+| 2+ bindings, same context (§8) | red | `⚠` and count `2×` |
+| 2+ bindings, context differs or unknown | amber | `≈` and count |
+| Selected or highlighted | blue outline (2 px) | outline |
+
+  Yellow/amber is the "context-dependent" state from the brief; whether to show it in V1 is Q-KM4. Colors are drawn from a fixed palette that stays distinguishable with deuteranopia and protanopia; red versus green is never the only cue (`⚠` and counts).
+- **UI-3 Side panel.** A scrollable list, grouped by vanilla category (`KeyMapping.Category.label()`). Each row shows the action name, the key name (or "Unbound"), the conflict marker, and "Not on this keyboard" when KL-5 applies. Mod name per row is Q-KM5.
+- **UI-4 Toolbar.**
+  - Search box: one unified search, which also handles "key filter" and "name filter".
+  - Category: All or one category.
+  - Show: All, Conflicts, Assigned, Unbound.
+  - Layout switcher.
+  - Help button with the legend.
+- **UI-5 Contextual labels.** Only for the hovered or selected key. A small panel next to the key lists its actions, with at most one short connector line to the panel. Only one key's labels are ever shown; no lines are drawn in the default view.
+- **UI-6 Background.** Vanilla's in-world background (F-11): the world stays visible, blurred by the player's own Menu Background Blur setting, under the translucent in-world dimming. The keyboard and side panel sit on their own semi-opaque dark panels (about 70% black), so text stays readable on snow, in darkness, in rain and in bright skies. No dirt or panorama in a world. From the title screen, vanilla's panorama shows instead.
+
+## 7. Interaction model [Proposed]
+
+| Id | Behavior |
+| --- | --- |
+| **I-1** | Clicking a key selects it (blue outline). The list scrolls to and highlights its bindings, and its labels appear (UI-5). Clicking it again clears the selection. |
+| **I-2** | Clicking a binding in the list selects it and outlines its key (or its mouse chip). An unbound action selects no key. |
+| **I-3** | Hovering a key shows its labels without changing the selection. |
+| **I-4** | Search and filters apply to the list and the keyboard together. Keys with no matching binding are dimmed, not hidden, so the keyboard shape stays stable. |
+| **I-5** | Filters combine with AND: search ∧ category ∧ show-mode. |
+| **I-6** | Unbound actions are always reachable: in "All" (in their category, marked "Unbound") and in "Unbound". |
+| **I-7** | Search matches the translated action name, the category label and the key's display name, without regard to case or accents (so `ç` finds `Ç`). A query of the form `key:w` matches only key names. |
+| **I-8** | While the screen is open, all keyboard and mouse input goes to it (F-12). Pressing a bound key doesn't trigger its action. Typing goes to the search box when it has focus. |
+| **I-9** | Escape: if the search box has text, the first Escape clears it; otherwise Escape closes the screen and returns to where it was opened from. Ctrl+F focuses the search box. |
+| **I-10** | Keyboard navigation: Tab and Shift+Tab move between toolbar, keyboard and list (vanilla focus navigation); arrow keys move the selection in the list; Enter on a list row selects its key. |
+
+**Remapping.** V1 is view, search, diagnostics and navigation only
+[Proposed]. Remapping is proposed separately as **R-1 [Proposed, separate
+approval]**:
+- With a binding selected, a "Change" button waits for the next key or mouse press (Escape cancels). It applies through vanilla's own path (F-10): `setKey`, `resetMapping`, `Options.save()`. "Reset" restores `getDefaultKey()`.
+- No new storage, no modifiers, no "reset all".
+- It adds about one screen state and a few calls. It touches the player's real bindings, so it needs its own acceptance criteria (KM-AC-R1…R3) and approval (Q-KM6). An "Open vanilla Key Binds" button is offered either way.
+
+## 8. Conflict-classification policy [Proposed]
+
+The smallest reliable model. It uses only what `KeyMapping` exposes (F-5,
+F-6, F-8) and explains every verdict in the tooltip.
+
+| State | Rule | Shown as |
+| --- | --- | --- |
+| **Unbound** | `isUnbound()` | listed as "Unbound"; key not involved |
+| **Single** | exactly one mapping on the key | green |
+| **Shared** | 2+ mappings on the key, and **every** pair is in the known-compatible list (CC-2) | green with `2×` and an "expected overlap" tooltip |
+| **Conflict** | 2+ mappings on the key and at least one pair is not known-compatible | red, `⚠`, count; tooltip lists the actions and says "All of these run when you press this key" (F-6) |
+
+- **CC-1 Wording.** "Conflict" means vanilla will fire every listed action (F-6). It doesn't claim the result is harmful; the tooltip says what happens.
+- **CC-2 Known-compatible pairs.** A short, reviewed list of vanilla pairs whose contexts don't overlap. The candidates must each be verified in game before they are listed, for example: hotbar keys and spectator-menu keys, and `keyDebugModifier` (F3) with keys only used in game. Modded pairs are never assumed compatible.
+- **CC-3 Mouse.** Mouse buttons are compared with mouse buttons only. A keyboard key and a mouse button never conflict.
+- **CC-4 Modifiers.** None in V1 (F-5). A mod that implements its own modifiers outside `KeyMapping` isn't visible. Its overlaps are not judged.
+- **CC-5 Modded bindings** are treated exactly like vanilla ones (F-9).
+- **CC-6 "Unknown or context-dependent overlap"** (the amber state in UI-2) is Q-KM4. The recommendation is to **leave it out of V1** and use only Single, Shared and Conflict, because `KeyMapping` declares no context (F-8) and any guess would be unexplainable.
+
+## 9. Core integration [Proposed]
+
+- **CI-1 Registry and lifecycle.** `keymap` is registered in `Features` like Food HUD and Chat Heads. Enabling installs its entry points once (an idempotent hooks pattern, as in the existing features). Disabling hides the entry points and closes nothing in use; an open Keymap screen stays usable until closed. LIVE, cannot fail.
+- **CI-2 Configuration.** Through the Core setting descriptors only (§10). No new setting types.
+- **CI-3 Bindings.** Read from `Options.keyMappings` (F-9). V1 writes nothing to bindings unless R-1 is approved.
+- **CI-4 Localization.** All new text uses translation keys in `en_us` and `pt_br`. Action, category and key names come from vanilla, mods and the OS, untranslated by Keymap.
+- **CI-5 Compatibility detection.** Candidates for the declared-conflict list (Q-KM7):
+  - **Not a conflict:** Controlling, which changes vanilla's Key Binds screen rather than adding a second keyboard view.
+  - **Overlap, not a functional clash:** Keyboard Wizard CE and Keymap [Maintained], which both add a keyboard screen. Keymap [Maintained] also changes input dispatch for its modifiers, which makes its bindings partly invisible to `KeyMapping` (CC-4).
+  - **Recommendation:** declare no conflict and add a QA note. Q-KM7 decides.
+- **CI-6 No Mixins.** Entry points use Fabric screen events (F-13) and the existing settings screen. The Keymap screen is an ordinary `Screen`. No access widener.
+
+### 9.1 Entry points [Proposed]
+
+| Id | Entry point | Recommendation |
+| --- | --- | --- |
+| **EP-1** | Key binding "Open Keymap", **unbound by default** (like the settings key; vanilla and many mods already use most free keys) | Yes |
+| **EP-2** | Button in Options → Controls. Placed outside the options list (F-13): next to the "Done" footer button, or a small button in the header's right corner, to avoid a Mixin and overlap. The final position must be checked with Controlling installed. | Yes, Q-KM8 |
+| **EP-3** | "Open Keymap" action on the feature's row in the QoL: Unified settings screen | Yes |
+
+### 9.2 QoL: Unified button in Minecraft's Options screen [Proposed, separate Core UI work]
+
+Not part of Keymap. Proposed for later approval (Q-KM9).
+- Vanilla's `OptionsScreen` uses a two-column `GridLayout` with no free slot. Adding a full-width row would push or overlap other mods' widgets.
+- **Recommendation:** a small (20×20) icon button with a tooltip, added through `ScreenEvents.AFTER_INIT`. It goes in the header beside the title, at the right edge, where vanilla draws nothing. Mods that commonly add buttons there (for example Mod Menu's "Mods" button, which goes in the grid) must be checked in QA.
+- No change to Options in this task.
+
+## 10. Configuration [Proposed]
+
+| Key | Type | Default | Apply |
+| --- | --- | --- | --- |
+| (feature toggle) | — | enabled | LIVE |
+| `layout` | ENUM `us_ansi` / `abnt2` | `us_ansi` (Q-KM3) | LIVE |
+| `show_unbound_keys` | BOOLEAN | `true`: free keys drawn in gray; `false`: dimmed further | LIVE |
+| `contextual_labels` | BOOLEAN | `true` | LIVE |
+| `default_filter` | ENUM `all` / `conflicts` / `assigned` / `unbound` | `all` | LIVE (next open) |
+
+All of these are existing Core setting types (BOOLEAN, ENUM). The layout
+switcher in the toolbar writes the same `layout` setting through the Core,
+so it persists like any other setting.
+
+## 11. Performance [Proposed]
+
+- **P-1 Refresh on open.** The binding catalog (mappings, keys, labels, states) is built when the screen opens, plus after a remap (R-1) or a layout change. It is never rebuilt per frame. With a few hundred mappings this is a single pass.
+- **P-2 While closed:** no work at all, besides the entry points' existing event listeners (one key-binding check per tick for EP-1, which the settings key already does).
+- **P-3 Drawing** costs one rectangle and one label per key (about 110) plus visible list rows.
+- **P-4 No change detection.** Bindings can only change outside the screen (F-14), so refresh-on-open is enough for V1.
+- **P-5 No network.**
+
+## 12. Accessibility and responsiveness [Proposed]
+
+- **A-1 Minimum size.** Keys are at least 12 GUI pixels high with a readable label. If the keyboard doesn't fit at that size, it doesn't shrink further:
+  - First the numpad and navigation cluster move to a "More keys" section, which can be toggled (vanilla's main, numpad and auxiliary split is a known pattern; S-3).
+  - Then the side panel becomes a tab, switching between the keyboard and the list.
+- **A-2 854×480 at GUI scale 2** (427×240 GUI pixels): main block plus the list as a tab; numpad and navigation through "More keys". At GUI scales 3–4 in a small window, vanilla lowers the scale automatically.
+- **A-3 Ultrawide.** The keyboard is centered with a maximum width. The extra space goes to the side panel, up to a maximum, so the layout doesn't stretch.
+- **A-4 Long labels.** pt_br strings are longer. Toolbar labels are cut with "…" and a tooltip; key labels never wrap.
+- **A-5 Color vision.** See UI-2: markers and counts on every state, outlines for selection.
+- **A-6 Focus.** The search box isn't focused on open, so Escape closes immediately (I-9). Ctrl+F focuses it.
+
+## 13. Acceptance criteria [Proposed]
+
+| Id | Criterion |
+| --- | --- |
+| **KM-AC-1** | Every mapping in `Options.keyMappings` appears exactly once in the list, with its translated name, category and key name (unit test on the catalog, plus a game test). |
+| **KM-AC-2** | Each drawn key's state (none, single, shared, conflict) matches the mappings bound to that scancode (unit test). |
+| **KM-AC-3** | US ANSI shows 104 keys. ABNT2 shows 107, including scancodes 100 and 135 and the keypad comma, with labels from the OS. The geometry passes a no-overlap check (unit test). |
+| **KM-AC-4** | Clicking a key highlights all its bindings in the list; selecting a binding outlines its key or mouse chip. |
+| **KM-AC-5** | Search, category and show-mode combine (AND). The keyboard dims keys with no matching binding and the list shows only matches (unit test on the filter). |
+| **KM-AC-6** | Unbound actions appear in "All" and "Unbound" and can be found by search. |
+| **KM-AC-7** | Two mappings on one key (not on the known-compatible list) show as Conflict with `⚠` and a count. A known-compatible pair shows as Shared. A single binding is never marked. |
+| **KM-AC-8** | Mouse bindings appear as mouse chips and never conflict with keyboard keys. |
+| **KM-AC-9** | A binding registered by a Fabric mod (a dev-fixture mapping) appears in its category and takes part in conflict detection. |
+| **KM-AC-10** | A binding on a scancode not on the selected layout is listed with "Not on this keyboard". |
+| **KM-AC-11** | In a world, the world is visible behind the screen, with vanilla blur; text contrast stays readable in daylight, at night, in rain and on snow (screenshots). |
+| **KM-AC-12** | While the screen is open, pressing bound keys (W, Space, Q, number keys) causes no player movement, item drop or slot change (game test). Escape closes it. |
+| **KM-AC-13** | At GUI scales 1–4 and at 854×480, no key is smaller than 12 GUI pixels high, nothing overlaps, and every key is reachable (directly, through "More keys" or by scrolling). |
+| **KM-AC-14** | `layout` and the other settings persist across restarts. |
+| **KM-AC-15** | Turning the feature off removes the entry points without a restart; turning it on restores them. |
+| **KM-AC-16** | All new text exists in `en_us` and `pt_br` (`LocalizationTest`). |
+| **KM-AC-17** | Food HUD and Chat Heads game tests still pass. Vanilla's Key Binds screen behaves the same with Keymap on and off. |
+| **KM-AC-18** | On the PO's authenticated Paper server: opens, shows bindings, sends no packets, never disconnects. |
+| **KM-AC-19** | Opening the screen does one catalog build; nothing in Keymap runs per frame while it is closed (instrumented game test). |
+| **KM-AC-R1** | (R-1 only) Remapping through Keymap writes the same `options.txt` value as vanilla's screen would. |
+| **KM-AC-R2** | (R-1 only) Escape cancels a pending remap without changes. |
+| **KM-AC-R3** | (R-1 only) Reset restores the mapping's default key. |
+
+## 14. Manual QA checklist [Proposed]
+
+Use the PO's Prism testing instance and Paper server for item 9. Use
+disposable game tests for everything else. Never change server
+configuration or authentication.
+
+1. Open Keymap from each entry point (key, Controls, QoL: Unified settings).
+2. With a US keyboard: check that the labels match the physical keys.
+3. With an ABNT2 keyboard and the Brazilian layout: `Ç`, the key left of Z, the `/?` key and the numpad comma show, are labeled correctly, and can be selected.
+4. Bind two actions to one key in vanilla's screen. Keymap shows Conflict and lists both.
+5. Bind an action to Mouse 4. It shows on the mouse chip.
+6. Search for an action, then for `key:q`, then combine with "Conflicts".
+7. In a world, open Keymap in daylight, at night, in rain and on snow. The world is visible and the text readable.
+8. Press W, Q and 1–9 with the screen open. Nothing happens in game.
+9. On the Paper server: open Keymap, check the bindings, close it.
+10. Try GUI scales 1–4, an 854×480 window and an ultrawide window.
+11. Switch to Português (Brasil).
+12. Check that Food HUD, Chat Heads and vanilla Key Binds still work, with and without Controlling installed.
+
+## 15. Technical risks
+
+- **TR-1** SDL key names for unusual scancodes may be empty or generic on some OSes. Fixed fallback labels (KL-2) cover this.
+- **TR-2** The geometry of two layouts is hand-written. A mistake shows a key in the wrong place, but the binding data is always right, because bindings are scancodes (F-2). Mitigated by the no-overlap and scancode-coverage tests (KM-AC-3).
+- **TR-3** The known-compatible list (CC-2) can be wrong for unusual play. Each entry must be verified, and the tooltip still lists every action.
+- **TR-4** Mods that dispatch input outside `KeyMapping` (own modifiers, MaLiLib hotkeys) are invisible. Documented as a limitation (CC-4).
+- **TR-5** The Controls-screen button (EP-2) can collide with other mods that also add buttons there. QA with Controlling and Keyboard Wizard CE.
+- **TR-6** The `keymap` feature id equals the Keymap [Maintained] mod id (Q-KM2). Feature ids and mod ids are separate namespaces in the Core, so there is no technical clash, but it may confuse logs and support.
+
+## 16. Open decisions
+
+- **Q-KM1 [Open]** Compare §6 with the PO's three screenshots, which were not available here, and adjust the layout.
+- **Q-KM2 [Open]** Keep the id `keymap` (same as the Keymap [Maintained] mod id), or use for example `keyboard_map`?
+- **Q-KM3 [Open]** Default layout `us_ansi`, or ABNT2, or follow the game language (pt_br → ABNT2)? The recommendation is `us_ansi`, with the toolbar switcher on first open.
+- **Q-KM4 [Open]** Include the amber "context-dependent" state in V1? The recommendation is no (CC-6).
+- **Q-KM5 [Open]** Show the owning mod per binding? That needs a mapping from category or translation-key namespace to mod. Cheap but approximate.
+- **Q-KM6 [Open]** Approve R-1 (native remapping through vanilla's own API) for V1, or keep V1 read-only?
+- **Q-KM7 [Open]** Declare conflicts with Keyboard Wizard CE and Keymap [Maintained]? The recommendation is no, QA note only.
+- **Q-KM8 [Open]** Exact placement of the Controls-screen button (EP-2).
+- **Q-KM9 [Open]** Approve the separate Core UI task for a QoL: Unified button in Minecraft's Options screen (§9.2)?
+- **Q-KM10 [Open]** The catalog lists `keybind_search` and `keybind_conflicts` as separate [Open] features. Fold them into `keymap`? Keymap covers both.
+- **Q-KM11 [Deferred]** More layouts (ISO-UK, AZERTY, QWERTZ, JIS, Dvorak, Colemak), modifier combinations and binding profiles.
