@@ -22,17 +22,27 @@ public final class KeyboardMapTexts {
     public static final String CONFIRM = P + "confirm";
     public static final String CANCEL = P + "cancel";
     public static final String KEY_BINDS = P + "key_binds";
+    public static final String KEY_BINDS_SHORT = P + "key_binds_short";
     public static final String DONE = P + "done";
     public static final String UNBOUND = P + "unbound";
     public static final String NOT_ON_LAYOUT = P + "not_on_layout";
     public static final String NO_MATCHES = P + "no_matches";
-    public static final String MOUSE = P + "mouse";
     public static final String OVERLAP_EXPLANATION = P + "overlap_explanation";
     public static final String MORE_ACTIONS = P + "more_actions";
     public static final String CAPTURING = P + "capturing";
-    public static final String CONFIRM_OVERLAP = P + "confirm_overlap";
-    public static final String SELECTED = P + "selected";
     public static final String LEGEND = P + "legend";
+    public static final String FILTERS = P + "filters";
+    public static final String BACK = P + "back";
+    public static final String FIND_UNBOUND = P + "find_unbound";
+    public static final String ACTION_COUNT = P + "action_count";
+    public static final String EMPTY_INPUT = P + "empty_input";
+    public static final String CAPTURING_SHORT = P + "capturing_short";
+    public static final String ALSO_USED_BY = P + "also_used_by";
+    public static final String CARD_DETAIL = P + "card_detail";
+    public static final String CONFIRM_HINT = P + "confirm_hint";
+    public static final String CARD_HINT = P + "card_hint";
+    public static final String FREE_INPUT = P + "free_input";
+    public static final String WHEEL_NOTE = P + "wheel_note";
 
     private KeyboardMapTexts() {
     }

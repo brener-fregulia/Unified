@@ -4,8 +4,10 @@ import com.mojang.blaze3d.platform.InputConstants;
 import io.github.brener_fregulia.qolunified.core.SettingsSnapshot;
 import io.github.brener_fregulia.qolunified.feature.keyboardmap.BindingFilter.Visibility;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -21,27 +23,39 @@ import net.minecraft.client.gui.screens.options.controls.KeyBindsScreen;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
+import net.minecraft.util.FormattedCharSequence;
 
 /**
- * The keyboard map screen (keymap-v1.md §6, §7). The catalog is built when the screen opens and after each change;
- * nothing is rebuilt per frame. Mappings change only through {@link RemapSession}, after an explicit Change, Clear or
- * Reset. The world stays visible: vanilla draws its in-world background, and the panels are translucent.
+ * The keyboard map screen, Concept A of keyboard-map-ux-v1.md. The keyboard and mouse dominate; one panel on the right
+ * shows either the action list (Explore) or a card for the selected input or unbound action, with Change, Clear and
+ * Reset on each action. The catalog is built on open and after each change, never per frame. Mappings change only
+ * through {@link RemapSession}; selecting never writes.
  */
 public final class KeyboardMapScreen extends Screen {
-    private static final int PANEL = 0xB0101010;
-    private static final int KEY_UNBOUND = 0x90505050;
-    private static final int KEY_UNBOUND_HIDDEN = 0x40303030;
-    private static final int KEY_SINGLE = 0xD02E7D32;
-    private static final int KEY_OVERLAP = 0xE0C62828;
-    private static final int OUTLINE = 0xFF4FC3F7;
-    private static final int HOVER = 0xA0FFFFFF;
+    // Approved palette (keyboard-map-ux-v1.md §8.1).
+    private static final int PANEL = 0xB4101010;
+    private static final int FILL_FREE = 0xCC2A2A2A;
+    private static final int FILL_FREE_QUIET = 0x662A2A2A;
+    private static final int LINE_FREE = 0xFF3C3C3C;
+    private static final int FILL_ONE = 0xD92F5D3A;
+    private static final int LINE_ONE = 0xFF3F7A4C;
+    private static final int FILL_SHARED = 0xD96B2E2E;
+    private static final int LINE_SHARED = 0xFF8A3B3B;
+    private static final int SELECTED = 0xFF4FC3F7;
+    private static final int HOVER = 0x99FFFFFF;
+    private static final int MATCH = 0xFFF0E6A0;
+    private static final int BODY = 0xCC1E1E1E;
     private static final int TEXT = 0xFFFFFFFF;
     private static final int TEXT_DIM = 0xFF9A9A9A;
-    private static final int TEXT_OVERLAP = 0xFFFF8A80;
-    private static final int TEXT_SINGLE = 0xFFB9F6CA;
-    private static final int TEXT_HEADER = 0xFFFFD866;
-    private static final int ROW_HEIGHT = 11;
-    private static final int MAX_LABEL_LINES = 6;
+    private static final int TEXT_HEADER = 0xFFE8C66A;
+    private static final int TEXT_SHARED = 0xFFE59A9A;
+    private static final int TEXT_ONE = 0xFFA9D8B4;
+
+    private static final int HEADER_ROW = 13;
+    private static final int LIST_ROW = 21;
+    private static final int CARD_HEADER = 24;
+    private static final int CARD_ROW = 46;
+    private static final int TAG_LINES = 3;
 
     private final Screen parent;
     private final Consumer<String> layoutWriter;
@@ -54,35 +68,33 @@ public final class KeyboardMapScreen extends Screen {
     private String query = "";
     private String category;
     private Visibility visibility;
-    private boolean showOtherSections;
-    private boolean showListTab;
-    private int scroll;
+    private boolean moreKeys;
+    private boolean actionsTab;
+    private boolean filtersOpen;
+    private int listScroll;
+    private int cardScroll;
 
     private KeyboardMapGeometry geometry;
     private KeyboardLayout layout;
     private List<KeyCap> drawnKeys = List.of();
     private int originX;
     private int originY;
-    private final List<Row> rows = new ArrayList<>();
-    private final List<Chip> chips = new ArrayList<>();
+    private int drawingBottom;
+    private int mouseX0 = -1;
+    private int mouseY0;
+    private final List<ListRow> rows = new ArrayList<>();
+    private final Map<String, Map<String, Button>> rowButtons = new LinkedHashMap<>();
     private InputId hovered;
 
     private EditBox search;
-    private Button change;
-    private Button clear;
-    private Button reset;
-    private Button confirm;
-    private Button cancel;
+    private Button filters;
 
-    private record Row(Binding binding, String header) {
-    }
-
-    private record Chip(InputId input, int x, int y, int width, int height, String label) {
+    private record ListRow(Binding binding, String header) {
     }
 
     /**
-     * @param layoutWriter persists a layout chosen in the toolbar: through the Core configuration, or into the
-     *     settings screen's draft when opened from there
+     * @param initialLayout layout to show first, or {@code null} for the current setting
+     * @param layoutWriter persists a layout chosen in the toolbar (Core configuration, or the settings draft)
      */
     public KeyboardMapScreen(Screen parent, String initialLayout, Consumer<String> layoutWriter) {
         super(Component.translatable(KeyboardMapTexts.TITLE));
@@ -101,126 +113,151 @@ public final class KeyboardMapScreen extends Screen {
         return active != null ? active : SettingsSnapshot.defaults(KeyboardMapSettings.DESCRIPTOR);
     }
 
+    // ---- Widgets ----
+
     @Override
     protected void init() {
+        catalog = source.snapshot();
         layout = KeyboardLayouts.byId(layoutId);
         geometry = KeyboardMapGeometry.plan(width, height, layout);
+        rowButtons.clear();
         int m = geometry.margin();
         int y = geometry.toolbarY();
 
-        // Toolbar: search, category, visibility, layout, and the section toggle when the keyboard is split.
+        // Toolbar, one row: search, Filters, layout | Vanilla Key Binds (secondary), Done.
+        // Buttons are sized from their text; short labels are used when the full ones would leave search too narrow.
+        Component doneText = Component.translatable(KeyboardMapTexts.DONE);
+        Component filtersText = Component.translatable(KeyboardMapTexts.FILTERS);
+        Component bindsText = Component.translatable(KeyboardMapTexts.KEY_BINDS);
+        boolean compact = width - 2 * m - 16 - buttonWidth(doneText) - buttonWidth(filtersText) - buttonWidth(bindsText)
+                - buttonWidth(Component.translatable(layoutKey(KeyboardLayouts.ABNT2))) < 120;
+        if (compact) {
+            bindsText = Component.translatable(KeyboardMapTexts.KEY_BINDS_SHORT);
+        }
+        int doneWidth = buttonWidth(doneText);
+        int bindsWidth = buttonWidth(bindsText);
+        int filtersWidth = buttonWidth(filtersText) + 8;
+        int layoutWidth = compact ? buttonWidth(Component.literal("US ANSI"))
+                : buttonWidth(Component.translatable(layoutKey(KeyboardLayouts.ABNT2)));
+        int searchWidth = Math.clamp(width - 2 * m - doneWidth - bindsWidth - filtersWidth - layoutWidth - 16, 60, 220);
         int x = m;
-        int searchWidth = Math.clamp(width / 4, 80, 180);
         search = new EditBox(font, x, y, searchWidth, 20, Component.translatable(KeyboardMapTexts.SEARCH_HINT));
         search.setHint(Component.translatable(KeyboardMapTexts.SEARCH_HINT).withStyle(ChatFormatting.DARK_GRAY));
         search.setMaxLength(64);
         search.setValue(query);
-        search.setResponder(text -> {
-            query = text;
-            scroll = 0;
-            rebuildRows();
-        });
+        search.setResponder(this::onSearch);
         addRenderableWidget(search);
         x += searchWidth + 4;
-
-        var categories = new ArrayList<String>();
-        categories.add("");
-        categories.addAll(catalog.categories());
-        if (category != null && !categories.contains(category)) {
-            category = null;
-        }
-        int controls = geometry.split() ? 4 : 3;
-        int cycleWidth = Math.clamp((width - x - m) / controls - 4, 50, 140);
-        CycleButton<String> categoryButton = CycleButton.<String>builder(
-                        c -> c.isEmpty() ? Component.translatable(KeyboardMapTexts.ALL_CATEGORIES) : Component.literal(c),
-                        category == null ? "" : category)
-                .withValues(categories).displayOnlyValue()
-                .create(x, y, cycleWidth, 20, Component.translatable(KeyboardMapTexts.CATEGORY), (b, v) -> {
-                    category = v.isEmpty() ? null : v;
-                    scroll = 0;
-                    rebuildRows();
-                });
-        categoryButton.setTooltip(Tooltip.create(Component.translatable(KeyboardMapTexts.CATEGORY)));
-        addRenderableWidget(categoryButton);
-        x += cycleWidth + 4;
-        CycleButton<Visibility> showButton = CycleButton.<Visibility>builder(
-                        v -> Component.translatable(filterKey(v.id())), visibility)
-                .withValues(Visibility.values()).displayOnlyValue()
-                .create(x, y, cycleWidth, 20, Component.translatable(KeyboardMapTexts.SHOW), (b, v) -> {
-                    visibility = v;
-                    scroll = 0;
-                    rebuildRows();
-                });
-        showButton.setTooltip(Tooltip.create(Component.translatable(KeyboardMapTexts.SHOW)));
-        addRenderableWidget(showButton);
-        x += cycleWidth + 4;
+        boolean filtering = category != null || visibility != Visibility.ALL;
+        filters = addRenderableWidget(Button.builder(Component.translatable(KeyboardMapTexts.FILTERS)
+                        .append(filtering ? " •" : ""), b -> {
+                    filtersOpen = !filtersOpen;
+                    refreshUi();
+                }).bounds(x, y, filtersWidth, 20).build());
+        x += filtersWidth + 4;
         CycleButton<String> layoutButton = CycleButton.<String>builder(
-                        v -> Component.translatable(layoutKey(v)), layoutId)
+                        v -> compact ? Component.literal(KeyboardLayouts.ABNT2.equals(v) ? "ABNT2" : "US ANSI")
+                                : Component.translatable(layoutKey(v)), layoutId)
                 .withValues(KeyboardLayouts.US_ANSI, KeyboardLayouts.ABNT2).displayOnlyValue()
-                .create(x, y, cycleWidth, 20, Component.translatable(KeyboardMapTexts.LAYOUT), (b, v) -> {
+                .create(x, y, layoutWidth, 20, Component.translatable(KeyboardMapTexts.LAYOUT), (b, v) -> {
                     layoutId = v;
                     layoutWriter.accept(v);
-                    rebuildWidgets();
+                    refreshUi();
                 });
         layoutButton.setTooltip(Tooltip.create(Component.translatable(KeyboardMapTexts.LAYOUT)));
         addRenderableWidget(layoutButton);
-        x += cycleWidth + 4;
-        if (geometry.split()) {
-            addRenderableWidget(Button.builder(Component.translatable(showOtherSections
-                            ? KeyboardMapTexts.MAIN_KEYS : KeyboardMapTexts.MORE_KEYS), b -> {
-                        showOtherSections = !showOtherSections;
-                        rebuildWidgets();
-                    }).bounds(x, y, cycleWidth, 20).build());
-        }
+        Button done = Button.builder(doneText, b -> onClose())
+                .bounds(width - m - doneWidth, y, doneWidth, 20).build();
+        Button binds = Button.builder(bindsText, b ->
+                        minecraft.gui.setScreen(new KeyBindsScreen(this, minecraft.options)))
+                .bounds(width - m - doneWidth - 4 - bindsWidth, y, bindsWidth, 20).build();
+        addRenderableWidget(binds);
+        addRenderableWidget(done);
 
-        // Bottom bar: Change / Confirm, Clear / Cancel, Reset, vanilla Key Binds, [list tab], Done.
-        int by = geometry.bottomBarY();
-        int slots = geometry.tabbed() ? 6 : 5;
-        int buttonWidth = Math.clamp((width - 2 * m - (slots - 1) * 4) / slots, 40, 110);
-        int bx = m;
-        change = addRenderableWidget(Button.builder(Component.translatable(KeyboardMapTexts.CHANGE), b -> {
-            if (selection.bindingId() != null) {
-                session.begin(selection.bindingId());
-                updateButtons();
+        // Filters popup under its button: category and visibility.
+        if (filtersOpen) {
+            int px = filters.getX();
+            int popupWidth = Math.min(160, width - px - m);
+            var categories = new ArrayList<String>();
+            categories.add("");
+            categories.addAll(catalog.categories());
+            if (category != null && !categories.contains(category)) {
+                category = null;
             }
-        }).bounds(bx, by, buttonWidth, 20).build());
-        confirm = addRenderableWidget(Button.builder(Component.translatable(KeyboardMapTexts.CONFIRM), b -> {
-            session.confirm();
-            refresh();
-        }).bounds(bx, by, buttonWidth, 20).build());
-        bx += buttonWidth + 4;
-        clear = addRenderableWidget(Button.builder(Component.translatable(KeyboardMapTexts.CLEAR), b -> {
-            session.clear(selection.bindingId());
-            refresh();
-        }).bounds(bx, by, buttonWidth, 20).build());
-        cancel = addRenderableWidget(Button.builder(Component.translatable(KeyboardMapTexts.CANCEL), b -> {
-            session.cancel();
-            updateButtons();
-        }).bounds(bx, by, buttonWidth, 20).build());
-        bx += buttonWidth + 4;
-        reset = addRenderableWidget(Button.builder(Component.translatable(KeyboardMapTexts.RESET), b -> {
-            session.reset(selection.bindingId());
-            refresh();
-        }).bounds(bx, by, buttonWidth, 20).build());
-        bx += buttonWidth + 4;
-        addRenderableWidget(Button.builder(Component.translatable(KeyboardMapTexts.KEY_BINDS), b ->
-                minecraft.gui.setScreen(new KeyBindsScreen(this, minecraft.options)))
-                .bounds(bx, by, buttonWidth, 20).build());
-        bx += buttonWidth + 4;
-        if (geometry.tabbed()) {
-            addRenderableWidget(Button.builder(Component.translatable(showListTab
-                            ? KeyboardMapTexts.SHOW_KEYBOARD : KeyboardMapTexts.SHOW_LIST), b -> {
-                        showListTab = !showListTab;
-                        rebuildWidgets();
-                    }).bounds(bx, by, buttonWidth, 20).build());
+            addRenderableWidget(CycleButton.<String>builder(c -> c.isEmpty()
+                                    ? Component.translatable(KeyboardMapTexts.ALL_CATEGORIES) : Component.literal(c),
+                            category == null ? "" : category)
+                    .withValues(categories)
+                    .create(px + 4, y + 26, popupWidth - 8, 20, Component.translatable(KeyboardMapTexts.CATEGORY),
+                            (b, v) -> {
+                                category = v.isEmpty() ? null : v;
+                                listScroll = 0;
+                                rebuildRows();
+                            }));
+            addRenderableWidget(CycleButton.<Visibility>builder(v -> Component.translatable(filterKey(v.id())),
+                            visibility)
+                    .withValues(Visibility.values())
+                    .create(px + 4, y + 50, popupWidth - 8, 20, Component.translatable(KeyboardMapTexts.SHOW),
+                            (b, v) -> {
+                                visibility = v;
+                                listScroll = 0;
+                                rebuildRows();
+                            }));
         }
-        addRenderableWidget(Button.builder(Component.translatable(KeyboardMapTexts.DONE), b -> onClose())
-                .bounds(width - m - buttonWidth, by, buttonWidth, 20).build());
 
-        catalog = source.snapshot();
-        layoutKeyboard();
+        // Bottom row: page and tab switches, then the status line.
+        int by = geometry.bottomBarY();
+        int bx = m;
+        if (geometry.split() && controlsVisible()) {
+            addRenderableWidget(Button.builder(Component.translatable(moreKeys
+                            ? KeyboardMapTexts.MAIN_KEYS : KeyboardMapTexts.MORE_KEYS), b -> {
+                        moreKeys = !moreKeys;
+                        refreshUi();
+                    }).bounds(bx, by, 80, 20).build());
+            bx += 84;
+        }
+        if (geometry.tabbed()) {
+            addRenderableWidget(Button.builder(Component.translatable(actionsTab
+                            ? KeyboardMapTexts.SHOW_KEYBOARD : KeyboardMapTexts.SHOW_LIST), b -> {
+                        actionsTab = !actionsTab;
+                        refreshUi();
+                    }).bounds(bx, by, 80, 20).build());
+        }
+
+        layoutDrawing();
         rebuildRows();
-        updateButtons();
+        if (panelVisible() && selection.mode() != Selection.Mode.EXPLORE) {
+            addCardWidgets();
+        }
+    }
+
+    private int buttonWidth(Component text) {
+        return font.width(text) + 16;
+    }
+
+    private void onSearch(String text) {
+        if (text.equals(query)) {
+            return;
+        }
+        query = text;
+        listScroll = 0;
+        if (selection.mode() != Selection.Mode.EXPLORE) {
+            // Typing means looking for something else: back to Explore, search kept (§0).
+            selection.clear();
+            refreshUi();
+        } else {
+            rebuildRows();
+        }
+    }
+
+    /** Re-creates the widgets for a new state, keeping search focus while typing. */
+    private void refreshUi() {
+        boolean typing = search != null && search.isFocused();
+        rebuildWidgets();
+        if (typing) {
+            setFocused(search);
+            search.moveCursorToEnd(false);
+        }
     }
 
     private static String filterKey(String id) {
@@ -231,83 +268,163 @@ public final class KeyboardMapScreen extends Screen {
         return "qol_unified.feature.keyboard_map.setting.layout." + id;
     }
 
-    private boolean keyboardVisible() {
-        return !geometry.tabbed() || !showListTab;
+    private boolean controlsVisible() {
+        return !geometry.tabbed() || !actionsTab;
     }
 
-    private boolean listVisible() {
-        return !geometry.tabbed() || showListTab;
+    private boolean panelVisible() {
+        return !geometry.tabbed() || actionsTab;
     }
 
-    private void layoutKeyboard() {
-        drawnKeys = layout.keys(geometry.visibleSections(showOtherSections));
+    // ---- Drawing layout ----
+
+    private void layoutDrawing() {
+        drawnKeys = layout.keys(geometry.visibleSections(moreKeys));
         int unit = geometry.unit();
-        int keyboardWidth = KeyboardLayout.width(drawnKeys) * unit;
-        originX = geometry.keyboardX() + (geometry.keyboardWidth() - keyboardWidth) / 2;
-        originY = geometry.contentTop();
-        chips.clear();
-        var mouse = new LinkedHashSet<>(MinecraftBindings.standardMouseButtons());
-        catalog.inputs().stream().filter(i -> i.kind() == InputId.Kind.MOUSE).forEach(mouse::add);
-        int start = originX + font.width(Component.translatable(KeyboardMapTexts.MOUSE)) + 4;
-        int end = geometry.keyboardX() + geometry.keyboardWidth();
-        int cy = originY + KeyboardLayout.height(drawnKeys) * unit + 4;
-        // Full button names when they all fit; otherwise button numbers, so every bound button stays reachable.
-        int full = mouse.stream().mapToInt(i -> Math.min(font.width(MinecraftBindings.label(i)) + 8, 80) + 3).sum();
-        boolean numbers = start + full > end;
-        int cx = start;
-        for (InputId input : mouse.stream().sorted(java.util.Comparator.comparingInt(InputId::code)).toList()) {
-            String label = numbers ? String.valueOf(input.code()) : MinecraftBindings.label(input);
-            int w = Math.min(font.width(label) + 8, 80);
-            if (cx + w > end) {
-                break;
-            }
-            chips.add(new Chip(input, cx, cy, w, 12, label));
-            cx += w + 3;
+        int keysWidth = KeyboardLayout.width(drawnKeys);
+        int keysHeight = KeyboardLayout.height(drawnKeys);
+        boolean mouse = geometry.mouseVisible(moreKeys);
+        boolean beside = geometry.mouseBeside();
+        int totalWidth = keysWidth;
+        int totalHeight = keysHeight;
+        if (mouse && beside) {
+            totalWidth += KeyboardMapGeometry.MOUSE_GAP + MouseLayout.WIDTH;
+            totalHeight = Math.max(keysHeight, MouseLayout.HEIGHT);
+        } else if (mouse) {
+            totalWidth = Math.max(keysWidth, MouseLayout.WIDTH);
+            totalHeight += KeyboardMapGeometry.MOUSE_GAP + MouseLayout.HEIGHT;
+        }
+        originX = geometry.keyboardX() + (geometry.keyboardWidth() - totalWidth * unit) / 2;
+        // Slightly above center, leaving room under the drawing for the hover label.
+        int free = geometry.contentBottom() - geometry.contentTop() - 8 - totalHeight * unit;
+        originY = geometry.contentTop() + 4 + Math.max(0, free / 3);
+        drawingBottom = originY + totalHeight * unit;
+        if (!mouse) {
+            mouseX0 = -1;
+        } else if (beside) {
+            mouseX0 = originX + (keysWidth + KeyboardMapGeometry.MOUSE_GAP) * unit;
+            mouseY0 = originY + Math.max(0, keysHeight - MouseLayout.HEIGHT) * unit;
+        } else {
+            mouseX0 = originX + (keysWidth - MouseLayout.WIDTH) * unit;
+            mouseY0 = originY + (keysHeight + KeyboardMapGeometry.MOUSE_GAP) * unit;
         }
     }
 
     private void rebuildRows() {
         rows.clear();
-        var filter = new BindingFilter(query, category, visibility);
+        var filter = filter();
         String lastCategory = null;
         for (Binding binding : catalog.bindings()) {
             if (!filter.matches(binding, catalog)) {
                 continue;
             }
             if (!binding.category().equals(lastCategory)) {
-                rows.add(new Row(null, binding.category()));
+                rows.add(new ListRow(null, binding.category()));
                 lastCategory = binding.category();
             }
-            rows.add(new Row(binding, null));
+            rows.add(new ListRow(binding, null));
         }
-        scroll = Math.clamp(scroll, 0, maxScroll());
+        listScroll = Math.clamp(listScroll, 0, maxListScroll());
     }
 
-    private void refresh() {
-        catalog = source.snapshot();
-        layoutKeyboard();
-        rebuildRows();
-        updateButtons();
+    private BindingFilter filter() {
+        return new BindingFilter(query, category, visibility);
     }
 
-    private void updateButtons() {
-        if (change == null) {
+    // ---- Card ----
+
+    private int panelTop() {
+        return geometry.contentTop() + 2;
+    }
+
+    private int panelBottom() {
+        return geometry.contentBottom() - 2;
+    }
+
+    private List<Binding> cardBindings() {
+        return selection.highlightedBindings(catalog);
+    }
+
+    private int cardRowsFit() {
+        return Math.max(1, (panelBottom() - panelTop() - CARD_HEADER - 24) / CARD_ROW);
+    }
+
+    private void addCardWidgets() {
+        int x = geometry.panelX();
+        int w = geometry.panelWidth();
+        addRenderableWidget(Button.builder(Component.literal("✕"), b -> {
+            selection.clear();
+            refreshUi();
+        }).bounds(x + w - 18, panelTop() + 2, 16, 16)
+                .tooltip(Tooltip.create(Component.translatable(KeyboardMapTexts.BACK))).build());
+        List<Binding> bindings = cardBindings();
+        if (bindings.isEmpty()) {
+            addRenderableWidget(Button.builder(Component.translatable(KeyboardMapTexts.FIND_UNBOUND), b -> {
+                selection.clear();
+                visibility = Visibility.UNBOUND;
+                category = null;
+                listScroll = 0;
+                refreshUi();
+            }).bounds(x + 4, panelTop() + CARD_HEADER + 26, w - 8, 20).build());
             return;
         }
-        boolean confirming = session.state() == RemapSession.State.CONFIRMING;
-        boolean idle = session.state() == RemapSession.State.IDLE;
-        Binding selected = selectedBinding();
-        change.visible = !confirming;
-        clear.visible = !confirming;
-        confirm.visible = confirming;
-        cancel.visible = confirming;
-        change.active = idle && selected != null;
-        clear.active = idle && selected != null && !selected.unbound();
-        reset.active = idle && selected != null && !selected.isDefault();
+        cardScroll = Math.clamp(cardScroll, 0, Math.max(0, bindings.size() - cardRowsFit()));
+        int buttonWidth = (w - 16) / 3;
+        for (int i = 0; i < Math.min(cardRowsFit(), bindings.size() - cardScroll); i++) {
+            Binding binding = bindings.get(cardScroll + i);
+            String id = binding.id();
+            int by = panelTop() + CARD_HEADER + i * CARD_ROW + 22;
+            var buttons = new LinkedHashMap<String, Button>();
+            boolean capturing = session.state() == RemapSession.State.CAPTURING && id.equals(session.target());
+            boolean confirming = session.state() == RemapSession.State.CONFIRMING && id.equals(session.target());
+            boolean idle = session.state() == RemapSession.State.IDLE;
+            if (confirming) {
+                buttons.put(KeyboardMapTexts.CONFIRM, Button.builder(Component.translatable(KeyboardMapTexts.CONFIRM),
+                        b -> {
+                            session.confirm();
+                            afterChange(id);
+                        }).bounds(x + 4, by, (w - 12) / 2, 20).build());
+                buttons.put(KeyboardMapTexts.CANCEL, Button.builder(Component.translatable(KeyboardMapTexts.CANCEL),
+                        b -> {
+                            session.cancel();
+                            refreshUi();
+                        }).bounds(x + 8 + (w - 12) / 2, by, (w - 12) / 2, 20).build());
+            } else if (capturing) {
+                buttons.put(KeyboardMapTexts.CANCEL, Button.builder(Component.translatable(KeyboardMapTexts.CANCEL),
+                        b -> {
+                            session.cancel();
+                            refreshUi();
+                        }).bounds(x + 4, by, w - 8, 20).build());
+            } else {
+                Button change = Button.builder(Component.translatable(KeyboardMapTexts.CHANGE), b -> {
+                    session.begin(id);
+                    refreshUi();
+                }).bounds(x + 4, by, buttonWidth, 20).build();
+                Button clear = Button.builder(Component.translatable(KeyboardMapTexts.CLEAR), b -> {
+                    session.clear(id);
+                    afterChange(id);
+                }).bounds(x + 8 + buttonWidth, by, buttonWidth, 20).build();
+                Button reset = Button.builder(Component.translatable(KeyboardMapTexts.RESET), b -> {
+                    session.reset(id);
+                    afterChange(id);
+                }).bounds(x + 12 + 2 * buttonWidth, by, buttonWidth, 20).build();
+                change.active = idle;
+                clear.active = idle && !binding.unbound();
+                reset.active = idle && !binding.isDefault();
+                buttons.put(KeyboardMapTexts.CHANGE, change);
+                buttons.put(KeyboardMapTexts.CLEAR, clear);
+                buttons.put(KeyboardMapTexts.RESET, reset);
+            }
+            buttons.values().forEach(this::addRenderableWidget);
+            rowButtons.put(id, buttons);
+        }
     }
 
-    private Binding selectedBinding() {
-        return selection.bindingId() == null ? null : catalog.binding(selection.bindingId()).orElse(null);
+    /** After a write: rebuild the catalog and let the card follow the action (§0). */
+    private void afterChange(String id) {
+        catalog = source.snapshot();
+        selection.follow(catalog, id);
+        refreshUi();
     }
 
     // ---- Input ----
@@ -315,79 +432,83 @@ public final class KeyboardMapScreen extends Screen {
     @Override
     public boolean keyPressed(KeyEvent event) {
         if (session.state() == RemapSession.State.CAPTURING) {
+            String id = session.target();
             if (event.isEscape()) {
                 session.cancel();
+                refreshUi();
             } else {
                 InputId input = MinecraftBindings.toInput(InputConstants.getKey(event));
-                if (input != null) {
-                    session.offer(input);
-                    refresh();
+                if (input != null && session.offer(input) == RemapSession.Outcome.APPLIED) {
+                    afterChange(id);
+                } else {
+                    refreshUi();
                 }
             }
-            updateButtons();
             return true;
         }
         if (session.state() == RemapSession.State.CONFIRMING && event.isEscape()) {
             session.cancel();
-            updateButtons();
+            refreshUi();
             return true;
         }
         if (event.hasControlDownWithQuirk() && event.key() == InputConstants.KEY_F) {
             setFocused(search);
             return true;
         }
-        if (event.isEscape() && search.isFocused() && !search.getValue().isEmpty()) {
-            search.setValue("");
-            return true;
+        if (event.isEscape()) {
+            if (filtersOpen) {
+                filtersOpen = false;
+                refreshUi();
+                return true;
+            }
+            if (search.isFocused() && !search.getValue().isEmpty()) {
+                search.setValue("");
+                return true;
+            }
+            if (selection.mode() != Selection.Mode.EXPLORE) {
+                selection.clear();
+                refreshUi();
+                return true;
+            }
         }
-        if ((event.isUp() || event.isDown()) && listVisible() && session.state() == RemapSession.State.IDLE) {
-            moveSelection(event.isDown() ? 1 : -1);
+        if ((event.isUp() || event.isDown()) && !search.isFocused() && selection.mode() == Selection.Mode.EXPLORE) {
+            listScroll = Math.clamp(listScroll + (event.isDown() ? LIST_ROW : -LIST_ROW), 0, maxListScroll());
             return true;
         }
         return super.keyPressed(event);
     }
 
-    private void moveSelection(int step) {
-        List<Binding> visible = rows.stream().map(Row::binding).filter(Objects::nonNull).toList();
-        if (visible.isEmpty()) {
-            return;
-        }
-        int index = -1;
-        for (int i = 0; i < visible.size(); i++) {
-            if (visible.get(i).id().equals(selection.bindingId())) {
-                index = i;
-            }
-        }
-        int next = Math.clamp(index + step, 0, visible.size() - 1);
-        selection.selectBinding(visible.get(next).id());
-        ensureRowVisible(visible.get(next).id());
-        updateButtons();
-    }
-
     @Override
     public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
         if (session.state() == RemapSession.State.CAPTURING) {
-            session.offer(InputId.mouse(event.button()));
-            refresh();
+            String id = session.target();
+            if (session.offer(InputId.mouse(event.button())) == RemapSession.Outcome.APPLIED) {
+                afterChange(id);
+            } else {
+                refreshUi();
+            }
             return true;
         }
         if (super.mouseClicked(event, doubleClick)) {
             return true;
         }
+        if (filtersOpen) {
+            filtersOpen = false;
+            refreshUi();
+            return true;
+        }
         if (session.state() != RemapSession.State.IDLE || event.button() != InputConstants.MOUSE_BUTTON_LEFT) {
             return false;
         }
-        double mx = event.x();
-        double my = event.y();
-        if (keyboardVisible()) {
-            InputId input = inputAt(mx, my);
+        if (controlsVisible()) {
+            InputId input = inputAt(event.x(), event.y());
             if (input != null) {
                 selectInput(input);
                 return true;
             }
         }
-        if (listVisible()) {
-            Binding binding = rowAt(mx, my);
+        if (panelVisible() && selection.mode() == Selection.Mode.EXPLORE) {
+            Binding binding = rowAt(event.x(), event.y());
             if (binding != null) {
                 selectBinding(binding.id());
                 return true;
@@ -396,24 +517,46 @@ public final class KeyboardMapScreen extends Screen {
         return false;
     }
 
-    /** Same as clicking a key or chip (I-1). */
+    /** Same as clicking a key or mouse region. */
     public void selectInput(InputId input) {
         selection.selectInput(input);
-        catalog.on(selection.highlightedInput(catalog)).stream().findFirst().ifPresent(b -> ensureRowVisible(b.id()));
-        updateButtons();
+        cardScroll = 0;
+        if (geometry.tabbed() && selection.mode() != Selection.Mode.EXPLORE) {
+            actionsTab = true;
+        }
+        refreshUi();
     }
 
-    /** Same as clicking a row (I-2). */
+    /** Same as clicking a row in Explore. */
     public void selectBinding(String id) {
-        selection.selectBinding(id);
-        ensureRowVisible(id);
-        updateButtons();
+        selection.selectBinding(catalog, id);
+        List<Binding> on = cardBindings();
+        int index = 0;
+        for (int i = 0; i < on.size(); i++) {
+            if (on.get(i).id().equals(id)) {
+                index = i;
+            }
+        }
+        cardScroll = Math.max(0, index - cardRowsFit() + 1);
+        if (geometry.tabbed()) {
+            actionsTab = true;
+        }
+        refreshUi();
     }
 
     @Override
     public boolean mouseScrolled(double x, double y, double scrollX, double scrollY) {
-        if (listVisible() && x >= geometry.panelX() && x < geometry.panelX() + geometry.panelWidth()) {
-            scroll = Math.clamp(scroll - (int) Math.signum(scrollY) * ROW_HEIGHT * 3, 0, maxScroll());
+        if (panelVisible() && x >= geometry.panelX() && x < geometry.panelX() + geometry.panelWidth()) {
+            if (selection.mode() == Selection.Mode.EXPLORE) {
+                listScroll = Math.clamp(listScroll - (int) Math.signum(scrollY) * LIST_ROW * 2, 0, maxListScroll());
+            } else {
+                int max = Math.max(0, cardBindings().size() - cardRowsFit());
+                int next = Math.clamp(cardScroll - (int) Math.signum(scrollY), 0, max);
+                if (next != cardScroll) {
+                    cardScroll = next;
+                    refreshUi();
+                }
+            }
             return true;
         }
         return super.mouseScrolled(x, y, scrollX, scrollY);
@@ -444,98 +587,105 @@ public final class KeyboardMapScreen extends Screen {
                 return InputId.key(key.scancode());
             }
         }
-        for (Chip chip : chips) {
-            if (mx >= chip.x() && mx < chip.x() + chip.width() && my >= chip.y() && my < chip.y() + chip.height()) {
-                return chip.input();
-            }
+        if (mouseX0 >= 0) {
+            return MouseLayout.regionAt((mx - mouseX0) / unit, (my - mouseY0) / unit)
+                    .map(MouseLayout.Region::input).orElse(null);
         }
         return null;
     }
 
-    private int listTop() {
-        return geometry.contentTop() + 2;
-    }
-
-    private int listBottom() {
-        return geometry.contentBottom();
-    }
-
-    private int maxScroll() {
-        return geometry == null ? 0 : Math.max(0, rows.size() * ROW_HEIGHT - (listBottom() - listTop()));
+    private int maxListScroll() {
+        int total = rows.stream().mapToInt(r -> r.header() != null ? HEADER_ROW : LIST_ROW).sum();
+        return geometry == null ? 0 : Math.max(0, total - (panelBottom() - panelTop()));
     }
 
     private Binding rowAt(double mx, double my) {
-        if (mx < geometry.panelX() || mx >= geometry.panelX() + geometry.panelWidth() || my < listTop()
-                || my >= listBottom()) {
+        if (mx < geometry.panelX() || mx >= geometry.panelX() + geometry.panelWidth() || my < panelTop()
+                || my >= panelBottom()) {
             return null;
         }
-        int index = (int) ((my - listTop() + scroll) / ROW_HEIGHT);
-        return index >= 0 && index < rows.size() ? rows.get(index).binding() : null;
-    }
-
-    private void ensureRowVisible(String id) {
-        for (int i = 0; i < rows.size(); i++) {
-            Binding binding = rows.get(i).binding();
-            if (binding != null && binding.id().equals(id)) {
-                int top = i * ROW_HEIGHT;
-                int height = listBottom() - listTop();
-                if (top < scroll) {
-                    scroll = Math.max(0, top - ROW_HEIGHT);
-                } else if (top + ROW_HEIGHT > scroll + height) {
-                    scroll = Math.min(maxScroll(), top + 2 * ROW_HEIGHT - height);
-                }
-                return;
+        int y = panelTop() - listScroll;
+        for (ListRow row : rows) {
+            int h = row.header() != null ? HEADER_ROW : LIST_ROW;
+            if (my >= y && my < y + h) {
+                return row.binding();
             }
+            y += h;
         }
+        return null;
     }
 
     // ---- Drawing ----
 
     @Override
     public void extractRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTick) {
-        hovered = session.state() == RemapSession.State.IDLE && keyboardVisible() ? inputAt(mouseX, mouseY) : null;
-        if (keyboardVisible()) {
+        hovered = session.state() == RemapSession.State.IDLE && controlsVisible() && !filtersOpen
+                ? inputAt(mouseX, mouseY) : null;
+        if (controlsVisible()) {
             g.fill(geometry.keyboardX() - 2, geometry.contentTop() - 2,
                     geometry.keyboardX() + geometry.keyboardWidth() + 2, geometry.contentBottom() + 2, PANEL);
             drawKeyboard(g);
+            drawMouse(g);
         }
-        if (listVisible()) {
+        if (panelVisible()) {
             g.fill(geometry.panelX() - 2, geometry.contentTop() - 2, geometry.panelX() + geometry.panelWidth() + 2,
                     geometry.contentBottom() + 2, PANEL);
-            drawList(g, mouseX, mouseY);
+            if (selection.mode() == Selection.Mode.EXPLORE) {
+                drawList(g, mouseX, mouseY);
+            } else {
+                drawCard(g);
+            }
         }
         drawStatus(g);
-        super.extractRenderState(g, mouseX, mouseY, partialTick);
-        if (keyboardVisible() && settings().getBoolean(KeyboardMapSettings.CONTEXTUAL_LABELS)) {
-            drawContextLabels(g, hovered != null ? hovered : selection.highlightedInput(catalog), hovered != null);
+        if (filtersOpen) {
+            g.fill(filters.getX(), geometry.toolbarY() + 22, filters.getX() + Math.min(160,
+                    width - filters.getX() - geometry.margin()), geometry.toolbarY() + 74, 0xF0101010);
         }
-    }
-
-    private BindingFilter filter() {
-        return new BindingFilter(query, category, visibility);
+        super.extractRenderState(g, mouseX, mouseY, partialTick);
+        if (hovered != null) {
+            drawHoverLabel(g, hovered, mouseX, mouseY);
+        }
     }
 
     private void drawKeyboard(GuiGraphicsExtractor g) {
         int unit = geometry.unit();
-        InputId highlighted = selection.highlightedInput(catalog);
-        boolean showUnbound = settings().getBoolean(KeyboardMapSettings.SHOW_UNBOUND_KEYS);
-        BindingFilter filter = filter();
         for (KeyCap key : drawnKeys) {
-            InputId input = InputId.key(key.scancode());
             int w = key.width() * unit;
-            drawInput(g, input, keyX(key), keyY(key), w, key.height() * unit, keyLabel(key, w), highlighted,
-                    showUnbound, filter);
-        }
-        if (!chips.isEmpty()) {
-            g.text(font, Component.translatable(KeyboardMapTexts.MOUSE), originX, chips.getFirst().y() + 2, TEXT_DIM);
-        }
-        for (Chip chip : chips) {
-            drawInput(g, chip.input(), chip.x(), chip.y(), chip.width(), chip.height(), chip.label(), highlighted,
-                    showUnbound, filter);
+            drawInput(g, InputId.key(key.scancode()), keyX(key), keyY(key), w, key.height() * unit, keyLabel(key, w));
         }
     }
 
-    /** Fixed symbol, else the OS name if it fits, else the short name, else the OS name cut to fit. */
+    private void drawMouse(GuiGraphicsExtractor g) {
+        if (mouseX0 < 0) {
+            return;
+        }
+        int u = geometry.unit();
+        int x = mouseX0 + MouseLayout.BODY_X * u;
+        int y = mouseY0 + MouseLayout.BODY_Y * u;
+        int w = MouseLayout.BODY_WIDTH * u;
+        int h = MouseLayout.BODY_HEIGHT * u;
+        int r = Math.max(2, u);
+        // Rounded body from three rectangles; the outline follows the same steps.
+        g.fill(x + r, y, x + w - r, y + h, BODY);
+        g.fill(x, y + r, x + r, y + h - r, BODY);
+        g.fill(x + w - r, y + r, x + w, y + h - r, BODY);
+        g.horizontalLine(x + r, x + w - r - 1, y, LINE_FREE);
+        g.horizontalLine(x + r, x + w - r - 1, y + h - 1, LINE_FREE);
+        g.verticalLine(x, y + r, y + h - r - 1, LINE_FREE);
+        g.verticalLine(x + w - 1, y + r, y + h - r - 1, LINE_FREE);
+        for (MouseLayout.Region region : MouseLayout.REGIONS) {
+            int rx = mouseX0 + region.x() * u;
+            int ry = mouseY0 + region.y() * u;
+            String label = region.button() == MouseLayout.BACK || region.button() == MouseLayout.FORWARD
+                    ? String.valueOf(region.button()) : "";
+            drawInput(g, region.input(), rx, ry, region.width() * u, region.height() * u, label);
+        }
+        var wheel = MouseLayout.region(MouseLayout.MIDDLE).orElseThrow();
+        int wx = mouseX0 + wheel.x() * u + wheel.width() * u / 2;
+        g.verticalLine(wx, mouseY0 + wheel.y() * u + 2, mouseY0 + (wheel.y() + wheel.height()) * u - 3, TEXT_DIM);
+    }
+
+    /** Fixed symbol, else the OS name if it fits, else the short name. */
     private String keyLabel(KeyCap key, int width) {
         if (key.fixedLabel() != null) {
             return key.fixedLabel();
@@ -545,188 +695,282 @@ public final class KeyboardMapScreen extends Screen {
         return font.width(name) <= width - 4 || shortName == null ? name : shortName;
     }
 
-    private void drawInput(GuiGraphicsExtractor g, InputId input, int x, int y, int w, int h, String label,
-            InputId highlighted, boolean showUnbound, BindingFilter filter) {
+    private void drawInput(GuiGraphicsExtractor g, InputId input, int x, int y, int w, int h, String label) {
         InputState state = catalog.state(input);
-        boolean dimmed = !filter.isEmpty() && catalog.on(input).stream().noneMatch(b -> filter.matches(b, catalog));
+        boolean quietFree = !settings().getBoolean(KeyboardMapSettings.SHOW_UNBOUND_KEYS);
         int fill = switch (state) {
-            case UNBOUND -> showUnbound ? KEY_UNBOUND : KEY_UNBOUND_HIDDEN;
-            case SINGLE -> KEY_SINGLE;
-            case OVERLAP -> KEY_OVERLAP;
+            case UNBOUND -> quietFree ? FILL_FREE_QUIET : FILL_FREE;
+            case SINGLE -> FILL_ONE;
+            case OVERLAP -> FILL_SHARED;
         };
-        if (dimmed) {
-            fill = (fill & 0x00FFFFFF) | 0x38000000;
-        }
+        int line = switch (state) {
+            case UNBOUND -> LINE_FREE;
+            case SINGLE -> LINE_ONE;
+            case OVERLAP -> LINE_SHARED;
+        };
         g.fill(x + 1, y + 1, x + w - 1, y + h - 1, fill);
-        if (input.equals(highlighted)) {
-            g.outline(x, y, w, h, OUTLINE);
-            g.outline(x + 1, y + 1, w - 2, h - 2, OUTLINE);
+        g.outline(x, y, w, h, line);
+        if (input.equals(selection.highlightedInput(catalog))) {
+            g.outline(x - 1, y - 1, w + 2, h + 2, SELECTED);
+            g.outline(x, y, w, h, SELECTED);
         } else if (input.equals(hovered)) {
             g.outline(x, y, w, h, HOVER);
+        } else if (matchesSearch(input)) {
+            g.outline(x, y, w, h, MATCH);
         }
-        int color = dimmed || (state == InputState.UNBOUND && !showUnbound) ? TEXT_DIM : TEXT;
-        int textWidth = font.width(label);
-        if (textWidth <= w - 2) {
-            g.centeredText(font, label, x + w / 2, y + (h - 8) / 2, color);
-        } else {
-            // Shrink rather than cut, down to half size; cut only beyond that.
-            float scale = Math.max(0.5f, (w - 2) / (float) textWidth);
-            String fitted = font.plainSubstrByWidth(label, (int) ((w - 2) / scale));
+        int color = state == InputState.UNBOUND ? TEXT_DIM : TEXT;
+        drawFitted(g, label, x, y, w, h, color);
+        if (state == InputState.OVERLAP && w >= 10) {
+            // Count badge so a shared key never depends on color alone.
+            String count = String.valueOf(catalog.on(input).size());
             var pose = g.pose();
             pose.pushMatrix();
-            pose.translate(x + w / 2f, y + h / 2f);
-            pose.scale(scale, scale);
-            g.centeredText(font, fitted, 0, -4, color);
-            pose.popMatrix();
-        }
-        if (state == InputState.OVERLAP) {
-            // Warning marker and count, so overlaps never depend on color alone.
-            var pose = g.pose();
-            pose.pushMatrix();
-            pose.translate(x + 2, y + 2);
+            pose.translate(x + w - 2 - font.width(count) * 0.5f, y + 2);
             pose.scale(0.5f, 0.5f);
-            g.text(font, "!" + catalog.on(input).size(), 0, 0, TEXT);
+            g.text(font, count, 0, 0, TEXT);
             pose.popMatrix();
         }
+    }
+
+    private void drawFitted(GuiGraphicsExtractor g, String label, int x, int y, int w, int h, int color) {
+        if (label.isEmpty()) {
+            return;
+        }
+        int textWidth = font.width(label);
+        if (textWidth <= w - 3) {
+            g.centeredText(font, label, x + w / 2, y + (h - 7) / 2, color);
+            return;
+        }
+        float scale = Math.max(0.5f, (w - 3) / (float) textWidth);
+        String fitted = font.plainSubstrByWidth(label, (int) ((w - 3) / scale));
+        var pose = g.pose();
+        pose.pushMatrix();
+        pose.translate(x + w / 2f, y + h / 2f);
+        pose.scale(scale, scale);
+        g.centeredText(font, fitted, 0, -4, color);
+        pose.popMatrix();
+    }
+
+    private boolean matchesSearch(InputId input) {
+        BindingFilter filter = filter();
+        return !filter.isEmpty() && catalog.on(input).stream().anyMatch(b -> filter.matches(b, catalog));
+    }
+
+    private int stateColor(InputState state) {
+        return switch (state) {
+            case UNBOUND -> LINE_FREE;
+            case SINGLE -> 0xFF4E9A62;
+            case OVERLAP -> 0xFFB35454;
+        };
+    }
+
+    /** The state square in front of a row: hollow when unbound. */
+    private void drawStateMark(GuiGraphicsExtractor g, Binding binding, int x, int y) {
+        InputState state = catalog.state(binding);
+        g.fill(x, y, x + 6, y + 6, stateColor(state));
+        if (state == InputState.UNBOUND) {
+            g.fill(x + 1, y + 1, x + 5, y + 5, 0xFF101010);
+        }
+    }
+
+    private String inputText(Binding binding) {
+        if (binding.unbound()) {
+            return Component.translatable(KeyboardMapTexts.UNBOUND).getString();
+        }
+        boolean drawn = binding.input().kind() == InputId.Kind.MOUSE || layout.contains(binding.input());
+        int count = catalog.on(binding.input()).size();
+        return binding.inputLabel() + (drawn ? "" : " *") + (count > 1 ? "  ×" + count : "");
     }
 
     private void drawList(GuiGraphicsExtractor g, int mouseX, int mouseY) {
         int x = geometry.panelX();
         int w = geometry.panelWidth();
-        int top = listTop();
-        int bottom = listBottom();
+        int top = panelTop();
+        int bottom = panelBottom();
         if (rows.isEmpty()) {
-            g.text(font, Component.translatable(KeyboardMapTexts.NO_MATCHES), x + 4, top + 2, TEXT_DIM);
+            g.text(font, Component.translatable(KeyboardMapTexts.NO_MATCHES), x + 4, top + 4, TEXT_DIM);
             return;
         }
         g.enableScissor(x, top, x + w, bottom);
-        for (int i = scroll / ROW_HEIGHT; i < rows.size(); i++) {
-            int y = top + i * ROW_HEIGHT - scroll;
-            if (y >= bottom) {
-                break;
-            }
-            Row row = rows.get(i);
-            if (row.header() != null) {
-                g.text(font, font.plainSubstrByWidth(row.header(), w - 6), x + 2, y + 2, TEXT_HEADER);
-                continue;
-            }
-            Binding binding = row.binding();
-            boolean hoveredRow = mouseX >= x && mouseX < x + w && mouseY >= y && mouseY < y + ROW_HEIGHT
-                    && mouseY < bottom;
-            if (selection.highlights(binding, catalog)) {
-                boolean selected = binding.id().equals(selection.bindingId());
-                g.fill(x, y, x + w, y + ROW_HEIGHT, selected ? 0x704FC3F7 : 0x404FC3F7);
-                g.fill(x, y, x + 2, y + ROW_HEIGHT, OUTLINE);
-            } else if (hoveredRow) {
-                g.fill(x, y, x + w, y + ROW_HEIGHT, 0x30FFFFFF);
-            }
-            String key;
-            int keyColor;
-            if (binding.unbound()) {
-                key = Component.translatable(KeyboardMapTexts.UNBOUND).getString();
-                keyColor = TEXT_DIM;
-            } else {
-                boolean overlap = catalog.state(binding) == InputState.OVERLAP;
-                boolean drawn = binding.input().kind() == InputId.Kind.MOUSE || layout.contains(binding.input());
-                key = (overlap ? "! " : "") + binding.inputLabel() + (drawn ? "" : " *");
-                keyColor = overlap ? TEXT_OVERLAP : TEXT_SINGLE;
-                if (!drawn && hoveredRow) {
-                    g.setTooltipForNextFrame(font, Component.translatable(KeyboardMapTexts.NOT_ON_LAYOUT),
-                            mouseX, mouseY);
+        int y = top - listScroll;
+        for (ListRow row : rows) {
+            int h = row.header() != null ? HEADER_ROW : LIST_ROW;
+            if (y + h > top && y < bottom) {
+                if (row.header() != null) {
+                    g.text(font, font.plainSubstrByWidth(row.header(), w - 6), x + 3, y + 3, TEXT_HEADER);
+                } else {
+                    Binding binding = row.binding();
+                    boolean over = mouseX >= x && mouseX < x + w && mouseY >= y && mouseY < y + h && mouseY < bottom;
+                    if (over) {
+                        g.fill(x, y, x + w, y + h, 0x26FFFFFF);
+                        if (!binding.unbound() && !layout.contains(binding.input())
+                                && binding.input().kind() == InputId.Kind.KEYBOARD) {
+                            g.setTooltipForNextFrame(font, Component.translatable(KeyboardMapTexts.NOT_ON_LAYOUT),
+                                    mouseX, mouseY);
+                        }
+                    }
+                    drawStateMark(g, binding, x + 4, y + 3);
+                    g.text(font, font.plainSubstrByWidth(binding.name(), w - 16), x + 14, y + 1, TEXT);
+                    InputState state = catalog.state(binding);
+                    int color = state == InputState.OVERLAP ? TEXT_SHARED
+                            : state == InputState.SINGLE ? TEXT_ONE : TEXT_DIM;
+                    g.text(font, font.plainSubstrByWidth(inputText(binding), w - 16), x + 14, y + 11, color);
                 }
             }
-            String keyText = font.plainSubstrByWidth(key, w / 2 - 4);
-            int keyWidth = font.width(keyText);
-            g.text(font, keyText, x + w - 3 - keyWidth, y + 2, keyColor);
-            g.text(font, font.plainSubstrByWidth(binding.name(), w - keyWidth - 14), x + 6, y + 2, TEXT);
+            y += h;
         }
         g.disableScissor();
     }
 
+    private void drawCard(GuiGraphicsExtractor g) {
+        int x = geometry.panelX();
+        int w = geometry.panelWidth();
+        int top = panelTop();
+        List<Binding> bindings = cardBindings();
+        String title;
+        String subtitle;
+        if (selection.mode() == Selection.Mode.BINDING) {
+            title = bindings.isEmpty() ? "" : bindings.getFirst().name();
+            subtitle = Component.translatable(KeyboardMapTexts.UNBOUND).getString();
+        } else {
+            InputId input = selection.highlightedInput(catalog);
+            title = MinecraftBindings.label(input);
+            subtitle = Component.translatable(KeyboardMapTexts.ACTION_COUNT, bindings.size()).getString();
+        }
+        g.text(font, font.plainSubstrByWidth(title, w - 26), x + 4, top + 3, TEXT);
+        g.text(font, font.plainSubstrByWidth(subtitle, w - 26), x + 4, top + 13, TEXT_DIM);
+        g.horizontalLine(x + 2, x + w - 3, top + CARD_HEADER - 2, LINE_FREE);
+        if (bindings.isEmpty()) {
+            g.textWithWordWrap(font, Component.translatable(KeyboardMapTexts.EMPTY_INPUT), x + 4, top + CARD_HEADER + 4,
+                    w - 8, TEXT_DIM, false);
+            return;
+        }
+        int rowsShown = Math.min(cardRowsFit(), bindings.size() - cardScroll);
+        for (int i = 0; i < rowsShown; i++) {
+            Binding binding = bindings.get(cardScroll + i);
+            int y = top + CARD_HEADER + i * CARD_ROW;
+            if (binding.id().equals(selection.bindingId())) {
+                g.fill(x, y - 1, x + 2, y + CARD_ROW - 4, SELECTED);
+            }
+            drawStateMark(g, binding, x + 5, y + 2);
+            g.text(font, font.plainSubstrByWidth(binding.name(), w - 18), x + 15, y, TEXT);
+            Component detail;
+            int color = TEXT_DIM;
+            if (session.state() == RemapSession.State.CAPTURING && binding.id().equals(session.target())) {
+                detail = Component.translatable(KeyboardMapTexts.CAPTURING_SHORT);
+                color = 0xFF7FD7F7;
+            } else if (session.state() == RemapSession.State.CONFIRMING && binding.id().equals(session.target())) {
+                detail = Component.translatable(KeyboardMapTexts.ALSO_USED_BY,
+                        MinecraftBindings.label(session.pending()),
+                        String.join(", ", session.pendingOverlaps().stream().map(Binding::name).toList()));
+                color = TEXT_HEADER;
+            } else {
+                String def = binding.defaultInput() == null
+                        ? Component.translatable(KeyboardMapTexts.UNBOUND).getString()
+                        : MinecraftBindings.label(binding.defaultInput());
+                detail = Component.translatable(KeyboardMapTexts.CARD_DETAIL, binding.category(), def);
+            }
+            g.text(font, font.plainSubstrByWidth(detail.getString(), w - 18), x + 15, y + 10, color);
+        }
+        if (cardScroll + rowsShown < bindings.size() || cardScroll > 0) {
+            g.text(font, Component.translatable(KeyboardMapTexts.MORE_ACTIONS,
+                            bindings.size() - rowsShown), x + 4, top + CARD_HEADER + rowsShown * CARD_ROW, TEXT_DIM);
+        }
+        if (bindings.size() > 1 && selection.mode() == Selection.Mode.INPUT) {
+            int noteY = top + CARD_HEADER + rowsShown * CARD_ROW + 10;
+            List<FormattedCharSequence> lines = font.split(Component.translatable(
+                    KeyboardMapTexts.OVERLAP_EXPLANATION, bindings.size()), w - 8);
+            for (int i = 0; i < lines.size() && noteY + i * 10 < panelBottom() - 8; i++) {
+                g.text(font, lines.get(i), x + 4, noteY + i * 10, TEXT_DIM);
+            }
+        }
+    }
+
     private void drawStatus(GuiGraphicsExtractor g) {
-        String unbound = Component.translatable(KeyboardMapTexts.UNBOUND).getString();
-        Binding selected = selectedBinding();
         Component status = switch (session.state()) {
             case CAPTURING -> Component.translatable(KeyboardMapTexts.CAPTURING,
                     catalog.binding(session.target()).map(Binding::name).orElse("")).withStyle(ChatFormatting.AQUA);
-            case CONFIRMING -> Component.translatable(KeyboardMapTexts.CONFIRM_OVERLAP,
-                    MinecraftBindings.label(session.pending()),
-                    String.join(", ", session.pendingOverlaps().stream().map(Binding::name).toList()))
-                    .withStyle(ChatFormatting.GOLD);
-            case IDLE -> selected == null ? Component.translatable(KeyboardMapTexts.LEGEND)
-                    : Component.translatable(KeyboardMapTexts.SELECTED, selected.name(),
-                            selected.unbound() ? unbound : selected.inputLabel(),
-                            selected.defaultInput() == null ? unbound : MinecraftBindings.label(selected.defaultInput()));
+            case CONFIRMING -> Component.translatable(KeyboardMapTexts.CONFIRM_HINT).withStyle(ChatFormatting.GOLD);
+            case IDLE -> Component.translatable(selection.mode() == Selection.Mode.EXPLORE
+                    ? KeyboardMapTexts.LEGEND : KeyboardMapTexts.CARD_HINT);
         };
-        String text = font.plainSubstrByWidth(status.getString(), width - 2 * geometry.margin());
-        g.text(font, Component.literal(text).withStyle(status.getStyle()), geometry.margin(),
-                geometry.contentBottom() + 4, TEXT);
+        int x = geometry.margin();
+        for (var child : children()) {
+            if (child instanceof Button b && b.getY() == geometry.bottomBarY()) {
+                x = Math.max(x, b.getX() + b.getWidth() + 6);
+            }
+        }
+        String text = font.plainSubstrByWidth(status.getString(), width - x - geometry.margin());
+        g.text(font, Component.literal(text).withStyle(status.getStyle()), x, geometry.bottomBarY() + 6, TEXT_DIM);
     }
 
-    /** Labels for one key only (keymap-v1.md UI-5): its actions and a short connector line. */
-    private void drawContextLabels(GuiGraphicsExtractor g, InputId input, boolean pointed) {
+    /**
+     * One compact label for the hovered input (§6.3), in the free space under the drawing with one short connector in
+     * that space only, so it never covers a key; otherwise a vanilla tooltip.
+     */
+    private void drawHoverLabel(GuiGraphicsExtractor g, InputId input, int mouseX, int mouseY) {
         List<Binding> on = catalog.on(input);
-        int[] anchor = input == null ? null : anchor(input);
-        if (on.isEmpty() || anchor == null) {
-            return;
-        }
-        var lines = new ArrayList<String>();
-        on.stream().limit(MAX_LABEL_LINES).forEach(b -> lines.add(b.name()));
-        if (on.size() > MAX_LABEL_LINES) {
-            lines.add(Component.translatable(KeyboardMapTexts.MORE_ACTIONS, on.size() - MAX_LABEL_LINES).getString());
-        }
-        if (on.size() > 1) {
-            lines.add(Component.translatable(KeyboardMapTexts.OVERLAP_EXPLANATION, on.size()).getString());
-        }
-        int maxWidth = Math.min(240, geometry.keyboardWidth() - 8);
-        var wrapped = new ArrayList<net.minecraft.util.FormattedCharSequence>();
-        int noteStart = -1;
-        for (int i = 0; i < lines.size(); i++) {
-            if (on.size() > 1 && i == lines.size() - 1) {
-                noteStart = wrapped.size();
+        var lines = new ArrayList<Component>();
+        lines.add(Component.literal(MinecraftBindings.label(input)).withStyle(ChatFormatting.WHITE));
+        boolean labels = settings().getBoolean(KeyboardMapSettings.CONTEXTUAL_LABELS);
+        if (labels) {
+            on.stream().limit(TAG_LINES).forEach(b -> lines.add(Component.literal(b.name())
+                    .withStyle(ChatFormatting.GRAY)));
+            if (on.size() > TAG_LINES) {
+                lines.add(Component.translatable(KeyboardMapTexts.MORE_ACTIONS, on.size() - TAG_LINES)
+                        .withStyle(ChatFormatting.DARK_GRAY));
             }
-            wrapped.addAll(font.split(Component.literal(lines.get(i)), maxWidth - 8));
+            if (on.isEmpty()) {
+                lines.add(Component.translatable(KeyboardMapTexts.FREE_INPUT).withStyle(ChatFormatting.DARK_GRAY));
+            }
+        }
+        if (input.equals(InputId.mouse(MouseLayout.MIDDLE))) {
+            lines.add(Component.translatable(KeyboardMapTexts.WHEEL_NOTE).withStyle(ChatFormatting.DARK_GRAY));
+        }
+        int maxWidth = Math.min(220, geometry.keyboardWidth() - 8);
+        var wrapped = new ArrayList<FormattedCharSequence>();
+        for (Component line : lines) {
+            wrapped.addAll(font.split(line, maxWidth - 8));
         }
         int boxWidth = Math.min(maxWidth, wrapped.stream().mapToInt(font::width).max().orElse(0) + 8);
         int boxHeight = wrapped.size() * 10 + 4;
+        int[] anchor = anchor(input);
+        int boxY = drawingBottom + 8;
+        boolean fits = labels && anchor != null && boxY + boxHeight <= geometry.contentBottom() - 2;
+        if (!fits) {
+            g.setComponentTooltipForNextFrame(font, lines, mouseX, mouseY);
+            return;
+        }
         int boxX = Math.clamp(anchor[0] - boxWidth / 2, geometry.keyboardX(),
                 geometry.keyboardX() + geometry.keyboardWidth() - boxWidth);
-        // A selected key's labels go in the free space under the keyboard when there is room, so they cover no
-        // keys; a pointed key's labels sit right next to it.
-        int freeTop = originY + KeyboardLayout.height(drawnKeys) * geometry.unit() + KeyboardMapGeometry.MOUSE_ROW + 4;
-        boolean below = !pointed && freeTop + boxHeight <= geometry.contentBottom();
-        boolean above = !below && anchor[1] - boxHeight - 8 >= geometry.contentTop();
-        int boxY = below ? freeTop : above ? anchor[1] - boxHeight - 8 : anchor[3] + 8;
         g.nextStratum();
-        g.verticalLine(anchor[0], above ? boxY + boxHeight : anchor[3], above ? anchor[1] : boxY, OUTLINE);
-        g.fill(boxX, boxY, boxX + boxWidth, boxY + boxHeight, 0xE0000000);
-        g.outline(boxX, boxY, boxWidth, boxHeight, on.size() > 1 ? KEY_OVERLAP | 0xFF000000 : OUTLINE);
+        g.verticalLine(anchor[0], drawingBottom + 1, boxY, SELECTED);
+        g.fill(boxX, boxY, boxX + boxWidth, boxY + boxHeight, 0xE6101010);
+        g.outline(boxX, boxY, boxWidth, boxHeight, on.size() > 1 ? LINE_SHARED : on.size() == 1 ? LINE_ONE : LINE_FREE);
         for (int i = 0; i < wrapped.size(); i++) {
-            boolean note = noteStart >= 0 && i >= noteStart;
-            g.text(font, wrapped.get(i), boxX + 4, boxY + 3 + i * 10, note ? TEXT_DIM : TEXT);
+            g.text(font, wrapped.get(i), boxX + 4, boxY + 3 + i * 10, TEXT);
         }
     }
 
-    /** Center x, top y, right x and bottom y of a drawn key or chip, or {@code null} if it is not drawn. */
+    /** Center x, top y, right x and bottom y of a drawn input, or {@code null}. */
     private int[] anchor(InputId input) {
-        int unit = geometry.unit();
+        int u = geometry.unit();
         if (input.kind() == InputId.Kind.KEYBOARD) {
             for (KeyCap key : drawnKeys) {
                 if (key.scancode() == input.code()) {
                     int x = keyX(key);
                     int y = keyY(key);
-                    return new int[] {x + key.width() * unit / 2, y, x + key.width() * unit, y + key.height() * unit};
+                    return new int[] {x + key.width() * u / 2, y, x + key.width() * u, y + key.height() * u};
                 }
             }
             return null;
         }
-        for (Chip chip : chips) {
-            if (chip.input().equals(input)) {
-                return new int[] {chip.x() + chip.width() / 2, chip.y(), chip.x() + chip.width(),
-                        chip.y() + chip.height()};
-            }
+        if (mouseX0 < 0) {
+            return null;
         }
-        return null;
+        return MouseLayout.region(input.code()).map(r -> new int[] {mouseX0 + r.x() * u + r.width() * u / 2,
+                mouseY0 + r.y() * u, mouseX0 + (r.x() + r.width()) * u, mouseY0 + (r.y() + r.height()) * u})
+                .orElse(null);
     }
 
     // ---- Read access for development game tests ----
@@ -748,16 +992,33 @@ public final class KeyboardMapScreen extends Screen {
     }
 
     public List<String> visibleRowIds() {
-        return rows.stream().map(Row::binding).filter(Objects::nonNull).map(Binding::id).toList();
+        return rows.stream().map(ListRow::binding).filter(Objects::nonNull).map(Binding::id).toList();
+    }
+
+    public List<String> cardBindingIds() {
+        return selection.mode() == Selection.Mode.EXPLORE ? List.of()
+                : cardBindings().stream().map(Binding::id).toList();
     }
 
     public Set<KeyCap.Section> drawnSections() {
-        return geometry.visibleSections(showOtherSections);
+        return geometry.visibleSections(moreKeys);
     }
 
-    /** Screen position of a drawn key's center, or {@code null}. */
-    public int[] keyCenter(int scancode) {
-        int[] a = anchor(InputId.key(scancode));
+    /** A card button ({@link KeyboardMapTexts#CHANGE}, CLEAR, RESET, CONFIRM, CANCEL) of one action, or null. */
+    public Button rowButton(String bindingId, String key) {
+        return rowButtons.getOrDefault(bindingId, Map.of()).get(key);
+    }
+
+    /** Every card button currently shown, for checking that Explore has none. */
+    public Set<String> shownRowButtonKeys() {
+        var keys = new LinkedHashSet<String>();
+        rowButtons.values().forEach(m -> keys.addAll(m.keySet()));
+        return keys;
+    }
+
+    /** Screen position of a drawn key's or mouse region's center, or {@code null}. */
+    public int[] inputCenter(InputId input) {
+        int[] a = anchor(input);
         return a == null ? null : new int[] {a[0], (a[1] + a[3]) / 2};
     }
 }

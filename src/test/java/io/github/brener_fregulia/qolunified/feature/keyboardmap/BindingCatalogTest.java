@@ -111,19 +111,63 @@ class BindingCatalogTest {
     void selectingAnInputHighlightsItsMappingsAndViceVersa() {
         BindingCatalog c = sample();
         var selection = new Selection();
+        assertEquals(Selection.Mode.EXPLORE, selection.mode());
         selection.selectInput(Q);
+        assertEquals(Selection.Mode.INPUT, selection.mode());
         assertEquals(Q, selection.highlightedInput(c));
         assertEquals(2, selection.highlightedBindings(c).size());
         assertTrue(selection.highlights(c.binding("key.mod.zoom").orElseThrow(), c));
         selection.selectInput(Q);
-        assertNull(selection.highlightedInput(c), "clicking the same key again clears it");
+        assertEquals(Selection.Mode.EXPLORE, selection.mode(), "clicking the same key again returns to Explore");
+        assertNull(selection.highlightedInput(c));
 
-        selection.selectBinding("key.forward");
-        assertEquals(W, selection.highlightedInput(c));
+        selection.selectBinding(c, "key.forward");
+        assertEquals(W, selection.highlightedInput(c), "a row selects its key");
+        assertEquals("key.forward", selection.bindingId(), "with the row in focus");
         assertEquals(1, selection.highlightedBindings(c).size());
-        selection.selectBinding("key.spectatorOutlines");
-        assertNull(selection.highlightedInput(c), "an unbound action highlights no key");
         selection.clear();
         assertTrue(selection.highlightedBindings(c).isEmpty());
+    }
+
+    @Test
+    void theInputCardShowsOnlyThatInputWhateverTheFilters() {
+        BindingCatalog c = sample();
+        var selection = new Selection();
+        selection.selectBinding(c, "key.drop");
+        assertEquals(List.of("key.drop", "key.mod.zoom"),
+                selection.highlightedBindings(c).stream().map(Binding::id).toList(), "both actions on Q");
+        selection.selectInput(InputId.key(5));
+        assertEquals(Selection.Mode.INPUT, selection.mode(), "an unused key still opens its (empty) card");
+        assertTrue(selection.highlightedBindings(c).isEmpty());
+        selection.selectInput(MOUSE_4);
+        assertEquals(List.of("key.mod.back"), selection.highlightedBindings(c).stream().map(Binding::id).toList(),
+                "mouse button 4, not scancode 4");
+    }
+
+    @Test
+    void anUnboundActionOpensItsOwnCardForAssignment() {
+        BindingCatalog c = sample();
+        var selection = new Selection();
+        selection.selectBinding(c, "key.spectatorOutlines");
+        assertEquals(Selection.Mode.BINDING, selection.mode());
+        assertNull(selection.highlightedInput(c), "no key to outline");
+        assertEquals(List.of("key.spectatorOutlines"),
+                selection.highlightedBindings(c).stream().map(Binding::id).toList());
+    }
+
+    @Test
+    void afterARemapTheCardFollowsTheAction() {
+        var selection = new Selection();
+        selection.selectBinding(sample(), "key.forward");
+        BindingCatalog moved = new BindingCatalog(List.of(
+                binding("key.forward", "Walk Forwards", "Movement", "Q", Q),
+                binding("key.drop", "Drop Selected Item", "Gameplay", "Q", Q)));
+        selection.follow(moved, "key.forward");
+        assertEquals(Q, selection.highlightedInput(moved));
+        assertEquals(2, selection.highlightedBindings(moved).size());
+        BindingCatalog cleared = new BindingCatalog(List.of(
+                new Binding("key.forward", "Walk Forwards", "Movement", "", null, W)));
+        selection.follow(cleared, "key.forward");
+        assertEquals(Selection.Mode.BINDING, selection.mode(), "cleared: its own card, ready to assign again");
     }
 }

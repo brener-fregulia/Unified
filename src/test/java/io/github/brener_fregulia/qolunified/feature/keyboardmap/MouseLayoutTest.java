@@ -58,9 +58,9 @@ class MouseLayoutTest {
             assertEquals(r.button(), MouseLayout.regionAt(r.x() + r.width() / 2.0, r.y() + r.height() / 2.0)
                     .orElseThrow().button());
         }
-        assertTrue(MouseLayout.regionAt(4.5, 0.5).isEmpty(), "body above the wheel is not a button");
-        assertTrue(MouseLayout.regionAt(5, 9).isEmpty(), "palm area is not a button");
-        assertTrue(MouseLayout.onBody(5, 9));
+        assertTrue(MouseLayout.regionAt(7, 0.5).isEmpty(), "body above the wheel is not a button");
+        assertTrue(MouseLayout.regionAt(7, 13).isEmpty(), "palm area is not a button");
+        assertTrue(MouseLayout.onBody(7, 13));
         assertTrue(MouseLayout.regionAt(-1, 0).isEmpty());
         assertTrue(MouseLayout.regionAt(MouseLayout.WIDTH, 0).isEmpty());
     }

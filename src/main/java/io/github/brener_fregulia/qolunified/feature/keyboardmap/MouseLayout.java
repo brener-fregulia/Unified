@@ -33,17 +33,17 @@ public final class MouseLayout {
     /** The body outline (not an input): buttons sit on its top; the side buttons stick out on its left flank. */
     public static final int BODY_X = 1;
     public static final int BODY_Y = 0;
-    public static final int BODY_WIDTH = 8;
-    public static final int BODY_HEIGHT = 12;
+    public static final int BODY_WIDTH = 12;
+    public static final int BODY_HEIGHT = 18;
     public static final int WIDTH = BODY_X + BODY_WIDTH;
     public static final int HEIGHT = BODY_HEIGHT;
 
     public static final List<Region> REGIONS = List.of(
-            new Region(LEFT, 1, 0, 3, 5),
-            new Region(MIDDLE, 4, 1, 2, 3),
-            new Region(RIGHT, 6, 0, 3, 5),
-            new Region(FORWARD, 0, 6, 1, 2),
-            new Region(BACK, 0, 9, 1, 2));
+            new Region(LEFT, 1, 0, 5, 7),
+            new Region(MIDDLE, 6, 1, 2, 4),
+            new Region(RIGHT, 8, 0, 5, 7),
+            new Region(FORWARD, 0, 9, 1, 3),
+            new Region(BACK, 0, 13, 1, 3));
 
     private MouseLayout() {
     }
