@@ -342,7 +342,11 @@ final class KeyboardMapGameTest {
             // With Controlling: its Key Binds screen opens from ours, and ours still opens from Controls.
             ctx.runOnClient(mc -> controlsButton(mc).onPress(null));
             ctx.waitTicks(2);
-            pressButton(bottomButton(current(), KeyboardMapTexts.KEY_BINDS));
+            KeyboardMapScreen open = current();
+            pressButton(ctx.computeOnClient(mc -> open.children().stream().filter(c -> c instanceof Button b
+                    && (b.getMessage().equals(Component.translatable(KeyboardMapTexts.KEY_BINDS))
+                    || b.getMessage().equals(Component.translatable(KeyboardMapTexts.KEY_BINDS_SHORT))))
+                    .map(c -> (Button) c).findFirst().orElseThrow()));
             ctx.waitTicks(3);
             shot("14-controlling-key-binds");
             // Controlling focuses its search box; its first Escape closes the suggestions.
