@@ -51,6 +51,7 @@ public final class CoreGameTest implements FabricClientGameTest {
             case "appleskin" -> new FoodHudGameTest(ctx).compareWithAppleSkin();
             case "chatheads" -> new ChatHeadsGameTest(ctx).run();
             case "chatheads_reference" -> new ChatHeadsGameTest(ctx).compareWithReference();
+            case "keyboardmap" -> new KeyboardMapGameTest(ctx).run();
             default -> throw new AssertionError("Unknown scenario " + scenario);
         }
         ctx.setScreen(TitleScreen::new);

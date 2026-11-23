@@ -40,5 +40,8 @@
   "qol_unified.feature.dev_all_settings.setting.layout.compact": "Compact",
   "qol_unified.feature.dev_all_settings.setting.layout.detailed": "Detailed",
   "qol_unified.feature.dev_all_settings.setting.layout.hidden": "Hidden",
-  "qol_unified_dev.conflict.dev_conflict": "Sample conflict used for testing."
+  "qol_unified_dev.conflict.dev_conflict": "Sample conflict used for testing.",
+  "key.qol_unified_dev.sample_on_q": "Sample Mod Action on Q",
+  "key.qol_unified_dev.sample_unbound": "Sample Unbound Mod Action",
+  "key.category.qol_unified_dev.samples": "QoL Dev Samples"
 }

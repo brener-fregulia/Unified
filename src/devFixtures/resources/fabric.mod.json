@@ -6,8 +6,15 @@
   "description": "Development-only sample features and client game tests. Not distributed.",
   "environment": "client",
   "entrypoints": {
-    "qol_unified:dev_features": ["io.github.brener_fregulia.qolunified.dev.DevFixtures"],
-    "fabric-client-gametest": ["io.github.brener_fregulia.qolunified.dev.CoreGameTest"]
+    "qol_unified:dev_features": [
+      "io.github.brener_fregulia.qolunified.dev.DevFixtures"
+    ],
+    "fabric-client-gametest": [
+      "io.github.brener_fregulia.qolunified.dev.CoreGameTest"
+    ],
+    "client": [
+      "io.github.brener_fregulia.qolunified.dev.DevKeyMappings"
+    ]
   },
   "depends": {
     "qol_unified": "*"

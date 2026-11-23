@@ -79,7 +79,7 @@ public final class DevFixtures implements DevelopmentFeatures {
                              "features":{"removed_feature":{"enabled":true,"settings":{"x":1}},
                              "dev_live_toggle":{"settings":{"unknown_setting":"kept"}}}}""");
                 }
-                case "foodhud", "appleskin", "chatheads", "chatheads_reference" -> deleteTree(dir);
+                case "foodhud", "appleskin", "chatheads", "chatheads_reference", "keyboardmap" -> deleteTree(dir);
                 case "restart" -> {
                     // Reuse the configuration written by the "main" scenario.
                 }

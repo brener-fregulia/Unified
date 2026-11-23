@@ -40,7 +40,8 @@ loom {
                 "newer" to "build/run-gametest-newer",
                 "corrupt" to "build/run-gametest-corrupt",
                 "foodhud" to "build/run-gametest-foodhud",
-                "chatheads" to "build/run-gametest-chatheads")) {
+                "chatheads" to "build/run-gametest-chatheads",
+                "keyboardmap" to "build/run-gametest-keyboardmap")) {
             register("gameTest" + scenario.replaceFirstChar { it.uppercase() }) {
                 client()
                 name("Game Test ($scenario)")

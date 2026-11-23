@@ -40,5 +40,8 @@
   "qol_unified.feature.dev_all_settings.setting.layout.compact": "Compacto",
   "qol_unified.feature.dev_all_settings.setting.layout.detailed": "Detalhado",
   "qol_unified.feature.dev_all_settings.setting.layout.hidden": "Oculto",
-  "qol_unified_dev.conflict.dev_conflict": "Conflito de exemplo usado em testes."
+  "qol_unified_dev.conflict.dev_conflict": "Conflito de exemplo usado em testes.",
+  "key.qol_unified_dev.sample_on_q": "Ação de exemplo no Q",
+  "key.qol_unified_dev.sample_unbound": "Ação de exemplo sem tecla",
+  "key.category.qol_unified_dev.samples": "Exemplos de desenvolvimento"
 }
