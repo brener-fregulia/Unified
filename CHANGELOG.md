@@ -62,3 +62,9 @@ released yet.
   controls (saved to `options.txt` as usual), with a confirmation before a
   key is shared. Open it from Options → Controls, from the QoL: Unified
   settings, or with an optional key (unbound by default).
+- Keyboard Map redesign: a calmer keyboard with muted colors and grouped
+  sections, a drawn mouse with clickable left, right, wheel-click and side
+  buttons, and one side panel. With nothing selected the panel lists all
+  actions. Selecting a key, mouse button or action shows only what belongs
+  to it, with Change, Clear and Reset on each action. Search matches are
+  outlined on the keyboard. Filters sit in a compact popup.

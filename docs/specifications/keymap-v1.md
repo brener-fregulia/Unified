@@ -328,12 +328,13 @@ configuration or authentication.
 - **Q-KM10 [Open]** The catalog lists `keybind_search` and `keybind_conflicts` as separate [Open] features. Fold them into `keymap`? Keymap covers both.
 - **Q-KM11 [Deferred]** More layouts (ISO-UK, AZERTY, QWERTZ, JIS, Dvorak, Colemak), modifier combinations and binding profiles.
 
-## 16a. UX refinement M1.3.1 [Approved 2026-11-23]
+## 16a. UX refinement M1.3.1 [Approved and implemented 2026-11-23]
 
 The presentation is redesigned by [Keyboard Map UX refinement](../design/keyboard-map-ux-v1.md)
 (Concept A). The binding model, states, scancodes, remapping semantics,
 settings, entry points and persistence in §0 are unchanged. Where §6, §7
-and §17.3 describe the V1 screen layout, the design document now governs.
+and §17.3 describe the V1 screen layout, the design document now governs;
+its §13 records the implementation.
 
 ## 17. Implementation notes [Implemented 2026-11-23]
 

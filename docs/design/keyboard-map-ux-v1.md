@@ -362,3 +362,72 @@ None of these are implemented here.
 - **Q-UX6 [Approved 2026-11-23]** Visible secondary button outside Filters.
 - **Q-UX7 [Approved 2026-11-23]** Explain it in the wheel tooltip.
 - **Q-UX8 [Deferred 2026-11-23]** Spatial arrow-key navigation and advanced narration; existing focus behavior kept.
+
+## 13. Implementation notes [Implemented 2026-11-23]
+
+Concept A as approved in §0. The binding model, scancodes, `RemapSession`
+semantics, settings, entry points and persistence are unchanged
+(keymap-v1.md §0).
+
+### 13.1 What changed in code
+
+- **`MouseLayout` (new, pure):** five regions on Minecraft 26.3's own button numbers (`InputConstants.MOUSE_BUTTON_LEFT` = 1, `MIDDLE` = 2, `RIGHT` = 3, `4`, `5`) in quarter-key units.
+  - Body 12 × 18, buttons 5 × 7, wheel 2 × 4, side buttons 1 × 3 on the left flank, "5" above "4".
+  - Hit testing ignores the shell.
+  - No wheel-up or wheel-down input exists anywhere (MD-6).
+- **`KeyboardLayouts`:** full-key gaps between the main block, navigation cluster and numpad (the function row keeps its half-key gap).
+- **`Selection`:** now the panel state: `EXPLORE`, `INPUT` (one key or mouse button) and `BINDING` (one unbound action).
+  - A bound row opens its input's card with that action in focus.
+  - An unbound row opens its own card.
+  - `follow` moves the card with an action after a remap.
+  - Selecting never writes.
+- **`KeyboardMapGeometry`:** fallback order mouse beside → mouse below → split ("More keys": navigation, numpad and mouse) → tabs. Keys are at least 12 px and at most 36 px; the panel is 25% of the width (130–220 px).
+- **`KeyboardMapScreen`:**
+  - Explore list with two-line rows (action, then key with `×N` when shared) and a state square; no remap buttons.
+  - Cards with per-action Change, Clear and Reset; capture and overlap confirmation shown inside the row.
+  - Empty cards for free inputs with "Find an unbound action" (switches to Explore with the Unbound filter).
+  - Toolbar: search, Filters popup (category, visibility), layout, a secondary "Vanilla Key Binds" button and Done. Buttons are sized from their text, with short labels ("US ANSI"/"ABNT2", "Key Binds") when space is tight.
+  - Drawing: muted fills with outlines, small count badges, search matches outlined in pale yellow (no dimming), blue double outline for the selected input.
+  - Hover: one label in the free space under the drawing, with one connector that stays in that space; otherwise a vanilla tooltip. The wheel tooltip explains that scrolling is not a remappable key binding.
+- **Text:** new strings in en_us and pt_br; the "Mouse" chip label was removed.
+
+### 13.2 Interaction details
+
+- Clicking the selected input again, ✕, or Escape returns to Explore. Escape order: cancel capture → close Filters → clear search → leave the card → close the screen.
+- Typing in search while a card is open returns to Explore with the query kept.
+- Up and Down scroll the Explore list. Vanilla Tab focus is unchanged (Q-UX8).
+
+### 13.3 Tests
+
+- **Unit tests** (191 in total):
+  - `MouseLayoutTest`: button numbers equal `InputConstants`, no overlaps, shape, hit testing.
+  - `BindingCatalogTest`: Explore/input/binding transitions, input card independent of filters, unbound-action card, card following a remap.
+  - `KeyboardMapGeometryTest`: the four fallbacks, minimum key size, no spill-over.
+  - All V1 model and remap tests unchanged.
+- **Game test** `runGameTestKeyboardmap` (disposable world and `options.txt`), with real clicks and key presses. It asserts:
+  - Explore has no row buttons; all five mouse regions are drawn.
+  - Q's card holds only its two actions.
+  - Clicking Q again returns to Explore.
+  - The left button shows Attack; mouse 4 and F7 show empty cards; "Find an unbound action" switches to the Unbound filter.
+  - An unbound action's card has Change enabled and Clear disabled.
+  - Escape leaves a card without closing.
+  - Filters popup: "shared" and category.
+  - Typing leaves a card.
+  - Per-row Change → F7 is saved and the card follows; Escape cancels; the overlap needs confirmation in the row (Cancel and Use anyway); mouse 5 is captured and the card follows; Reset; Clear leaves the action's own card.
+  - No gameplay input while open; all window and GUI scales; ABNT2 persistence; Controls entry; LIVE toggle.
+- **Controlling 26.3.4 run:** passes.
+- **Regressions:** Food HUD, Chat Heads, main, restart, newer and corrupt pass.
+
+### 13.4 Screenshot review
+
+Inspected:
+- Explore and the shared-key card (Q) at 800×450.
+- Left-button card, wheel hover with the note, the free mouse-4 card, the unbound-action card.
+- Capture; overlap confirmation in the row; the card after the overlap; the mouse-5 card.
+- 427×240 (split, compact toolbar), 960×540 (mouse beside), ABNT2 at 533×300.
+
+Observations:
+- The keyboard is the dominant element at every size.
+- No overlapping elements were seen.
+- The side buttons are narrow (1 unit, 5–9 px); they stay clickable and selectable.
+- Status text is cut at 427×240 (by design, with ellipsis-free cutting).
