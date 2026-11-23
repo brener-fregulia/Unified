@@ -1,6 +1,7 @@
 package io.github.brener_fregulia.qolunified;
 
 import io.github.brener_fregulia.qolunified.core.CoreRuntime;
+import io.github.brener_fregulia.qolunified.feature.keyboardmap.KeyboardMapHooks;
 import io.github.brener_fregulia.qolunified.core.FeatureRegistry;
 import io.github.brener_fregulia.qolunified.core.config.ConfigurationService;
 import io.github.brener_fregulia.qolunified.ui.screen.SettingsKeyBinding;
@@ -45,6 +46,9 @@ public final class QolUnifiedClient implements ClientModInitializer {
         core = CoreRuntime.start(registry, new ConfigurationService(configFile, registry), loader::isModLoaded,
                 Thread.currentThread());
         SettingsKeyBinding.register();
+        // Fabric only accepts key mappings during client start, so this one exists even while the feature is off;
+        // it opens nothing then.
+        KeyboardMapHooks.registerKeyMapping();
         LOGGER.info("QoL: Unified initialized successfully ({} features).", registry.features().size());
     }
 }

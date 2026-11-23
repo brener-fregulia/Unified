@@ -53,15 +53,17 @@ class KeyboardLayoutsTest {
     }
 
     @Test
-    void abnt2HasItsExtraKeysAndNoAnsiBackslash() {
+    void abnt2HasItsExtraKeys() {
         Set<Integer> br = scancodes(KeyboardLayouts.BR);
         Set<Integer> us = scancodes(KeyboardLayouts.US);
         var added = new HashSet<>(br);
         added.removeAll(us);
         var removed = new HashSet<>(us);
         removed.removeAll(br);
-        assertEquals(Set.of(50, 100, 133, 135), added, "] (Non-US #), key left of Z, keypad comma, /? key");
-        assertEquals(Set.of(49), removed);
+        assertEquals(Set.of(100, 133, 135), added, "key left of Z, keypad comma, /? key");
+        assertEquals(Set.of(), removed, "the ']' key reports backslash (49) on Windows and SDL");
+        assertEquals(KeyboardLayouts.BR.key(52).orElseThrow().x() + 4, KeyboardLayouts.BR.key(49).orElseThrow().x(),
+                "backslash scancode drawn at the end of the home row");
         assertTrue(br.contains(51), "Ç is the HID semicolon position, labeled by the OS");
     }
 

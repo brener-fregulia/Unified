@@ -21,9 +21,18 @@ public final class SettingsKeyBinding {
     private SettingsKeyBinding() {
     }
 
+    private static KeyMapping.Category category;
+
+    /** The "QoL: Unified" key-mapping category, shared by every QoL: Unified key mapping. */
+    public static KeyMapping.Category category() {
+        if (category == null) {
+            category = KeyMapping.Category.register(Identifier.fromNamespaceAndPath(QolUnifiedClient.MOD_ID, "main"));
+        }
+        return category;
+    }
+
     public static void register() {
-        KeyMapping.Category category = KeyMapping.Category.register(
-                Identifier.fromNamespaceAndPath(QolUnifiedClient.MOD_ID, "main"));
+        KeyMapping.Category category = category();
         KeyMapping key = KeyMappingHelper.registerKeyMapping(new KeyMapping(UiKeys.KEY_OPEN_SETTINGS,
                 InputConstants.Type.KEYBOARD, InputConstants.UNKNOWN.getValue(), category));
 

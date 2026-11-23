@@ -28,6 +28,28 @@ public final class KeyboardLayouts {
     private KeyboardLayouts() {
     }
 
+    /**
+     * Short, language-neutral keycap names used only when the OS name does not fit the drawn key (keymap-v1.md KL-2).
+     * The OS name stays the label everywhere else (list, labels, status line).
+     */
+    private static final java.util.Map<Integer, String> SHORT = java.util.Map.ofEntries(
+            java.util.Map.entry(41, "Esc"), java.util.Map.entry(42, "Bksp"), java.util.Map.entry(43, "Tab"),
+            java.util.Map.entry(57, "Caps"), java.util.Map.entry(40, "Enter"), java.util.Map.entry(44, "Space"),
+            java.util.Map.entry(225, "Shift"), java.util.Map.entry(229, "Shift"),
+            java.util.Map.entry(224, "Ctrl"), java.util.Map.entry(228, "Ctrl"),
+            java.util.Map.entry(226, "Alt"), java.util.Map.entry(230, "Alt"),
+            java.util.Map.entry(227, "Super"), java.util.Map.entry(231, "Super"), java.util.Map.entry(101, "Menu"),
+            java.util.Map.entry(70, "PrtSc"), java.util.Map.entry(71, "ScrLk"), java.util.Map.entry(72, "Pause"),
+            java.util.Map.entry(73, "Ins"), java.util.Map.entry(74, "Home"), java.util.Map.entry(75, "PgUp"),
+            java.util.Map.entry(76, "Del"), java.util.Map.entry(77, "End"), java.util.Map.entry(78, "PgDn"),
+            java.util.Map.entry(83, "Num"), java.util.Map.entry(88, "Enter"), java.util.Map.entry(99, "."),
+            java.util.Map.entry(133, ","));
+
+    /** The short keycap name for {@code scancode}, or {@code null}. */
+    public static String shortLabel(int scancode) {
+        return SHORT.get(scancode);
+    }
+
     public static KeyboardLayout byId(String id) {
         return ABNT2.equals(id) ? BR : US;
     }
@@ -64,8 +86,10 @@ public final class KeyboardLayouts {
         main(keys, 51, 43, ROW_3, 4);
         main(keys, 52, 47, ROW_3, 4);
         if (abnt2) {
-            // ISO-style: Non-US # (']' on ABNT2) at the end of the home row, and a tall Enter over two rows.
-            main(keys, 50, 51, ROW_3, 4);
+            // ISO-style: the key at the end of the home row (']' on ABNT2) and a tall Enter over two rows. That key is
+            // HID "Non-US #" (50) on paper, but Windows and SDL report it as backslash (49), as verified on an ABNT2
+            // system, so 49 is drawn there.
+            main(keys, 49, 51, ROW_3, 4);
             keys.add(new KeyCap(40, 55, ROW_2, 5, 8, null, Section.MAIN));
             // Short left Shift, Non-US backslash, Z–M, comma, period, semicolon key (HID slash), International1.
             main(keys, 225, 0, ROW_4, 5);

@@ -2,7 +2,9 @@ package io.github.brener_fregulia.qolunified.ui.screen;
 
 import io.github.brener_fregulia.qolunified.core.ApplyMode;
 import io.github.brener_fregulia.qolunified.core.FeatureDescriptor;
+import io.github.brener_fregulia.qolunified.core.FeatureState;
 import io.github.brener_fregulia.qolunified.core.SettingDescriptor;
+import io.github.brener_fregulia.qolunified.ui.FeatureActions;
 import io.github.brener_fregulia.qolunified.ui.SettingsDraft;
 import io.github.brener_fregulia.qolunified.ui.UiKeys;
 import java.util.ArrayList;
@@ -43,6 +45,13 @@ final class FeatureSettingsScreen extends Screen {
         errorLine = new StringWidget(GAP, height - 44, width - 2 * GAP, font.lineHeight, Component.empty(), font);
         errorLine.setMaxWidth(width - 2 * GAP);
         var rows = new ArrayList<RowList.Row>();
+        FeatureActions.find(descriptor.id())
+                .filter(action -> draft.core().lifecycle().state(descriptor.id()) == FeatureState.ACTIVE)
+                .ifPresent(action -> {
+                    Component label = Component.translatable(action.labelKey());
+                    rows.add(RowList.row(font, label, null, List.of(Button.builder(label,
+                            b -> minecraft.gui.setScreen(action.open().apply(this, draft))).size(120, 20).build())));
+                });
         for (SettingDescriptor setting : descriptor.settings()) {
             rows.add(settingRow(setting));
         }

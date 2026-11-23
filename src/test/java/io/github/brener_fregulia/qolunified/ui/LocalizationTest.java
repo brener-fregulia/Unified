@@ -11,6 +11,7 @@ import io.github.brener_fregulia.qolunified.core.FeatureCategory;
 import io.github.brener_fregulia.qolunified.core.FeatureDescriptor;
 import io.github.brener_fregulia.qolunified.core.SettingDescriptor;
 import io.github.brener_fregulia.qolunified.feature.foodhud.FoodHudSettings;
+import io.github.brener_fregulia.qolunified.feature.keyboardmap.KeyboardMapTexts;
 import java.io.InputStreamReader;
 import java.lang.reflect.Modifier;
 import java.nio.charset.StandardCharsets;
@@ -53,6 +54,11 @@ class LocalizationTest {
             }
         }
         keys.add(FoodHudSettings.DEBUG_LINE_KEY);
+        for (var field : KeyboardMapTexts.class.getFields()) {
+            if (Modifier.isStatic(field.getModifiers()) && field.getType() == String.class) {
+                keys.add((String) field.get(null));
+            }
+        }
         return keys;
     }
 
