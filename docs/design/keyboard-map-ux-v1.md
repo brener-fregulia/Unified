@@ -1,8 +1,9 @@
 # Keyboard Map UX refinement (M1.3.1)
 
 Status labels follow [AGENTS.md](../../AGENTS.md#decision-status-labels).
-Everything in this document is **[Proposed]** unless marked otherwise. It
-is design only. It changes nothing in the approved
+**Approved 2026-11-23 (§0)**: Concept A with the §9 improvements,
+KMUX-AC-1 to KMUX-AC-13 with the corrections below. Implementation notes are
+in §13. Before approval this document was design only. It changes nothing in the approved
 [Keymap V1 specification](../specifications/keymap-v1.md), the binding
 model, remapping semantics, settings, entry points or persistence. Those
 stay as approved on 2026-11-23 and implemented in §17 of that spec.
@@ -16,6 +17,21 @@ stay as approved on 2026-11-23 and implemented in §17 of that spec.
 The PO's own screenshots of the current screen and of reference interfaces
 were **not available in this session**. Nothing here claims to have seen
 them; Q-UX1 asks for a check against them.
+
+## 0. Approval [Approved 2026-11-23]
+
+- **Q-UX1, Q-UX2:** Concept A, with the §9 improvements, matches the PO's intended direction.
+- **Q-UX3:** muted filled keys with defined outlines (§8.1).
+- **Q-UX4:** highlight search matches; do not dim non-matching keys.
+- **Q-UX5:** left-handed mirroring deferred.
+- **Q-UX6:** keep a visible but secondary "Vanilla Key Binds" button, **outside** Filters. This corrects §8.2 item 4 and §10.
+- **Q-UX7:** the wheel tooltip explains that scrolling is not a vanilla remappable key binding.
+- **Q-UX8:** spatial arrow-key navigation and advanced narration deferred; existing focus behavior kept.
+- **Corrections:**
+  - Selecting an **unbound** action from Explore shows that action's own card with Change enabled, never an empty input card (corrects §6.2).
+  - An unused key's card shows an empty state with a way to find an unbound action.
+  - Selection never writes bindings.
+  - Concept A fallback order: (1) keyboard, mouse beside it and panel; (2) mouse below the keyboard; (3) navigation, numpad and mouse under "More keys"; (4) tabs.
 
 ## 1. Current usability problems
 
@@ -60,7 +76,7 @@ translations were used.
 - They put per-binding actions on the binding row.
 - None draws a recognizable mouse.
 
-## 4. Two layout alternatives
+## 4. Two layout alternatives [Concept A approved 2026-11-23]
 
 Both use the same states (§8.1), the same mouse (§5) and the same
 interaction model (§6). They differ in where the mouse and the panel go.
@@ -151,7 +167,7 @@ interaction model (§6). They differ in where the mouse and the panel go.
 | 854×480 GUI 2 | Mouse below numpad; panel stays | Strip very short |
 | Implementation change from V1 | Smaller (same panel slot) | Larger (drawer and strip) |
 
-## 5. Mouse diagram specification
+## 5. Mouse diagram specification [Approved 2026-11-23]
 
 - **MD-1 Silhouette.** A rounded, symmetric body 8 units wide × 12 units tall, in the keyboard's quarter-key units, drawn with the same outline and fill style as keys. Rounding comes from stepped corner rectangles (2-unit steps), not textures. No brand shape.
 - **MD-2 Regions (clickable, each its own input):**
@@ -171,7 +187,7 @@ interaction model (§6). They differ in where the mouse and the panel go.
 - **MD-6 Wheel scrolling (finding).** In 26.3 wheel scrolling is not a key mapping. `MouseHandler.onScroll` handles it directly (hotbar slot, spectator menu, zoom-like uses by vanilla screens), and `InputConstants` has no wheel-up or wheel-down input. The wheel region is therefore **only middle click** (mouse 2). A non-interactive note in its tooltip can read "Scrolling changes the hotbar slot (not a key binding)". Wheel up and down are **not** offered as remappable inputs.
 - **MD-7 Handedness.** The side buttons sit on the left flank (right-handed mice). Mirroring for left-handed players is Q-UX5.
 
-## 6. Interaction model
+## 6. Interaction model [Approved 2026-11-23, with §0 corrections]
 
 ### 6.1 Explore mode (nothing selected)
 
@@ -217,7 +233,7 @@ card**:
 - Tags never overlap keys. If no free space is close enough (small windows), no tag is drawn and the hover is shown only as the outline plus a vanilla tooltip.
 - The `contextual_labels` setting turns tags off (tooltips remain).
 
-## 7. Responsive layout rules
+## 7. Responsive layout rules [Approved 2026-11-23, §0 order]
 
 Quarter-key unit `u`, in GUI pixels. Approved minimum key height: 12 px
 (`u ≥ 3`, keymap-v1.md §12 and §17.3).
@@ -243,9 +259,9 @@ switches to the Actions tab with its card.
 **Fixed rules:** keys are never under 12 px; nothing overlaps; every input is
 reachable directly, through "More keys", or from the list.
 
-## 8. Visual hierarchy, palette and accessibility
+## 8. Visual hierarchy, palette and accessibility [Approved 2026-11-23]
 
-### 8.1 States [Proposed palette]
+### 8.1 States [Approved 2026-11-23]
 
 | State | Interior fill | Outline | Text | Extra marker |
 | --- | --- | --- | --- | --- |
@@ -281,7 +297,7 @@ reachable directly, through "More keys", or from the list.
 - In the controls area, the arrow keys move a focus outline between keys (spatial nearest neighbor). Enter selects, Escape returns to Explore, then closes.
 - Narration announces the focused input, its state and its actions (vanilla narration API).
 
-## 9. Recommendation
+## 9. Recommendation [Approved 2026-11-23]
 
 **Concept A, with two improvements taken from B:**
 1. Full-width input-card rows inside the right panel (two-line rows with actions on line 2).
@@ -318,7 +334,7 @@ None of these are implemented here.
   - Screenshots stay at the same window and scale matrix.
 - **Risk:** the arrow-key navigation inside the controls area must not conflict with search editing. It is active only when the controls area has focus.
 
-## 11. Acceptance criteria [Proposed]
+## 11. Acceptance criteria [Approved 2026-11-23]
 
 | Id | Criterion |
 | --- | --- |
@@ -338,11 +354,11 @@ None of these are implemented here.
 
 ## 12. Open PO decisions
 
-- **Q-UX1 [Open]** Check this design against your screenshots of the current screen and the reference interfaces, which were not available here.
-- **Q-UX2 [Open]** Choose Concept A (recommended, with the §9 improvements) or B.
-- **Q-UX3 [Open]** State style: muted fills (§8.1) or outline-only keys as in Keyboard Wizard CE (calmer; free keys then nearly invisible)?
-- **Q-UX4 [Open]** Search on the keyboard: highlight matches (recommended) or dim non-matches (V1)?
-- **Q-UX5 [Open]** Offer a left-handed mouse mirror?
-- **Q-UX6 [Open]** Move "Open vanilla Key Binds" into the Filters dropdown, or keep it as a visible button?
-- **Q-UX7 [Open]** Show the wheel-scroll note (MD-6) in the wheel tooltip, or leave the wheel as middle click only?
-- **Q-UX8 [Deferred]** Spatial arrow-key navigation and narration (§8.4) could follow in a later step if V1.1 must stay small.
+- **Q-UX1 [Approved 2026-11-23]** Concept A matches the intended direction.
+- **Q-UX2 [Approved 2026-11-23]** Concept A.
+- **Q-UX3 [Approved 2026-11-23]** Muted filled keys with defined outlines.
+- **Q-UX4 [Approved 2026-11-23]** Highlight matches.
+- **Q-UX5 [Deferred]** Left-handed mirroring.
+- **Q-UX6 [Approved 2026-11-23]** Visible secondary button outside Filters.
+- **Q-UX7 [Approved 2026-11-23]** Explain it in the wheel tooltip.
+- **Q-UX8 [Deferred 2026-11-23]** Spatial arrow-key navigation and advanced narration; existing focus behavior kept.
