@@ -2,14 +2,26 @@
 
 Status labels follow [AGENTS.md](../../AGENTS.md#decision-status-labels).
 
-This is a specification and discovery document only. No code is written
-until the PO approves the [Proposed] parts. Nothing below is approved yet,
-including the feature identity: the PO's brief proposed it, and it is
-recorded here as [Proposed] until it is approved.
+The technical lead approved Keymap V1 on 2026-11-23 with the corrections in
+§0. Where §0 and a later section differ, §0 wins; superseded proposals are
+marked. Implementation notes are in §17.
+
+## 0. Approval and corrections [Approved 2026-11-23]
+
+- **Identity:** feature id **`keyboard_map`** (not `keymap`; resolves Q-KM2), category Controls, enabled by default, LIVE, client-side only, no networking, no new key-binding persistence format.
+- **Approved behavior:** physical keyboard view; US ANSI and ABNT2; transparent in-world background; scrollable side panel with names and categories; search and combined filters; unbound actions; mouse bindings; highlighting between keys and rows; contextual labels for the hovered or selected key only; **native rebinding, clearing and resetting** (resolves Q-KM6); keyboard navigation and responsive layout; en_us and pt_br.
+- **Visual design:** the keyboard is the dominant central element. Gray = unassigned, green = one assignment, red = two or more, blue outline = selected or highlighted; counts and warning markers so color is never the only cue. **No amber in V1** (resolves Q-KM4). Right-hand panel with a searchable, scrollable list; toolbar with category, visibility filter and layout. Restrained vanilla-like styling, translucent panels, world visible.
+- **Keyboard model:** SDL scancodes; physical scancode, OS label and drawn geometry are kept separate. Hand-authored `us_ansi` and `abnt2`, default `us_ansi` (resolves Q-KM3), switchable from the toolbar and persisted through the Core configuration. No claim of automatic detection. Bindings not on the drawn layout stay visible in the list.
+- **Conflict states:** only **UNBOUND, SINGLE, OVERLAP**. Two or more assignments on one input is an overlap, without guessing whether the actions compete. All actions are listed with a neutral explanation. Modded `KeyMapping`s take part the same way. **No mapping from translation namespaces to mods** (resolves Q-KM5: no mod column). Mouse and keyboard identities are separate. This replaces the Shared/Conflict policy and the known-compatible list in §8.
+- **Remapping:** select a binding → Change → the next supported keyboard or mouse input; Escape cancels; Clear unbinds; Reset restores the declared default. Then `KeyMapping.resetMapping()` and `Options.save()`. If the new input would create an overlap, the overlapping actions are shown and the player confirms or cancels. No change to input dispatch, no chords, profiles or custom listeners. Navigation, search and closing can never remap. Automated tests use only disposable options.
+- **Entry points:** an "Open Keymap" key (unbound), a button in Options → Controls near Key Binds that overlaps nothing (Fabric screen events, no Mixin, checked with Controlling where feasible), and an action in the QoL: Unified settings. Disabled feature → no entry point opens it. Returning goes to the previous screen.
+- **Configuration:** `layout` (`us_ansi`/`abnt2`, default `us_ansi`), `show_unbound_keys` (true), `contextual_labels` (true), `default_filter` (`all`/`overlaps`/`assigned`/`unbound`, default `all`), all LIVE, through the Core descriptors.
+- **Separate:** the general QoL: Unified button in Minecraft's Options screen is approved as a future Core UI task (Q-KM9) and is **not** part of this work.
+- **Still open:** Q-KM1 (comparison with the PO's screenshots), Q-KM7 (declared conflicts), Q-KM10 (catalog rows).
 
 ## 1. Product goals and non-goals
 
-### 1.1 Goals (from the PO's brief) [Proposed]
+### 1.1 Goals (from the PO's brief) [Approved 2026-11-23]
 
 | Id | Goal |
 | --- | --- |
@@ -20,16 +32,16 @@ recorded here as [Proposed] until it is approved.
 | **G-5** | Support common physical layouts: US ANSI and Brazilian ABNT2 first. |
 | **G-6** | Over time, offer a better configuration experience than vanilla's Key Binds screen. |
 
-### 1.2 Feature identity [Proposed]
+### 1.2 Feature identity [Approved 2026-11-23, id corrected]
 
 | Id | Proposal |
 | --- | --- |
-| **K-1** | Feature id `keymap`, category Controls, part of QoL: Unified. |
+| **K-1** | Feature id `keyboard_map`, category Controls, part of QoL: Unified. |
 | **K-2** | Enabled by default, LIVE toggle. |
 | **K-3** | Client-side only: no networking, no gameplay change. |
 | **K-4** | No change to Minecraft's key-binding storage (`options.txt`); no new persistence for bindings. |
 
-### 1.3 Non-goals for V1 [Proposed]
+### 1.3 Non-goals for V1 [Approved 2026-11-23]
 
 - Modifier combinations (Ctrl+key and similar): vanilla has none (F-5). Adding them would change how input is dispatched.
 - Key-binding profiles or presets.
@@ -89,7 +101,7 @@ a matter of **geometry and labels**. US ANSI and ABNT2 differ in key shapes
 and in a few extra keys, not in what scancode a position sends. The OS
 supplies the labels (F-3).
 
-## 5. Keyboard-layout strategy [Proposed]
+## 5. Keyboard-layout strategy [Approved 2026-11-23]
 
 - **KL-1 Model.** A layout is a static, hand-written list of keys: scancode, row, x, width, height, in quarter-key units. Two layouts ship with V1: **US ANSI** (104 keys) and **ABNT2** (107 keys). They are written from public HID tables and key geometry, not copied from any mod.
 - **KL-2 Labels.** A key's label is vanilla's display name for its scancode (F-3), so it follows the OS layout. A short fixed label is used only where the OS name is too long for a keycap: Shift, Ctrl, Alt, Super, Enter, Backspace, Tab, Caps, the arrows, and the numpad (for example "Num 7").
@@ -107,7 +119,7 @@ supplies the labels (F-3).
   - Mouse buttons are drawn as a separate row of chips: Left, Right, Middle, 4, 5, and any other button that a binding uses.
 - **KL-8 Out of scope for V1:** ISO-UK, AZERTY, QWERTZ, JIS, Dvorak and Colemak drawings. Labels already follow the OS, so on these layouts US ANSI geometry shows the right labels; only the key shapes differ.
 
-## 6. Proposed UI layout [Proposed]
+## 6. UI layout [Approved 2026-11-23, see §0 for colors]
 
 Representative design. The PO's screenshots weren't available (S-4).
 
@@ -148,7 +160,7 @@ Representative design. The PO's screenshots weren't available (S-4).
 - **UI-5 Contextual labels.** Only for the hovered or selected key. A small panel next to the key lists its actions, with at most one short connector line to the panel. Only one key's labels are ever shown; no lines are drawn in the default view.
 - **UI-6 Background.** Vanilla's in-world background (F-11): the world stays visible, blurred by the player's own Menu Background Blur setting, under the translucent in-world dimming. The keyboard and side panel sit on their own semi-opaque dark panels (about 70% black), so text stays readable on snow, in darkness, in rain and in bright skies. No dirt or panorama in a world. From the title screen, vanilla's panorama shows instead.
 
-## 7. Interaction model [Proposed]
+## 7. Interaction model [Approved 2026-11-23]
 
 | Id | Behavior |
 | --- | --- |
@@ -163,14 +175,12 @@ Representative design. The PO's screenshots weren't available (S-4).
 | **I-9** | Escape: if the search box has text, the first Escape clears it; otherwise Escape closes the screen and returns to where it was opened from. Ctrl+F focuses the search box. |
 | **I-10** | Keyboard navigation: Tab and Shift+Tab move between toolbar, keyboard and list (vanilla focus navigation); arrow keys move the selection in the list; Enter on a list row selects its key. |
 
-**Remapping.** V1 is view, search, diagnostics and navigation only
-[Proposed]. Remapping is proposed separately as **R-1 [Proposed, separate
-approval]**:
+**Remapping.** Remapping **R-1 is approved (2026-11-23)** with the §0 rules:
 - With a binding selected, a "Change" button waits for the next key or mouse press (Escape cancels). It applies through vanilla's own path (F-10): `setKey`, `resetMapping`, `Options.save()`. "Reset" restores `getDefaultKey()`.
 - No new storage, no modifiers, no "reset all".
 - It adds about one screen state and a few calls. It touches the player's real bindings, so it needs its own acceptance criteria (KM-AC-R1…R3) and approval (Q-KM6). An "Open vanilla Key Binds" button is offered either way.
 
-## 8. Conflict-classification policy [Proposed]
+## 8. Conflict-classification policy [Superseded by §0: UNBOUND / SINGLE / OVERLAP]
 
 The smallest reliable model. It uses only what `KeyMapping` exposes (F-5,
 F-6, F-8) and explains every verdict in the tooltip.
@@ -189,7 +199,7 @@ F-6, F-8) and explains every verdict in the tooltip.
 - **CC-5 Modded bindings** are treated exactly like vanilla ones (F-9).
 - **CC-6 "Unknown or context-dependent overlap"** (the amber state in UI-2) is Q-KM4. The recommendation is to **leave it out of V1** and use only Single, Shared and Conflict, because `KeyMapping` declares no context (F-8) and any guess would be unexplainable.
 
-## 9. Core integration [Proposed]
+## 9. Core integration [Approved 2026-11-23]
 
 - **CI-1 Registry and lifecycle.** `keymap` is registered in `Features` like Food HUD and Chat Heads. Enabling installs its entry points once (an idempotent hooks pattern, as in the existing features). Disabling hides the entry points and closes nothing in use; an open Keymap screen stays usable until closed. LIVE, cannot fail.
 - **CI-2 Configuration.** Through the Core setting descriptors only (§10). No new setting types.
@@ -201,7 +211,7 @@ F-6, F-8) and explains every verdict in the tooltip.
   - **Recommendation:** declare no conflict and add a QA note. Q-KM7 decides.
 - **CI-6 No Mixins.** Entry points use Fabric screen events (F-13) and the existing settings screen. The Keymap screen is an ordinary `Screen`. No access widener.
 
-### 9.1 Entry points [Proposed]
+### 9.1 Entry points [Approved 2026-11-23]
 
 | Id | Entry point | Recommendation |
 | --- | --- | --- |
@@ -209,14 +219,14 @@ F-6, F-8) and explains every verdict in the tooltip.
 | **EP-2** | Button in Options → Controls. Placed outside the options list (F-13): next to the "Done" footer button, or a small button in the header's right corner, to avoid a Mixin and overlap. The final position must be checked with Controlling installed. | Yes, Q-KM8 |
 | **EP-3** | "Open Keymap" action on the feature's row in the QoL: Unified settings screen | Yes |
 
-### 9.2 QoL: Unified button in Minecraft's Options screen [Proposed, separate Core UI work]
+### 9.2 QoL: Unified button in Minecraft's Options screen [Approved 2026-11-23 as separate future Core UI work; not part of Keymap]
 
 Not part of Keymap. Proposed for later approval (Q-KM9).
 - Vanilla's `OptionsScreen` uses a two-column `GridLayout` with no free slot. Adding a full-width row would push or overlap other mods' widgets.
 - **Recommendation:** a small (20×20) icon button with a tooltip, added through `ScreenEvents.AFTER_INIT`. It goes in the header beside the title, at the right edge, where vanilla draws nothing. Mods that commonly add buttons there (for example Mod Menu's "Mods" button, which goes in the grid) must be checked in QA.
 - No change to Options in this task.
 
-## 10. Configuration [Proposed]
+## 10. Configuration [Approved 2026-11-23]
 
 | Key | Type | Default | Apply |
 | --- | --- | --- | --- |
@@ -224,13 +234,13 @@ Not part of Keymap. Proposed for later approval (Q-KM9).
 | `layout` | ENUM `us_ansi` / `abnt2` | `us_ansi` (Q-KM3) | LIVE |
 | `show_unbound_keys` | BOOLEAN | `true`: free keys drawn in gray; `false`: dimmed further | LIVE |
 | `contextual_labels` | BOOLEAN | `true` | LIVE |
-| `default_filter` | ENUM `all` / `conflicts` / `assigned` / `unbound` | `all` | LIVE (next open) |
+| `default_filter` | ENUM `all` / `overlaps` / `assigned` / `unbound` | `all` | LIVE (next open) |
 
 All of these are existing Core setting types (BOOLEAN, ENUM). The layout
 switcher in the toolbar writes the same `layout` setting through the Core,
 so it persists like any other setting.
 
-## 11. Performance [Proposed]
+## 11. Performance [Approved 2026-11-23]
 
 - **P-1 Refresh on open.** The binding catalog (mappings, keys, labels, states) is built when the screen opens, plus after a remap (R-1) or a layout change. It is never rebuilt per frame. With a few hundred mappings this is a single pass.
 - **P-2 While closed:** no work at all, besides the entry points' existing event listeners (one key-binding check per tick for EP-1, which the settings key already does).
@@ -238,7 +248,7 @@ so it persists like any other setting.
 - **P-4 No change detection.** Bindings can only change outside the screen (F-14), so refresh-on-open is enough for V1.
 - **P-5 No network.**
 
-## 12. Accessibility and responsiveness [Proposed]
+## 12. Accessibility and responsiveness [Approved 2026-11-23]
 
 - **A-1 Minimum size.** Keys are at least 12 GUI pixels high with a readable label. If the keyboard doesn't fit at that size, it doesn't shrink further:
   - First the numpad and navigation cluster move to a "More keys" section, which can be toggled (vanilla's main, numpad and auxiliary split is a known pattern; S-3).
@@ -249,7 +259,7 @@ so it persists like any other setting.
 - **A-5 Color vision.** See UI-2: markers and counts on every state, outlines for selection.
 - **A-6 Focus.** The search box isn't focused on open, so Escape closes immediately (I-9). Ctrl+F focuses it.
 
-## 13. Acceptance criteria [Proposed]
+## 13. Acceptance criteria [Approved 2026-11-23; "Conflict" reads OVERLAP, Shared is dropped]
 
 | Id | Criterion |
 | --- | --- |
@@ -276,7 +286,7 @@ so it persists like any other setting.
 | **KM-AC-R2** | (R-1 only) Escape cancels a pending remap without changes. |
 | **KM-AC-R3** | (R-1 only) Reset restores the mapping's default key. |
 
-## 14. Manual QA checklist [Proposed]
+## 14. Manual QA checklist [Approved 2026-11-23]
 
 Use the PO's Prism testing instance and Paper server for item 9. Use
 disposable game tests for everything else. Never change server
@@ -307,13 +317,13 @@ configuration or authentication.
 ## 16. Open decisions
 
 - **Q-KM1 [Open]** Compare §6 with the PO's three screenshots, which were not available here, and adjust the layout.
-- **Q-KM2 [Open]** Keep the id `keymap` (same as the Keymap [Maintained] mod id), or use for example `keyboard_map`?
-- **Q-KM3 [Open]** Default layout `us_ansi`, or ABNT2, or follow the game language (pt_br → ABNT2)? The recommendation is `us_ansi`, with the toolbar switcher on first open.
-- **Q-KM4 [Open]** Include the amber "context-dependent" state in V1? The recommendation is no (CC-6).
-- **Q-KM5 [Open]** Show the owning mod per binding? That needs a mapping from category or translation-key namespace to mod. Cheap but approximate.
-- **Q-KM6 [Open]** Approve R-1 (native remapping through vanilla's own API) for V1, or keep V1 read-only?
+- **Q-KM2 [Approved 2026-11-23]** Id `keyboard_map`.
+- **Q-KM3 [Approved 2026-11-23]** Default `us_ansi`, switchable from the toolbar.
+- **Q-KM4 [Approved 2026-11-23]** No amber in V1.
+- **Q-KM5 [Approved 2026-11-23]** No mod column; no namespace-to-mod mapping.
+- **Q-KM6 [Approved 2026-11-23]** Native rebinding, clearing and resetting in V1.
 - **Q-KM7 [Open]** Declare conflicts with Keyboard Wizard CE and Keymap [Maintained]? The recommendation is no, QA note only.
-- **Q-KM8 [Open]** Exact placement of the Controls-screen button (EP-2).
-- **Q-KM9 [Open]** Approve the separate Core UI task for a QoL: Unified button in Minecraft's Options screen (§9.2)?
+- **Q-KM8 [Approved 2026-11-23]** Near vanilla's Key Binds entry, overlapping nothing; exact spot recorded in §17.
+- **Q-KM9 [Approved 2026-11-23]** As a separate future Core UI task, not in Keymap.
 - **Q-KM10 [Open]** The catalog lists `keybind_search` and `keybind_conflicts` as separate [Open] features. Fold them into `keymap`? Keymap covers both.
 - **Q-KM11 [Deferred]** More layouts (ISO-UK, AZERTY, QWERTZ, JIS, Dvorak, Colemak), modifier combinations and binding profiles.
