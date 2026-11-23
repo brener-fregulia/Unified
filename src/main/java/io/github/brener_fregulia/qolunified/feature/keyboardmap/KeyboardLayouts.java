@@ -6,7 +6,7 @@ import java.util.List;
 
 /**
  * The two V1 layouts (keymap-v1.md §5), written from the USB-HID usage table and standard keyboard geometry. Units are
- * quarter keys; rows are 4 units high, with a half-key gap under the function row. Scancodes are SDL's, which are
+ * quarter keys; rows are 4 units high, with a half-key gap under the function row and a full-key gap between the main block, the navigation cluster and the numpad (keyboard-map-ux-v1.md §8.1). Scancodes are SDL's, which are
  * USB-HID usages (F-2).
  */
 public final class KeyboardLayouts {
@@ -19,8 +19,8 @@ public final class KeyboardLayouts {
     private static final int ROW_3 = 14;
     private static final int ROW_4 = 18;
     private static final int ROW_5 = 22;
-    private static final int NAV_X = 62;
-    private static final int NUM_X = 76;
+    private static final int NAV_X = 64;
+    private static final int NUM_X = 80;
 
     public static final KeyboardLayout US = new KeyboardLayout(US_ANSI, build(false));
     public static final KeyboardLayout BR = new KeyboardLayout(ABNT2, build(true));

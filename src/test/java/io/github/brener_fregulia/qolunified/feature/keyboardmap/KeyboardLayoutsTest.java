@@ -95,7 +95,7 @@ class KeyboardLayoutsTest {
         assertEquals(0, numpad.stream().mapToInt(KeyCap::x).min().orElseThrow());
         assertEquals(16, KeyboardLayout.width(numpad));
         assertEquals(60, KeyboardLayout.width(KeyboardLayouts.US.keys(Set.of(KeyCap.Section.MAIN))));
-        assertEquals(92, KeyboardLayout.width(KeyboardLayouts.US.keys(KeyboardLayout.ALL)));
+        assertEquals(96, KeyboardLayout.width(KeyboardLayouts.US.keys(KeyboardLayout.ALL)), "full-key gaps between groups");
         assertEquals(26, KeyboardLayout.height(KeyboardLayouts.US.keys(KeyboardLayout.ALL)));
     }
 
