@@ -68,6 +68,23 @@ loom {
                 ideConfigGenerated(false)
             }
         }
+        // Optional keyboard_map run with Controlling installed, in its own disposable game directory:
+        // -PcontrollingJars=<Controlling jar><path separator><Searchables jar>. Nothing is added to the build.
+        providers.gradleProperty("controllingJars").orNull?.let { jars ->
+            register("gameTestKeyboardmapControlling") {
+                client()
+                name("Game Test (keyboard_map with Controlling)")
+                source(devFixtures)
+                runDir("build/run-gametest-keyboardmap-controlling")
+                property("fabric.client.gametest")
+                property("fabric.client.gametest.modid", "qol_unified_dev")
+                property("qol_unified.dev.scenario", "keyboardmap")
+                property("fabric.addMods", jars.split(File.pathSeparator).joinToString(File.pathSeparator) {
+                    file(it).absolutePath
+                })
+                ideConfigGenerated(false)
+            }
+        }
         // Optional side-by-side comparison with the original Chat Heads (CH-AC-15, CH-AC-17), in its own disposable
         // game directory. Runs only when a downloaded JAR is passed: -PchatHeadsJar=<path>. Nothing is added to the build.
         providers.gradleProperty("chatHeadsJar").orNull?.let { jar ->

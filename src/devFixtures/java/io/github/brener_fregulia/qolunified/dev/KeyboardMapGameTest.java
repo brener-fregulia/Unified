@@ -307,6 +307,23 @@ final class KeyboardMapGameTest {
         ctx.waitTicks(2);
         check(ctx.computeOnClient(mc -> mc.gui.screen() instanceof ControlsScreen), "Escape returns to Controls");
         check(FeatureActions.find("keyboard_map").isPresent(), "settings action registered");
+        if (FabricLoader.getInstance().isModLoaded("controlling")) {
+            // With Controlling: its Key Binds screen opens from ours, and ours still opens from Controls.
+            ctx.runOnClient(mc -> controlsButton(mc).onPress(null));
+            ctx.waitTicks(2);
+            pressButton(bottomButton(current(), KeyboardMapTexts.KEY_BINDS));
+            ctx.waitTicks(3);
+            shot("14-controlling-key-binds");
+            // Controlling focuses its search box; its first Escape closes the suggestions.
+            for (int i = 0; i < 3 && !ctx.computeOnClient(mc -> mc.gui.screen() instanceof KeyboardMapScreen); i++) {
+                ctx.getInput().pressKey(InputConstants.Type.KEYBOARD.getOrCreate(InputConstants.KEY_ESCAPE));
+                ctx.waitTicks(3);
+            }
+            check(ctx.computeOnClient(mc -> mc.gui.screen() instanceof KeyboardMapScreen),
+                    "Escape from Key Binds returns to the keyboard map");
+            ctx.getInput().pressKey(InputConstants.Type.KEYBOARD.getOrCreate(InputConstants.KEY_ESCAPE));
+            ctx.waitTicks(2);
+        }
 
         setEnabled(false);
         ctx.setScreen(() -> new ControlsScreen(null, Minecraft.getInstance().options));
