@@ -39,7 +39,8 @@ loom {
                 "restart" to "build/run-gametest",
                 "newer" to "build/run-gametest-newer",
                 "corrupt" to "build/run-gametest-corrupt",
-                "foodhud" to "build/run-gametest-foodhud")) {
+                "foodhud" to "build/run-gametest-foodhud",
+                "chatheads" to "build/run-gametest-chatheads")) {
             register("gameTest" + scenario.replaceFirstChar { it.uppercase() }) {
                 client()
                 name("Game Test ($scenario)")
@@ -62,6 +63,21 @@ loom {
                 property("fabric.client.gametest")
                 property("fabric.client.gametest.modid", "qol_unified_dev")
                 property("qol_unified.dev.scenario", "appleskin")
+                property("fabric.addMods", file(jar).absolutePath)
+                ideConfigGenerated(false)
+            }
+        }
+        // Optional side-by-side comparison with the original Chat Heads (CH-AC-15, CH-AC-17), in its own disposable
+        // game directory. Runs only when a downloaded JAR is passed: -PchatHeadsJar=<path>. Nothing is added to the build.
+        providers.gradleProperty("chatHeadsJar").orNull?.let { jar ->
+            register("gameTestChatheadsReference") {
+                client()
+                name("Game Test (Chat Heads comparison)")
+                source(devFixtures)
+                runDir("build/run-gametest-chatheads-reference")
+                property("fabric.client.gametest")
+                property("fabric.client.gametest.modid", "qol_unified_dev")
+                property("qol_unified.dev.scenario", "chatheads_reference")
                 property("fabric.addMods", file(jar).absolutePath)
                 ideConfigGenerated(false)
             }
