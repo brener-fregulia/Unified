@@ -428,8 +428,11 @@ Package `feature/targetinfo`:
 | TI-1 | `MultiPlayerGameMode` | `destroyProgress`, `destroyBlockPos` |
 | TI-2 | `BossHealthOverlay` | `events` (only its size) |
 
-TI-2 was not named in §0; it is the read-only minimum for the approved
-"adjusting for boss bars" rule, because vanilla exposes no boss-bar count.
+TI-2 is the read-only minimum for the approved "adjusting for boss bars"
+rule, because vanilla exposes no boss-bar count. **[Approved 2026-11-23]** by
+the Product Owner after implementation: it must stay a read-only accessor that
+reads only the size of `events`, and stays covered by the boss-bar game test
+and `DetailsTest.overlaySitsBelowBossBars`.
 
 ### 16.3 Tool semantics as built
 
