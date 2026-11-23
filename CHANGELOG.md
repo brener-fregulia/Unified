@@ -53,3 +53,12 @@ released yet.
   untouched), updates messages already in chat when it or its position is
   changed, and is disabled by default when the original Chat Heads mod is
   installed. TAB is not changed.
+- Keyboard Map (`keyboard_map`): a visual keyboard of all vanilla and modded
+  key bindings, with US (ANSI) and Brazilian (ABNT2) layouts and key names
+  from your system. Free keys are gray, keys with one action green, and keys
+  shared by several actions red with a count. A searchable, filterable list
+  sits beside the keyboard. Selecting a key highlights its actions and vice
+  versa. Bindings can be changed, cleared and reset with Minecraft's own
+  controls (saved to `options.txt` as usual), with a confirmation before a
+  key is shared. Open it from Options → Controls, from the QoL: Unified
+  settings, or with an optional key (unbound by default).

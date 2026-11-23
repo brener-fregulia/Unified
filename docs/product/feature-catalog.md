@@ -40,7 +40,7 @@ assets may be copied.
 | Distinct potion identification | Visuals | `potion_identification` | [Open] | |
 | Keybinding search | Controls | `keybind_search` | [Open] | |
 | Keybinding conflict detection | Controls | `keybind_conflicts` | [Open] | |
-| Visual keyboard and key-binding search | Controls | `keyboard_map` | M1.3 [Approved 2026-11-23] | Controlling, Keyboard Wizard CE, Keymap; spec: [Keymap V1](../specifications/keymap-v1.md) [Approved 2026-11-23]; in implementation. Would cover `keybind_search` and `keybind_conflicts` (Q-KM10) |
+| Visual keyboard and key-binding search | Controls | `keyboard_map` | M1.3 [Approved 2026-11-23] | Controlling, Keyboard Wizard CE, Keymap; spec: [Keymap V1](../specifications/keymap-v1.md) [Approved 2026-11-23]; implemented. Would cover `keybind_search` and `keybind_conflicts` (Q-KM10) |
 | Player heads in chat | Chat & Social | `chat_heads` | M1.2 [Approved 2026-11-22] | Chat Heads; spec: [Chat Heads V1](../specifications/chat-heads-v1.md) [Approved 2026-11-22]; implemented. Uses vanilla's skin cache only; see Q-F3 |
 | Server ping optimization | Performance & Network | `server_ping` | M3 [Approved] | Likely restart-required |
 | Fast world exit | Performance & Network | `fast_world_exit` | M3 [Approved] | Must not compromise world data safety |

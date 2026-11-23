@@ -327,3 +327,83 @@ configuration or authentication.
 - **Q-KM9 [Approved 2026-11-23]** As a separate future Core UI task, not in Keymap.
 - **Q-KM10 [Open]** The catalog lists `keybind_search` and `keybind_conflicts` as separate [Open] features. Fold them into `keymap`? Keymap covers both.
 - **Q-KM11 [Deferred]** More layouts (ISO-UK, AZERTY, QWERTZ, JIS, Dvorak, Colemak), modifier combinations and binding profiles.
+
+## 17. Implementation notes [Implemented 2026-11-23]
+
+Implementation of §0. Nothing here changes an approved decision; §17.4 lists
+findings for the PO.
+
+### 17.1 Code (`feature/keyboardmap`)
+
+- **Pure model, unit-tested:** `InputId` (keyboard scancode or mouse button, separate identities), `KeyCap` and `KeyboardLayout` (geometry only), `KeyboardLayouts` (`us_ansi` 104 keys, `abnt2` 107 keys, plus short fallback names), `Binding`, `BindingCatalog` (UNBOUND/SINGLE/OVERLAP), `BindingFilter` (search, category, visibility; AND), `Selection`, `RemapSession` (capture, confirm, cancel, clear, reset) and `KeyboardMapGeometry` (responsive arrangement).
+- **Minecraft side:** `MinecraftBindings` reads `Options.keyMappings` once per open or change and writes only through `KeyMapping.setKey`, `KeyMapping.resetMapping()` and `Options.save()`. `KeyboardMapScreen` is an ordinary `Screen`. `KeyboardMapHooks` holds the entry points.
+- **Core UI:** `ui/FeatureActions`, an internal registry so a feature can offer a button on its settings page; shown only while the feature is active. `SettingsKeyBinding.category()` shares the "QoL: Unified" key category.
+- **No Mixin, no access widener, no new dependency.**
+
+### 17.2 Entry points
+
+- **EP-1** "Open Keyboard Map", unbound. Fabric accepts key mappings only at client start, so it is registered then (`QolUnifiedClient`), even if the feature starts disabled; while disabled it opens nothing.
+- **EP-2** A "Keyboard Map…" row added to vanilla's own Controls options list (`ScreenEvents.AFTER_INIT`, `OptionsList.addSmall`). It sits under Mouse Settings / Key Binds and the vanilla options, overlaps nothing and scrolls with the list. Verified without and with Controlling 26.3.4 (screenshots). Not added while the feature is disabled.
+- **EP-3** "Keyboard Map…" on the feature's page in the QoL: Unified settings. From there the layout switcher writes into the settings draft (saved with Done), so Done can't overwrite it with a stale value. From EP-1 and EP-2 it saves through the Core at once.
+- All return to the screen they were opened from (Escape or Done).
+
+### 17.3 Behavior as built
+
+- **States:** gray (no binding), green (one), red with a `!N` marker and count (N ≥ 2). Blue double outline for the selected or highlighted input, white outline on hover. No amber.
+- **List:** grouped by vanilla category. Each row shows the action and its key. An overlap is prefixed `!` and drawn in red; an unbound action reads "Not bound"; a key not on the drawn layout gets `*` and a tooltip.
+- **Labels:** for the pointed key, next to it; for the selected key, in the free space under the keyboard when there is room. The box lists up to 6 actions and, for an overlap, the neutral note "N actions use this input; Minecraft runs all of them when it is pressed", wrapped, with one connector line.
+- **Search and filters:** search dims keys with no matching action and filters the list. Escape first clears a non-empty search; Ctrl+F focuses search; Up and Down move through the list.
+- **Remapping:**
+  - Change waits for one key or mouse button.
+  - Escape cancels and does not close the screen.
+  - A new overlap shows "X is also used by: …. Use it anyway?" with "Use anyway" and "Cancel"; nothing is written before that.
+  - Clear and Reset act only when they change something.
+  - Searching, clicking keys or rows, and closing never write.
+- **Keycap labels:** OS name when it fits, else the short fallback (Esc, Ins, PgUp, Ctrl…), shrunk to at least half size before being cut.
+- **Mouse chips:** buttons 1–5 plus any other bound button, by name, or by number when the names don't fit.
+- **Responsive:**
+  - The full keyboard beside the list when keys can be at least 16 px (4 px per quarter key).
+  - Otherwise "More keys" splits it: main block, then navigation and numpad.
+  - Keys are never under 12 px.
+  - Very narrow windows switch keyboard and list as tabs.
+  - On ultrawide screens, keys stop growing at 36 px.
+
+### 17.4 Findings
+
+- **Vanilla 26.3 overlaps.** The F3 debug combinations are ordinary key mappings in 26.3 (category "Debug"), bound to A, C, D, G, L, P, T, X, 1–4, F3 and F4 among others. Under the approved policy these keys show as OVERLAP on a fresh install. This is accurate (vanilla runs every mapping on a key; F-6), and the labels say so neutrally. Controlling 26.3.4 also marks them (screenshot).
+- **ABNT2 `]` key.** On paper it is HID "Non-US #" (50). On a Windows ABNT2 system the game reports it as backslash (49), and scancode 50 shows an unrelated `#`. The `abnt2` drawing therefore uses 49 there. The same system confirmed the OS labels `Ç` (51), `\` (100), `/` (135), `´` (47), `[` (48), `~` (52) and `;` (56).
+- The screen pauses singleplayer like other option screens. In multiplayer the world keeps running behind it.
+
+### 17.5 Tests
+
+- **Unit tests:**
+  - `KeyboardLayoutsTest`: counts, no overlapping rectangles, scancode coverage, ABNT2 positions, sections.
+  - `BindingCatalogTest`: states, keyboard versus mouse, modded mappings, search with accents and `key:`, AND filters, unbound, selection.
+  - `RemapSessionTest`: capture, Escape, overlap confirmation and cancel, same-input no-op, Clear and Reset, nothing outside a capture; in-memory store only.
+  - `KeyboardMapFeatureTest`: descriptor, LIVE, persistence across restarts.
+  - `KeyboardMapGeometryTest`: 12 window and scale combinations; minimum key size, fit, split, tabs, ultrawide cap.
+  - `LocalizationTest` now also checks every `KeyboardMapTexts` key.
+- **Game test** `./gradlew runGameTestKeyboardmap` (disposable world and `options.txt`; a dev-only Fabric mapping on Q and an unbound one). It asserts, with real clicks and key presses:
+  - catalog = `Options.keyMappings`;
+  - Q is an overlap including the modded mapping;
+  - key → rows and row → key highlighting;
+  - `key:q` search, Escape clearing it, category, overlaps and unbound filters;
+  - Change → F7 saved in `options.txt`;
+  - Escape cancels;
+  - an overlap needs confirmation, Cancel keeps the old key, Use anyway keeps the overlap;
+  - mouse button 5 captured;
+  - Reset and Clear;
+  - W, Q, 3 and Space do nothing in game while open;
+  - keys ≥ 12 px at windows 854×480, 1280×720 and 1920×1080, GUI scales 1–4;
+  - the ABNT2 choice persisted through the Core;
+  - the Controls row opens it and Escape returns;
+  - disabled → no Controls row and the key opens nothing; enabled → the key opens it.
+- **Optional:** `./gradlew runGameTestKeyboardmapControlling -PcontrollingJars=<Controlling>;<Searchables>` repeats it with Controlling 26.3.4 and Searchables 1.0.3.
+
+### 17.6 Not verified automatically
+
+- A physical ABNT2 keyboard's own key presses (only the OS labels were seen) and a physical US keyboard.
+- Readability on snow, at night and in rain (screenshots were at noon on grass), and color-vision simulation.
+- Multiplayer on the PO's Paper server.
+- Keyboard-only use of the toolbar (vanilla Tab focus; not scripted).
+- Mods that dispatch input outside `KeyMapping` (TR-4).
