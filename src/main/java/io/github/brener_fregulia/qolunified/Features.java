@@ -2,6 +2,7 @@ package io.github.brener_fregulia.qolunified;
 
 import io.github.brener_fregulia.qolunified.core.Feature;
 import io.github.brener_fregulia.qolunified.core.FeatureRegistry;
+import io.github.brener_fregulia.qolunified.feature.chatheads.ChatHeadsFeature;
 import io.github.brener_fregulia.qolunified.feature.foodhud.FoodHudFeature;
 import java.util.List;
 
@@ -18,6 +19,7 @@ public final class Features {
     public static FeatureRegistry createRegistry(List<Feature> developmentFeatures) {
         FeatureRegistry.Builder builder = FeatureRegistry.builder();
         builder.register(new FoodHudFeature());
+        builder.register(new ChatHeadsFeature());
         developmentFeatures.forEach(builder::register);
         return builder.build();
     }

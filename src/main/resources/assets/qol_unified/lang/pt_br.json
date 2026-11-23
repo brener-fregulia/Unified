@@ -55,5 +55,11 @@
   "qol_unified.feature.food_hud.setting.tooltip.always": "Sempre",
   "qol_unified.feature.food_hud.setting.match_animations": "Acompanhar animações dos ícones",
   "qol_unified.feature.food_hud.setting.debug_info": "Valores de comida na tela de depuração",
-  "qol_unified.food_hud.debug": "Fome: %s, saturação: %s (último valor enviado pelo servidor)"
+  "qol_unified.food_hud.debug": "Fome: %s, saturação: %s (último valor enviado pelo servidor)",
+  "qol_unified.feature.chat_heads.name": "Cabeças no chat",
+  "qol_unified.feature.chat_heads.description": "Mostra a cabeça de quem enviou ao lado das mensagens de jogadores. Só mensagens que trazem o perfil de quem enviou recebem uma cabeça.",
+  "qol_unified.feature.chat_heads.conflict.chat_heads": "O Chat Heads adiciona cabeças às mesmas mensagens do chat.",
+  "qol_unified.feature.chat_heads.setting.position": "Posição da cabeça",
+  "qol_unified.feature.chat_heads.setting.position.before_name": "Antes do nome",
+  "qol_unified.feature.chat_heads.setting.position.before_line": "Início da linha"
 }

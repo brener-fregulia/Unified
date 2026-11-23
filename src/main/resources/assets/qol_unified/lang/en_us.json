@@ -55,5 +55,11 @@
   "qol_unified.feature.food_hud.setting.tooltip.always": "Always",
   "qol_unified.feature.food_hud.setting.match_animations": "Follow icon animations",
   "qol_unified.feature.food_hud.setting.debug_info": "Food values in debug screen",
-  "qol_unified.food_hud.debug": "Food: %s, saturation: %s (last value sent by the server)"
+  "qol_unified.food_hud.debug": "Food: %s, saturation: %s (last value sent by the server)",
+  "qol_unified.feature.chat_heads.name": "Chat Heads",
+  "qol_unified.feature.chat_heads.description": "Shows the sender's head next to player chat messages. Only messages that carry the sender's profile get a head.",
+  "qol_unified.feature.chat_heads.conflict.chat_heads": "Chat Heads adds heads to the same chat messages.",
+  "qol_unified.feature.chat_heads.setting.position": "Head position",
+  "qol_unified.feature.chat_heads.setting.position.before_name": "Before the name",
+  "qol_unified.feature.chat_heads.setting.position.before_line": "Start of the line"
 }
