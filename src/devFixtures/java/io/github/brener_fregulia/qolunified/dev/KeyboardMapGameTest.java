@@ -11,6 +11,7 @@ import io.github.brener_fregulia.qolunified.feature.keyboardmap.KeyboardMapHooks
 import io.github.brener_fregulia.qolunified.feature.keyboardmap.KeyboardMapScreen;
 import io.github.brener_fregulia.qolunified.feature.keyboardmap.KeyboardMapTexts;
 import io.github.brener_fregulia.qolunified.feature.keyboardmap.RemapSession;
+import io.github.brener_fregulia.qolunified.feature.keyboardmap.Selection;
 import io.github.brener_fregulia.qolunified.ui.FeatureActions;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -55,6 +56,13 @@ final class KeyboardMapGameTest {
             world.getConnection().waitForChunksRender();
             world.getServer().runCommand("time set noon");
             world.getServer().runCommand("gamemode survival @a");
+            // Main flow at 1600×900, GUI scale 2 (800×450): whole keyboard with the mouse beside it.
+            ctx.getInput().resizeWindow(1600, 900);
+            ctx.runOnClient(mc -> {
+                mc.options.guiScale().set(2);
+                mc.resizeGui();
+            });
+            ctx.waitTicks(3);
             catalogAndOverlaps();
             mouseSelection();
             searchAndFilters();
@@ -66,164 +74,187 @@ final class KeyboardMapGameTest {
         resetAllMappings();
     }
 
-    // KM-AC-1, KM-AC-2, KM-AC-7, KM-AC-8, KM-AC-9
+    // Explore mode, catalog and states (KM-AC-1, KM-AC-2, KM-AC-7, KM-AC-9; KMUX-AC-1).
     private void catalogAndOverlaps() {
         KeyboardMapScreen screen = open();
-        shot("01-in-world-default");
+        shot("01-explore");
         ctx.computeOnClient(mc -> {
             var catalog = screen.catalog();
             check(catalog.bindings().size() == mc.options.keyMappings.length, "every mapping listed");
             var ids = new HashSet<String>();
             catalog.bindings().forEach(b -> check(ids.add(b.id()), "listed once: " + b.id()));
             check(catalog.state(InputId.key(SCANCODE_Q)) == InputState.OVERLAP, "Drop and the modded action share Q");
-            check(catalog.on(InputId.key(SCANCODE_Q)).stream().anyMatch(b -> b.id().equals(DevKeyMappings.ON_Q)),
-                    "modded mapping takes part");
             check(catalog.state(InputId.key(SCANCODE_W)) == InputState.SINGLE, "W has one action");
             check(catalog.state(InputId.mouse(1)) == InputState.SINGLE, "left mouse button: Attack");
-            check(catalog.state(InputId.key(1)) == InputState.UNBOUND, "nothing on an unknown scancode");
             check(catalog.binding(DevKeyMappings.UNBOUND).orElseThrow().unbound(), "unbound modded action");
+            check(screen.selection().mode() == Selection.Mode.EXPLORE, "opens in Explore");
+            check(screen.shownRowButtonKeys().isEmpty(), "no Change, Clear or Reset in Explore");
             check(screen.drawnSections().contains(KeyCap.Section.MAIN), "main block drawn");
+            for (int button = 1; button <= 5; button++) {
+                check(screen.inputCenter(InputId.mouse(button)) != null, "mouse region " + button + " drawn");
+            }
             return null;
         });
     }
 
-    // KM-AC-4: clicking a key highlights its rows; selecting a row outlines its key.
+    // Selected-input mode for a key, a mouse button and a free key (KMUX-AC-2, KMUX-AC-3, KMUX-AC-5).
     private void mouseSelection() {
         KeyboardMapScreen screen = current();
-        click(ctx.computeOnClient(mc -> screen.keyCenter(SCANCODE_Q)));
+        click(ctx.computeOnClient(mc -> screen.inputCenter(InputId.key(SCANCODE_Q))));
         ctx.computeOnClient(mc -> {
-            check(InputId.key(SCANCODE_Q).equals(screen.selection().highlightedInput(screen.catalog())), "Q selected");
-            check(screen.selection().highlightedBindings(screen.catalog()).size() == 2, "both Q rows highlighted");
+            check(screen.selection().mode() == Selection.Mode.INPUT, "card opened");
+            check(screen.cardBindingIds().size() == 2 && screen.cardBindingIds().contains(DevKeyMappings.ON_Q),
+                    "only the two Q actions: " + screen.cardBindingIds());
+            check(screen.rowButton("key.drop", KeyboardMapTexts.CHANGE) != null, "per-action Change");
             return null;
         });
-        shot("02-key-q-selected-labels");
+        shot("02-selected-key-q-shared");
+        click(ctx.computeOnClient(mc -> screen.inputCenter(InputId.key(SCANCODE_Q))));
+        check(ctx.computeOnClient(mc -> screen.selection().mode() == Selection.Mode.EXPLORE),
+                "clicking Q again returns to Explore");
+
+        click(ctx.computeOnClient(mc -> screen.inputCenter(InputId.mouse(1))));
+        ctx.computeOnClient(mc -> {
+            check(InputId.mouse(1).equals(screen.selection().highlightedInput(screen.catalog())), "left button");
+            check(screen.cardBindingIds().equals(java.util.List.of("key.attack")), "Attack on the left button");
+            return null;
+        });
+        shot("03-selected-mouse-left");
+        hover(ctx.computeOnClient(mc -> screen.inputCenter(InputId.mouse(2))));
+        shot("04-hover-wheel-note");
+        click(ctx.computeOnClient(mc -> screen.inputCenter(InputId.mouse(4))));
+        check(ctx.computeOnClient(mc -> screen.selection().mode() == Selection.Mode.INPUT
+                && screen.cardBindingIds().isEmpty()), "mouse 4 is free: empty card");
+        shot("05-selected-mouse-4-free");
+        click(ctx.computeOnClient(mc -> screen.inputCenter(InputId.key(InputConstants.KEY_F7))));
+        check(ctx.computeOnClient(mc -> screen.cardBindingIds().isEmpty()), "F7 free: empty card");
+        pressButton(bottomButton(screen, KeyboardMapTexts.FIND_UNBOUND));
+        ctx.computeOnClient(mc -> {
+            check(screen.selection().mode() == Selection.Mode.EXPLORE, "back to Explore");
+            check(screen.visibleRowIds().contains(DevKeyMappings.UNBOUND), "unbound filter applied");
+            check(screen.visibleRowIds().stream().allMatch(id -> screen.catalog().binding(id).orElseThrow().unbound()),
+                    "only unbound actions");
+            return null;
+        });
+        shot("06-unbound-actions");
+        // An unbound action opens its own card with Change enabled.
+        ctx.runOnClient(mc -> screen.selectBinding(DevKeyMappings.UNBOUND));
+        ctx.computeOnClient(mc -> {
+            check(screen.selection().mode() == Selection.Mode.BINDING, "binding card");
+            Button change = screen.rowButton(DevKeyMappings.UNBOUND, KeyboardMapTexts.CHANGE);
+            check(change != null && change.active, "Change enabled for an unbound action");
+            check(!screen.rowButton(DevKeyMappings.UNBOUND, KeyboardMapTexts.CLEAR).active, "nothing to clear");
+            return null;
+        });
+        shot("07-unbound-action-card");
+        // Row in Explore → its input's card with that action in focus.
         ctx.runOnClient(mc -> screen.selectBinding("key.forward"));
-        ctx.computeOnClient(mc -> {
-            check(InputId.key(SCANCODE_W).equals(screen.selection().highlightedInput(screen.catalog())),
-                    "row selects its key");
-            return null;
-        });
-        shot("03-row-forward-selected");
+        check(ctx.computeOnClient(mc -> InputId.key(SCANCODE_W).equals(
+                screen.selection().highlightedInput(screen.catalog()))), "row selects its key");
+        pressKey(InputConstants.KEY_ESCAPE);
+        check(ctx.computeOnClient(mc -> screen.selection().mode() == Selection.Mode.EXPLORE
+                && mc.gui.screen() == screen), "Escape returns to Explore without closing");
     }
 
-    // KM-AC-5, KM-AC-6
+    // Search, filters, search highlighting and search leaving a card (KMUX-AC-11; KM-AC-5, KM-AC-6).
     private void searchAndFilters() {
         KeyboardMapScreen screen = current();
-        int[] box = ctx.computeOnClient(mc -> new int[] {screen.geometry().margin() + 10,
-                screen.geometry().toolbarY() + 10});
-        click(box);
+        pressButton(toolbar(screen, 1)); // Filters
+        AbstractWidget category = popup(screen, 0);
+        // Cycle the visibility filter to "shared" (it may still be on "unbound" from the previous step).
+        for (int i = 0; i < 4 && !ctx.computeOnClient(mc -> !screen.visibleRowIds().isEmpty()
+                && screen.visibleRowIds().stream().allMatch(id -> screen.catalog().state(
+                        screen.catalog().binding(id).orElseThrow()) == InputState.OVERLAP)); i++) {
+            pressButton(popup(screen, 1));
+        }
+        ctx.computeOnClient(mc -> {
+            check(!screen.visibleRowIds().isEmpty() && screen.visibleRowIds().stream().allMatch(id ->
+                    screen.catalog().state(screen.catalog().binding(id).orElseThrow()) == InputState.OVERLAP),
+                    "shared only");
+            return null;
+        });
+        shot("08-filter-shared");
+        for (int i = 0; i < 4 && ctx.computeOnClient(mc -> screen.visibleRowIds().size()
+                != screen.catalog().bindings().size()); i++) {
+            pressButton(popup(screen, 1)); // back to All
+        }
+        pressButton(category);
+        String first = ctx.computeOnClient(mc -> screen.catalog().categories().getFirst());
+        check(ctx.computeOnClient(mc -> screen.visibleRowIds().stream().allMatch(id ->
+                screen.catalog().binding(id).orElseThrow().category().equals(first))), "category filter");
+        int categories = ctx.computeOnClient(mc -> screen.catalog().categories().size());
+        for (int i = 0; i < categories; i++) {
+            pressButton(popup(screen, 0));
+        }
+        pressKey(InputConstants.KEY_ESCAPE); // closes the popup
+        // Typing while a card is open returns to Explore, with the search applied.
+        ctx.runOnClient(mc -> screen.selectInput(InputId.key(SCANCODE_W)));
+        click(ctx.computeOnClient(mc -> new int[] {screen.geometry().margin() + 10, screen.geometry().toolbarY() + 10}));
         ctx.getInput().typeChars("key:q");
         ctx.waitTicks(2);
         ctx.computeOnClient(mc -> {
+            check(screen.selection().mode() == Selection.Mode.EXPLORE, "typing returns to Explore");
             check(screen.visibleRowIds().size() == 2 && screen.visibleRowIds().contains("key.drop"),
                     "key:q finds both Q actions: " + screen.visibleRowIds());
             return null;
         });
-        shot("04-search-key-q");
-        ctx.getInput().pressKey(InputConstants.Type.KEYBOARD.getOrCreate(InputConstants.KEY_ESCAPE));
-        ctx.waitTicks(2);
-        ctx.computeOnClient(mc -> {
-            check(mc.gui.screen() == screen, "first Escape clears the search, the screen stays");
-            check(screen.visibleRowIds().size() == screen.catalog().bindings().size(), "all rows back");
-            return null;
-        });
-        ctx.getInput().typeChars("sample");
-        ctx.waitTicks(2);
-        ctx.computeOnClient(mc -> {
-            check(screen.visibleRowIds().contains(DevKeyMappings.UNBOUND), "unbound action found by search");
-            return null;
-        });
-        ctx.getInput().pressKey(InputConstants.Type.KEYBOARD.getOrCreate(InputConstants.KEY_ESCAPE));
-        // Category and visibility: the second and third toolbar buttons.
-        AbstractWidget category = button(screen, 1);
-        AbstractWidget show = button(screen, 2);
-        pressButton(category);
-        String first = ctx.computeOnClient(mc -> screen.catalog().categories().getFirst());
-        ctx.computeOnClient(mc -> {
-            check(screen.visibleRowIds().stream().allMatch(id ->
-                    screen.catalog().binding(id).orElseThrow().category().equals(first)), "category filter");
-            return null;
-        });
-        shot("05-category-" + "first");
-        pressButton(category);
-        for (int i = 0; i < screen.catalog().categories().size() - 1; i++) {
-            pressButton(category);
-        }
-        pressButton(show);
-        ctx.computeOnClient(mc -> {
-            check(screen.visibleRowIds().stream().allMatch(id -> screen.catalog().state(
-                    screen.catalog().binding(id).orElseThrow()) == InputState.OVERLAP), "overlaps only");
-            check(!screen.visibleRowIds().isEmpty(), "Q overlap shown");
-            return null;
-        });
-        shot("06-filter-overlaps");
-        pressButton(show);
-        pressButton(show);
-        ctx.computeOnClient(mc -> {
-            check(screen.visibleRowIds().contains(DevKeyMappings.UNBOUND), "unbound filter");
-            check(screen.visibleRowIds().stream().allMatch(id -> screen.catalog().binding(id).orElseThrow().unbound()),
-                    "unbound only");
-            return null;
-        });
-        shot("07-filter-unbound");
-        pressButton(show);
+        shot("09-search-highlight-key-q");
+        pressKey(InputConstants.KEY_ESCAPE);
+        check(ctx.computeOnClient(mc -> mc.gui.screen() == screen && screen.visibleRowIds().size()
+                == screen.catalog().bindings().size()), "first Escape clears the search");
     }
 
-    // KM-AC-R1..R3 and the overlap confirmation, through real clicks and key presses.
+    // Per-action remapping in the card with V1 semantics (KMUX-AC-4, KM-AC-R1..R3).
     private void remapping() {
         KeyboardMapScreen screen = current();
         ctx.runOnClient(mc -> screen.selectBinding(DevKeyMappings.ON_Q));
-        Button change = bottomButton(screen, KeyboardMapTexts.CHANGE);
-
-        pressButton(change);
+        pressButton(row(screen, DevKeyMappings.ON_Q, KeyboardMapTexts.CHANGE));
         check(state(screen) == RemapSession.State.CAPTURING, "Change starts capturing");
-        shot("08-capturing");
-        ctx.getInput().pressKey(InputConstants.Type.KEYBOARD.getOrCreate(SCANCODE_F7));
-        ctx.waitTicks(2);
+        shot("10-capturing");
+        pressKey(SCANCODE_F7);
         check(state(screen) == RemapSession.State.IDLE, "one input captured");
         check(mappingKey(DevKeyMappings.ON_Q).equals("key.keyboard.f7"), "remapped to F7");
         check(optionsFileContains("key_" + DevKeyMappings.ON_Q + ":key.keyboard.f7"), "saved by vanilla Options");
-        check(ctx.computeOnClient(mc -> KeyMapping.get(DevKeyMappings.ON_Q) != null
-                && screen.catalog().state(InputId.key(SCANCODE_Q)) == InputState.SINGLE), "lookup rebuilt");
+        check(ctx.computeOnClient(mc -> InputId.key(SCANCODE_F7).equals(
+                screen.selection().highlightedInput(screen.catalog()))), "card follows the action to F7");
 
-        // Escape cancels a capture without changes.
-        pressButton(change);
-        ctx.getInput().pressKey(InputConstants.Type.KEYBOARD.getOrCreate(InputConstants.KEY_ESCAPE));
-        ctx.waitTicks(2);
+        pressButton(row(screen, DevKeyMappings.ON_Q, KeyboardMapTexts.CHANGE));
+        pressKey(InputConstants.KEY_ESCAPE);
         check(state(screen) == RemapSession.State.IDLE, "Escape cancels capture");
-        check(ctx.computeOnClient(mc -> mc.gui.screen() == screen), "Escape during capture does not close");
+        check(ctx.computeOnClient(mc -> mc.gui.screen() == screen
+                && screen.selection().mode() == Selection.Mode.INPUT), "Escape during capture keeps the card");
         check(mappingKey(DevKeyMappings.ON_Q).equals("key.keyboard.f7"), "unchanged after cancel");
 
-        // A new overlap waits for confirmation; Cancel keeps the old key, Confirm keeps the player's choice.
-        pressButton(change);
-        ctx.getInput().pressKey(InputConstants.Type.KEYBOARD.getOrCreate(SCANCODE_W));
-        ctx.waitTicks(2);
-        check(state(screen) == RemapSession.State.CONFIRMING, "overlap with Walk Forwards needs confirmation");
-        shot("09-confirm-overlap");
-        pressButton(bottomButton(screen, KeyboardMapTexts.CANCEL));
+        pressButton(row(screen, DevKeyMappings.ON_Q, KeyboardMapTexts.CHANGE));
+        pressKey(SCANCODE_W);
+        check(state(screen) == RemapSession.State.CONFIRMING, "overlap with Walk Forward needs confirmation");
+        shot("11-confirm-overlap-in-row");
+        pressButton(row(screen, DevKeyMappings.ON_Q, KeyboardMapTexts.CANCEL));
         check(mappingKey(DevKeyMappings.ON_Q).equals("key.keyboard.f7"), "Cancel keeps F7");
-        pressButton(change);
-        ctx.getInput().pressKey(InputConstants.Type.KEYBOARD.getOrCreate(SCANCODE_W));
-        ctx.waitTicks(2);
-        pressButton(bottomButton(screen, KeyboardMapTexts.CONFIRM));
-        check(mappingKey(DevKeyMappings.ON_Q).equals("key.keyboard.w"), "Confirm keeps the overlap");
-        check(ctx.computeOnClient(mc -> screen.catalog().state(InputId.key(SCANCODE_W)) == InputState.OVERLAP),
-                "W is now an overlap");
+        pressButton(row(screen, DevKeyMappings.ON_Q, KeyboardMapTexts.CHANGE));
+        pressKey(SCANCODE_W);
+        pressButton(row(screen, DevKeyMappings.ON_Q, KeyboardMapTexts.CONFIRM));
+        check(mappingKey(DevKeyMappings.ON_Q).equals("key.keyboard.w"), "Use anyway keeps the overlap");
+        check(ctx.computeOnClient(mc -> screen.cardBindingIds().size() == 2), "card follows to W: two actions");
+        shot("12-card-after-overlap");
 
-        // Mouse capture.
-        pressButton(change);
+        pressButton(row(screen, DevKeyMappings.ON_Q, KeyboardMapTexts.CHANGE));
         ctx.getInput().pressMouse(InputConstants.MOUSE_BUTTON_5);
         ctx.waitTicks(2);
         check(mappingKey(DevKeyMappings.ON_Q).equals("key.mouse.5"), "mouse button 5 captured");
+        check(ctx.computeOnClient(mc -> InputId.mouse(5).equals(
+                screen.selection().highlightedInput(screen.catalog()))), "card follows to mouse 5");
+        shot("13-selected-mouse-5");
 
-        // Reset and Clear.
-        pressButton(bottomButton(screen, KeyboardMapTexts.RESET));
+        pressButton(row(screen, DevKeyMappings.ON_Q, KeyboardMapTexts.RESET));
         check(mappingKey(DevKeyMappings.ON_Q).equals("key.keyboard.q"), "Reset restores the declared default");
-        pressButton(bottomButton(screen, KeyboardMapTexts.CLEAR));
+        pressButton(row(screen, DevKeyMappings.ON_Q, KeyboardMapTexts.CLEAR));
         check(mappingKey(DevKeyMappings.ON_Q).equals("key.keyboard.unknown"), "Clear unbinds");
         check(optionsFileContains("key_" + DevKeyMappings.ON_Q + ":key.keyboard.unknown"), "clear saved");
-        pressButton(bottomButton(screen, KeyboardMapTexts.RESET));
-        shot("10-after-remapping");
+        check(ctx.computeOnClient(mc -> screen.selection().mode() == Selection.Mode.BINDING),
+                "cleared action keeps its own card");
+        pressButton(row(screen, DevKeyMappings.ON_Q, KeyboardMapTexts.RESET));
+        pressKey(InputConstants.KEY_ESCAPE);
     }
 
     // KM-AC-12: keys bound to gameplay do nothing while the screen is open.
@@ -278,18 +309,18 @@ final class KeyboardMapGameTest {
         ctx.waitTicks(2);
         // ABNT2 drawing, through the toolbar layout button (fourth toolbar button).
         KeyboardMapScreen screen = current();
-        pressButton(button(screen, 3));
+        pressButton(toolbar(screen, 2));
         on(core -> check(core.choices().get("keyboard_map").settings().getEnum("layout").equals("abnt2"),
                 "layout persisted through the Core"));
         KeyboardMapScreen abnt = current();
         ctx.computeOnClient(mc -> {
-            check(abnt.keyCenter(100) != null || abnt.geometry().split(), "key left of Z drawn on ABNT2");
+            check(abnt.inputCenter(InputId.key(100)) != null || abnt.geometry().split(), "key left of Z drawn on ABNT2");
             return null;
         });
         ctx.getInput().resizeWindow(1600, 900);
         ctx.waitTicks(3);
         shot("12-abnt2-1600x900");
-        pressButton(button(current(), 3));
+        pressButton(toolbar(current(), 2));
         ctx.getInput().resizeWindow(854, 480);
         ctx.waitTicks(3);
     }
@@ -411,15 +442,38 @@ final class KeyboardMapGameTest {
                 button.getY() + button.getHeight() / 2}));
     }
 
-    /** The {@code index}-th button of the toolbar (0 is the search box). */
-    private AbstractWidget button(KeyboardMapScreen screen, int index) {
-        return ctx.computeOnClient(mc -> {
-            int y = screen.geometry().toolbarY();
-            var row = screen.children().stream().filter(c -> c instanceof AbstractWidget w && w.getY() == y)
-                    .map(c -> (AbstractWidget) c).sorted(java.util.Comparator.comparingInt(AbstractWidget::getX))
-                    .toList();
-            return row.get(index);
-        });
+    /** The {@code index}-th widget of the toolbar row (0 is the search box). */
+    private AbstractWidget toolbar(KeyboardMapScreen screen, int index) {
+        return widgetsAt(screen, ctx.computeOnClient(mc -> screen.geometry().toolbarY())).get(index);
+    }
+
+    /** The {@code index}-th control of the open Filters popup (0 category, 1 visibility). */
+    private AbstractWidget popup(KeyboardMapScreen screen, int index) {
+        int y = ctx.computeOnClient(mc -> screen.geometry().toolbarY()) + 26 + index * 24;
+        return widgetsAt(screen, y).getFirst();
+    }
+
+    private java.util.List<AbstractWidget> widgetsAt(KeyboardMapScreen screen, int y) {
+        return ctx.computeOnClient(mc -> screen.children().stream()
+                .filter(c -> c instanceof AbstractWidget w && w.getY() == y).map(c -> (AbstractWidget) c)
+                .sorted(java.util.Comparator.comparingInt(AbstractWidget::getX)).toList());
+    }
+
+    private Button row(KeyboardMapScreen screen, String id, String key) {
+        Button button = ctx.computeOnClient(mc -> screen.rowButton(id, key));
+        check(button != null, "card button " + key + " for " + id);
+        return button;
+    }
+
+    private void pressKey(int scancode) {
+        ctx.getInput().pressKey(InputConstants.Type.KEYBOARD.getOrCreate(scancode));
+        ctx.waitTicks(2);
+    }
+
+    private void hover(int[] gui) {
+        double scale = ctx.computeOnClient(mc -> mc.getWindow().getGuiScale());
+        ctx.getInput().setCursorPos(gui[0] * scale + scale / 2, gui[1] * scale + scale / 2);
+        ctx.waitTicks(2);
     }
 
     private Button bottomButton(KeyboardMapScreen screen, String key) {
