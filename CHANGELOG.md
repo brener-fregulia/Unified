@@ -68,3 +68,14 @@ released yet.
   actions. Selecting a key, mouse button or action shows only what belongs
   to it, with Change, Clear and Reset on each action. Search matches are
   outlined on the keyboard. Filters sit in a compact popup.
+- Target Info (`target_info`): a compact panel at the top center of the
+  screen that names the block or entity under the crosshair, with its icon
+  and source mod. For blocks it shows the tools that break it faster, a
+  check or cross for the held item based on the game's own drop rules, the
+  required tool when the held one falls short, and a thin mining-progress
+  bar while breaking. It also shows beehive honey, redstone states (wire
+  power, lever, button, lamp, repeater, comparator) and crop growth. For
+  mobs it shows health and, for tamed animals, the owner when the client
+  knows the name. Players show their name only. Eight settings, all
+  applied live. Disabled by default when Jade or WTHIT is installed, unless
+  you enable it yourself.

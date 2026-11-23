@@ -373,7 +373,7 @@ authentication or world changes):
 6. Compare side-by-side with Jade 26.3.5 in a disposable profile.
 7. Confirm Food HUD, Chat Heads and Keyboard Map still work.
 
-## 15. Decisions (resolved in §0)
+## 15. Decisions (the resolution of each is recorded in §0)
 
 - **Q-TI1 [Approved 2026-11-23]** Approve id `target_info` (replacing `inspector`),
   milestone M1.4, default enabled.
@@ -395,3 +395,96 @@ authentication or world changes):
   merge `show_health`/`show_owner` into one entity-details toggle.
 - **Q-TI11 [Deferred]** Fluids, villagers, equipment, spawners, composter,
   cauldron, generic state dump.
+
+## 16. Implementation notes [Implemented 2026-11-23]
+
+### 16.1 Code
+
+Package `feature/targetinfo`:
+
+- `TargetInfoSettings`, `TargetInfoFeature`: descriptor, eight LIVE
+  booleans, Jade and WTHIT conflicts; the HUD element is registered once on
+  the first enable (`TargetInfoHooks`, after the vanilla boss bar element)
+  and returns at once while the feature is inactive.
+- Pure, unit-tested rules: `ToolAdvice` (§5), `BlockDetails` (§6),
+  `EntityDetails` (health and owner, §7), `OverlayRules` (suppression, boss
+  bar offset, progress gating), `DetailLine`.
+- `TargetResolver`: reads `Minecraft.hitResult` only (no ray cast); probes
+  the vanilla tools of each category and tier with `getDestroySpeed` and
+  `isCorrectToolForDrops`, cached per block state (LRU, 256 entries, cleared
+  when the level changes). Mod names come from Fabric Loader metadata, with
+  the namespace as fallback.
+- `TargetInfoRenderer`: rebuilds the view when the game tick, the target
+  (block position or entity) or the settings change; mining progress is read
+  every frame. Fills, vanilla item icons, vanilla heart sprites and font
+  glyphs only; no new textures.
+- Fabric mod ids verified from the published JARs' `fabric.mod.json`:
+  Jade 26.3.5+fabric → `jade`; WTHIT 21.0.0 (26.3) → `wthit`.
+
+### 16.2 Mixins (read-only accessors, no injections)
+
+| Id | Target | Reads |
+| --- | --- | --- |
+| TI-1 | `MultiPlayerGameMode` | `destroyProgress`, `destroyBlockPos` |
+| TI-2 | `BossHealthOverlay` | `events` (only its size) |
+
+TI-2 was not named in §0; it is the read-only minimum for the approved
+"adjusting for boss bars" rule, because vanilla exposes no boss-bar count.
+
+### 16.3 Tool semantics as built
+
+- A category is shown when its best vanilla tool breaks the block faster
+  than the hand, or, for blocks that require a correct tool, when any of its
+  tiers passes the drop check. Its icon is the lowest passing tier (wooden
+  when no tier is required; shears have none).
+- Mark: blocks requiring a correct tool get ✔ or ✘ from
+  `held.isCorrectToolForDrops(state)`, the final authority also for modded
+  tools. Hand-harvestable blocks get ✔ only when the held item is faster,
+  never ✘.
+- "Requires: <tool>" appears only after a failed check with exactly one
+  correct category (cobweb, where sword and shears both pass, shows none).
+- Verified results (game test): stone → wooden pickaxe; grass → shovel;
+  oak log → axe; iron ore → stone pickaxe; diamond ore → iron pickaxe;
+  obsidian → diamond pickaxe (✘ with iron, ✔ with diamond and netherite);
+  oak leaves → hoe, sword and shears; cobweb → sword and shears (✘ by hand);
+  torch and poppy → nothing.
+
+### 16.4 Tests
+
+- Unit: `ToolAdviceTest`, `DetailsTest`, `TargetInfoFeatureTest` (LIVE
+  toggles, Jade/WTHIT conflict default and explicit choice); the
+  localization test covers every `TargetInfoTexts` key.
+- Client game test `runGameTestTargetinfo` (disposable world): every
+  block, tool and state above, smooth progress (a new value each tick) and
+  its cancellation, Creative, honey 0–5, redstone, wheat and nether wart,
+  sheep hearts, tamed wolf owner, unknown owner, iron golem numeric health,
+  sky, F1, open screen, two boss bars, GUI scales 1–4 at 1920×1080, every
+  setting and the feature toggle.
+- Optional `runGameTestTargetinfoJade -PjadeJar=<path>`: Jade loaded, the
+  feature starts disabled by the conflict, the same scenes with Jade alone,
+  then with both after an explicit enable.
+
+### 16.5 Comparison with Jade 26.3.5 (screenshots, same scenes)
+
+- Matched: top-center panel, icon left, name, blue italic mod name, tool
+  icons right with a check or cross, the same tool set on leaves (hoe,
+  sword, shears), hearts for small mobs, owner line, honey level.
+- Intentional differences: ours adds a short "Requires: Diamond Pickaxe"
+  line on a failed check; the mod name is the second line (Jade puts it
+  last); a 4 px top margin; the mark is beside the icons rather than over
+  them; mobs above 10 hearts show numbers (Jade draws hearts).
+- Not comparable: in singleplayer Jade also runs on the integrated server
+  and shows the bee count ("Bees: 0"); ours never shows it (§3 row 13).
+- Unverified: Jade on a server without Jade; WTHIT side by side.
+
+### 16.6 Known limitations
+
+- Multiplayer mining progress is the client's prediction; the server
+  decides the actual break.
+- Owner names resolve only when the owner is loaded nearby or in the player
+  list; otherwise "unknown player".
+- Thin blocks (redstone dust, young crops) are targeted only where vanilla's
+  outline shape is hit, as with the vanilla crosshair.
+- Entities have no icon; tamed wolves (40 health) show numeric health.
+- Not covered automatically: a real Paper server, other mods' blocks, and
+  WTHIT side by side.
