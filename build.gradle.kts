@@ -41,7 +41,8 @@ loom {
                 "corrupt" to "build/run-gametest-corrupt",
                 "foodhud" to "build/run-gametest-foodhud",
                 "chatheads" to "build/run-gametest-chatheads",
-                "keyboardmap" to "build/run-gametest-keyboardmap")) {
+                "keyboardmap" to "build/run-gametest-keyboardmap",
+                "targetinfo" to "build/run-gametest-targetinfo")) {
             register("gameTest" + scenario.replaceFirstChar { it.uppercase() }) {
                 client()
                 name("Game Test ($scenario)")
@@ -82,6 +83,21 @@ loom {
                 property("fabric.addMods", jars.split(File.pathSeparator).joinToString(File.pathSeparator) {
                     file(it).absolutePath
                 })
+                ideConfigGenerated(false)
+            }
+        }
+        // Optional side-by-side comparison with Jade (TI-AC-16), in its own disposable game directory. Runs only when
+        // a downloaded JAR is passed: -PjadeJar=<path>. Nothing is added to the build.
+        providers.gradleProperty("jadeJar").orNull?.let { jar ->
+            register("gameTestTargetinfoJade") {
+                client()
+                name("Game Test (Target Info with Jade)")
+                source(devFixtures)
+                runDir("build/run-gametest-targetinfo-jade")
+                property("fabric.client.gametest")
+                property("fabric.client.gametest.modid", "qol_unified_dev")
+                property("qol_unified.dev.scenario", "targetinfo_jade")
+                property("fabric.addMods", file(jar).absolutePath)
                 ideConfigGenerated(false)
             }
         }
