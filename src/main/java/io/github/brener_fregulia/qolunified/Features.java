@@ -5,6 +5,7 @@ import io.github.brener_fregulia.qolunified.core.FeatureRegistry;
 import io.github.brener_fregulia.qolunified.feature.chatheads.ChatHeadsFeature;
 import io.github.brener_fregulia.qolunified.feature.foodhud.FoodHudFeature;
 import io.github.brener_fregulia.qolunified.feature.keyboardmap.KeyboardMapFeature;
+import io.github.brener_fregulia.qolunified.feature.targetinfo.TargetInfoFeature;
 import java.util.List;
 
 /** The production feature list. Features are registered here explicitly (M0 §3.5). */
@@ -22,6 +23,7 @@ public final class Features {
         builder.register(new FoodHudFeature());
         builder.register(new ChatHeadsFeature());
         builder.register(new KeyboardMapFeature());
+        builder.register(new TargetInfoFeature());
         developmentFeatures.forEach(builder::register);
         return builder.build();
     }

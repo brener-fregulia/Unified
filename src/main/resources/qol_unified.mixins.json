@@ -4,11 +4,13 @@
   "package": "io.github.brener_fregulia.qolunified.mixin",
   "compatibilityLevel": "JAVA_25",
   "client": [
+    "BossHealthOverlayAccessor",
     "ChatComponentAccessor",
     "ChatListenerMixin",
     "HudFoodMixin",
     "HudHeartsMixin",
-    "ItemStackTooltipMixin"
+    "ItemStackTooltipMixin",
+    "MultiPlayerGameModeAccessor"
   ],
   "injectors": {
     "defaultRequire": 1
