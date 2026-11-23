@@ -35,26 +35,22 @@ Requires **JDK 25** (Temurin recommended) on `PATH` or in `JAVA_HOME`. The
 Gradle Wrapper downloads the correct Gradle version; no separate Gradle
 install is needed.
 
-On Windows (PowerShell or Command Prompt):
+| Task | Windows (PowerShell or Command Prompt) | Linux, macOS, Git Bash |
+| --- | --- | --- |
+| Build and unit tests | `.\gradlew.bat clean build` | `./gradlew clean build` |
+| Development client | `.\gradlew.bat runClient` | `./gradlew runClient` |
 
-```powershell
-.\gradlew.bat clean build
-```
-
-On macOS/Linux or Git Bash, use `./gradlew clean build`.
+Linux setup (Java 25, WSL2, Prism Launcher): see
+[Linux development setup](docs/development/linux-setup.md).
 
 The distributable mod JAR is written to `build/libs/`, for example
 `build/libs/qol-unified-26.3.0-alpha.1-SNAPSHOT.jar`.
 
 ### Development client
 
-```powershell
-.\gradlew.bat runClient
-```
-
-This launches Minecraft 26.3 with the mod and Fabric API loaded. Game files
+`runClient` launches Minecraft 26.3 with the mod and Fabric API loaded. Game files
 are kept in `run/` (ignored by Git). A successful start logs
-`QoL: Unified initialized successfully (0 features).`
+`QoL: Unified initialized successfully (N features).`
 
 ### Development fixtures
 
@@ -102,6 +98,7 @@ workflow.
   - [M0 — Platform Foundations](docs/specifications/m0-platform-foundations.md)
 - Development
   - [Versioning and release policy](docs/development/versioning.md)
+  - [Linux development setup](docs/development/linux-setup.md)
 - [Changelog](CHANGELOG.md)
 
 ## Versioning
