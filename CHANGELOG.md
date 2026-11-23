@@ -43,3 +43,13 @@ released yet.
   follows the vanilla icon animations, applies settings without a restart,
   and is disabled by default when AppleSkin is installed. It is client-only
   and never shows exhaustion, which the server does not send.
+- Chat Heads (`chat_heads`): shows the sender's head, with its hat layer,
+  in player chat, either directly before the name (`<[head]Name> text`) or at
+  the start of the line. Heads come only from the sender profile sent with
+  the message, never from reading names in the text, so system messages,
+  command output and plugin broadcasts get no head. It uses vanilla's own
+  player-head text glyph and skin cache, changes only the displayed copy of a
+  message (signatures, trust indicators, reports and narration are
+  untouched), updates messages already in chat when it or its position is
+  changed, and is disabled by default when the original Chat Heads mod is
+  installed. TAB is not changed.

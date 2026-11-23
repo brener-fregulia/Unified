@@ -182,3 +182,68 @@ server-side mod.
 - **Q-CH2 [Approved 2026-11-22]** Sender metadata only; no name parsing or heuristics in V1. A later opt-in name match would need a new specification.
 - **Q-CH3 [Approved 2026-11-22]** Native glyph spacing; no padding Mixin.
 - **Q-CH4 [Deferred]** Heads in books, signs and config screens, as the reference does.
+
+## 13. Implementation notes [Implemented 2026-11-23]
+
+Implementation of the approved parts above. Nothing here changes an approved
+decision; the two findings in §13.4 are recorded for the PO.
+
+### 13.1 Code
+
+- `feature/chatheads/ChatHeadsSettings`: descriptor (TA-1, §7).
+- `feature/chatheads/ChatHeadsFeature`: LIVE toggle; `position()` is `null` while inactive.
+- `feature/chatheads/ChatHeadComponents`: pure functions (TA-2). `head` builds the glyph; `withHead` places it Before Name (by identity, first occurrence, searching translation arguments and siblings, never hover or click contents) or Before Line, with the CH-4 fallback. Unchanged subtrees are shared, not copied.
+- `feature/chatheads/ChatHeadMessages`: the C-1 display copy and the C-2 refresh.
+- `feature/chatheads/ChatHeadsHooks`: installs the refresh on the first enable.
+
+### 13.2 Mixins as built
+
+| Id | Mixin | Target | Kind |
+| --- | --- | --- | --- |
+| C-1 | `ChatListenerMixin` | `ChatListener.showMessageToPlayer(ChatType$Bound, PlayerChatMessage, Component, GameProfile, boolean, Instant)`, both `INVOKE ChatComponent.addPlayerMessage(Component, MessageSignature, GuiMessageTag)` (`require = 2`) | MixinExtras `@WrapOperation`; `@Local(argsOnly = true)` for the `Bound` and the `GameProfile` |
+| C-2 | `ChatComponentAccessor` | `ChatComponent.allMessages` | `@Accessor` (read the list; no new fields) |
+
+The refresh runs on Fabric's `ClientTickEvents.END_CLIENT_TICK`. Each tick it
+compares one value (the current position, or off) with the last applied one;
+only on a change does it go through the chat. No other Mixin was needed: no
+access widener, no padding Mixin (Q-CH3), nothing on TAB.
+
+### 13.3 Chat integrity
+
+- C-1 passes vanilla's signature and trust tag through unchanged and only replaces the `Component` argument. The report log (`LoggedChatMessage.Player`), narration and `PlayerChatMessage` are never touched (F-6).
+- For each player message shown, the original decorated component, the bound name and the sender profile are kept for the last 100 messages (vanilla's chat history size). Every display copy is built from the original, so a message never gets two heads, and turning the feature off puts back the original component itself (same object).
+- C-2 replaces a `GuiMessage` only by a new one with the same time, signature, source and tag, at the same index, and then calls vanilla's `rescaleChat()`. As with vanilla's own chat option changes, this scrolls chat back to the bottom. Messages it does not know (system messages, deleted-message markers) are left alone, so deletion still works by signature.
+- The glyph's plain-text fallback is empty, so `getString()` and the `[CHAT]` line in the game log stay exactly as without the feature.
+- Messages shown while the feature is off are remembered too, so enabling adds heads to them.
+
+### 13.4 Findings during implementation
+
+- **Glyph tinting.** The player-head glyph takes the color of its text. In a gray italic whisper, the head came out darker. The head is therefore fixed to white, upright and not bold, so the skin always shows its own colors (game-test screenshot `04b-styled-chat-types`).
+- **Console `/say`** reaches the client as disguised chat: player source, but no sender profile. It gets no head (CH-1, CH-AC-5).
+
+### 13.5 Reference comparison (CH-AC-15, CH-AC-17)
+
+Run with the downloaded reference JAR (SHA-512 checked against Modrinth) in
+the disposable `build/run-gametest-chatheads-reference` directory:
+`./gradlew runGameTestChatheadsReference -PchatHeadsJar=<path>`. Nothing is
+added to the build.
+
+- With Chat Heads 1.3.3 loaded, `chat_heads` starts disabled with the conflict status, and an explicit enable wins (asserted).
+- The reference builds the same structure in vanilla chat: an empty component holding a `PlayerSprite` glyph (hat on) and the name, as the first argument of `chat.type.text`, with the glyph colored white.
+- Head size and baseline are the same (8×8 GUI pixels at chat scale 1, on the text baseline, with the text shadow).
+- **Deliberate differences:**
+  - Spacing: the reference leaves 1 px after the head; this feature uses native glyph spacing (0 px) (Q-CH3).
+  - Identification: only the sender profile (Q-CH2). The reference also guesses from text by default; in singleplayer it did not add a head to a `tellraw` line that looks like player chat, and neither does this feature.
+  - Plain text: the reference's glyph has no fallback, so its plain text reads `[Name head]`; this feature keeps the original text.
+  - With both enabled, this feature cannot find the name (the reference has already wrapped it), so its head goes before the line: two heads per message, as expected from the declared conflict.
+- The reference's Before Line mode was not captured: it writes no configuration file without its optional Cloth Config dependency. Left for manual comparison.
+
+### 13.6 Tests
+
+- Unit tests: `ChatHeadsFeatureTest` (descriptor, registration, LIVE, conflict default and explicit override), `ChatHeadComponentsTest` (glyph, Before Name, nested styled names, Before Line, fallback by identity, first occurrence only, hover contents not searched) and `ChatHeadMessagesTest` (no head while off or without a sender, refresh keeps time, signature, source and tag, idempotence, no stacking, original restored, history bound). Translation completeness is covered by `LocalizationTest`, which reads every registered feature.
+- Client game test `./gradlew runGameTestChatheads` (disposable singleplayer world). It asserts: one head from the sender's UUID, unchanged text, the player source and trust tag the same with the feature on and off, the report log without heads, no head on `tellraw`, console `/say` or `/help` output, live refresh on enable, position change and disable, with order, time, signature and tag kept, and Food HUD still active. Screenshots cover the default skin, Before Name and Before Line, styled chat types, wrapping, chat scale 0.5 and 1.0, GUI scale 1 to 4, scrolling and existing lines after disabling.
+
+### 13.7 Not covered automatically
+
+- TAB (CH-AC-16): singleplayer shows no player list for one player. No code touches TAB; check it on the server.
+- Custom skins and other players (CH-AC-2, QA 1–2), Paper and signed secure chat (CH-AC-4, CH-AC-11), the report screen (QA 8), opacity and fading, and Portuguese in game (QA 10) remain in the manual QA checklist (§11).
