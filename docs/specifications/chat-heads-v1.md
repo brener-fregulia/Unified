@@ -2,8 +2,8 @@
 
 Status labels follow [AGENTS.md](../../AGENTS.md#decision-status-labels).
 
-This is a specification and discovery document only. No code is written
-until the PO approves the [Proposed] parts.
+The PO approved this specification on 2026-11-22, with the clarifications
+in §1.1. Implementation notes are in §13.
 
 ## 1. Approved direction [Approved 2026-11-22]
 
@@ -20,6 +20,15 @@ until the PO approves the [Proposed] parts.
 | **R-9** | Player identity comes from reliable sender metadata, never only from parsing names in message text. Not every server uses `<PlayerName>`. |
 | **R-10** | TAB player heads are vanilla in 26.3 when the server is in online mode. Chat Heads does not draw or change anything in TAB. |
 | **R-11** | If the original Chat Heads is installed, the M0 conflict policy applies: disabled by default, the player's explicit choice wins, and a warning is shown when both run. |
+
+### 1.1 Approval and clarifications [Approved 2026-11-22]
+
+- CH-1 to CH-8, the configuration in §7 and CH-AC-1 to CH-AC-17 are approved, subject to the points below.
+- **C-1** is approved.
+- **C-2** is approved on condition that the original chat history and signed-message integrity are preserved. If updating lines already in chat would need unsafe changes to the chat subsystem, the limitation is reported and toggles apply to new messages only.
+- **Q-CH2:** only reliable sender metadata. No name parsing or heuristics in V1.
+- **Q-CH3:** native player-head glyph spacing. No Mixin only for a 1 px gap.
+- **Q-CH4:** heads in books, signs and other screens stay deferred.
 
 ## 2. Sources
 
@@ -66,7 +75,7 @@ Because the head is a glyph in the text (F-1), vanilla's chat code handles
 it like text: wrapping, chat scale, opacity, fading, scrolling, text shadow,
 GUI scale and line height all work with no extra code.
 
-## 5. Behavior [Proposed]
+## 5. Behavior [Approved 2026-11-22]
 
 - **CH-1 Identity.** A head is added only to **signed or unsigned player chat that arrives with a sender profile** (F-4), using that profile. System messages, command responses, plugin broadcasts and disguised chat get **no head** in V1 (F-7, R-9). This is the reference mod's "UUID only" mode.
 - **CH-2 Position, Before Name (default).** The head is inserted directly before the sender's name component, found by identity in the decorated message (F-5). No extra space is inserted, so `<Name> Hello` becomes `<[head]Name> Hello`. This matches the PO's chat reference. The angle brackets and formatting come from the chat type and are untouched.
@@ -77,7 +86,7 @@ GUI scale and line height all work with no extra code.
 - **CH-7 No extra traffic.** No skin API or profile lookups. Skins come through vanilla's cache, as for TAB.
 - **CH-8 TAB.** Not touched (R-10).
 
-## 6. Technical approach [Proposed]
+## 6. Technical approach [Approved 2026-11-22]
 
 - **TA-1** `chat_heads` is registered through `Features`, in category `CHAT_SOCIAL`, enabled by default, with toggle mode `LIVE`, and a `ConflictDescriptor("chat_heads", …)`.
 - **TA-2** Building the head and locating the name are pure functions on `Component` trees, with unit tests (vanilla format, custom chat types, nested styles, missing name).
@@ -89,7 +98,7 @@ GUI scale and line height all work with no extra code.
 - **TA-4** Mixin **C-2**, for LIVE: an accessor for `ChatComponent.allMessages` (F-10). Each display change made by C-1 is remembered (original ↔ with head). On disable, `GuiMessage`s already in chat are swapped back to their originals and `rescaleChat()` rebuilds the lines; enabling does the reverse. Without C-2, a toggle would only affect new messages (Q-CH1).
 - **TA-5** No new skin manager, rendering framework or chat abstraction. No access widener.
 
-## 7. Configuration [Proposed]
+## 7. Configuration [Approved 2026-11-22]
 
 | Key | Type | Default | Apply |
 | --- | --- | --- | --- |
@@ -105,7 +114,7 @@ Left out on purpose, as cosmetic or out of V1 scope:
 
 ## 8. Parity matrix
 
-| Behavior | Chat Heads 1.3.3 (status) | Chat Heads V1 [Proposed] |
+| Behavior | Chat Heads 1.3.3 (status) | Chat Heads V1 [Approved 2026-11-22] |
 | --- | --- | --- |
 | Head in player chat, Before Name | Default (confirmed) | Same (CH-2) |
 | Before Line | Option (confirmed) | Same (CH-3) |
@@ -122,13 +131,13 @@ Left out on purpose, as cosmetic or out of V1 scope:
 | Books, config screens | Render targets (confirmed) | Not in V1 |
 | TAB | Not affected | Vanilla, untouched (R-10) |
 
-## 9. Compatibility [Proposed]
+## 9. Compatibility [Approved 2026-11-22]
 
 - **Chat Heads (`chat_heads`):** declared conflict. Both would insert heads into the same messages (duplicates). The M0 policy applies (R-11).
 - **Chat Patches:** the reference ships a compatibility Mixin for it (confirmed), so it changes chat storage. No documented conflict with this design. Listed for QA, not declared.
 - **No other verified conflicts.** Mods that replace `ChatComponent` drawing could still show the head, because it is an ordinary text glyph.
 
-## 10. Acceptance criteria [Proposed]
+## 10. Acceptance criteria [Approved 2026-11-22]
 
 | Id | Criterion |
 | --- | --- |
@@ -150,7 +159,7 @@ Left out on purpose, as cosmetic or out of V1 scope:
 | **CH-AC-16** | TAB looks the same with the feature on and off: vanilla heads in online mode, no duplicates. |
 | **CH-AC-17** | With `chat_heads` installed, the feature starts disabled with the conflict status, and an explicit enable wins. |
 
-## 11. Manual QA checklist [Proposed]
+## 11. Manual QA checklist [Approved 2026-11-22]
 
 Use the PO's Prism testing instance for multiplayer, and disposable game
 tests for everything else. Never change server authentication or install a
@@ -169,7 +178,7 @@ server-side mod.
 
 ## 12. Open questions
 
-- **Q-CH1 [Open]** Do you approve Mixin C-2, so toggles also update messages already in chat? Without it, toggles only affect new messages.
-- **Q-CH2 [Open]** Should V1 stay **UUID-only** (no heads on system-message chat from plugins like FreedomChat), as R-9 suggests? Or should a later version add an opt-in, clearly labeled name match, for example matching `ChatType.Bound.name()` of disguised chat against the player list? The reference mod enables heuristics by default.
-- **Q-CH3 [Open]** If the native glyph touches the name (0 px), should a 1 px gap like the reference's default be added? That needs a Mixin on glyph spacing, which V1 otherwise avoids.
+- **Q-CH1 [Approved 2026-11-22]** C-2 is approved conditionally (§1.1).
+- **Q-CH2 [Approved 2026-11-22]** Sender metadata only; no name parsing or heuristics in V1. A later opt-in name match would need a new specification.
+- **Q-CH3 [Approved 2026-11-22]** Native glyph spacing; no padding Mixin.
 - **Q-CH4 [Deferred]** Heads in books, signs and config screens, as the reference does.
