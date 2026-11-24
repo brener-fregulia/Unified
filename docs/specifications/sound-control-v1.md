@@ -1,7 +1,8 @@
 # Sound Control V1 (M1.5)
 
 Status labels follow [AGENTS.md](../../AGENTS.md#decision-status-labels).
-Approved by the Product Owner on 2026-11-23 (§0). Verified facts about
+Approved by the Product Owner on 2026-11-23 (§0). Implemented on
+2026-11-23; see §15 for how it was built and tested. Verified facts about
 Minecraft and other mods carry no label. Rows marked Future or Exclude in
 §14 stay **[Deferred]** or excluded.
 
@@ -829,3 +830,107 @@ Prism instance or world.
 | Keyboard shortcuts (mute last sound and similar) | **[Deferred]** | No demonstrated need; the brief asks for none |
 | Wildcard or pattern rules (`entity.villager.*`) | **[Deferred]** | Ambiguity with ids; revisit with feedback |
 | Hiding subtitles of muted sounds | **[Deferred]** | Q-SC8 |
+
+## 15. Implementation notes [Implemented 2026-11-23]
+
+### 15.1 Code
+
+| Part | Location |
+| --- | --- |
+| Descriptor, keys, limits, conflicts | `feature/soundcontrol/SoundControlSettings` |
+| Rule model (volume + muted flag, factor) | `SoundRule`, `SoundRules` (stored map ⇄ rules ⇄ lookup table) |
+| Lifecycle and change detection | `SoundControlFeature` |
+| Minecraft side: table, listener, entry points | `SoundControlHooks` |
+| Recent history | `RecentSounds` (generic, Minecraft-free) |
+| Search and filters | `SoundSearch` |
+| Screen | `SoundControlScreen` |
+| Shared mod names (Q-SC10) | `platform/ModNames`, also used by Target Info |
+| Core map setting (Q-SC3) | `SettingDescriptor.MapSetting`, `ConfigurationService` (§8.2) |
+
+### 15.2 Mixins
+
+- `SoundEngineVolumeMixin`: `@ModifyReturnValue` on
+  `calculateVolume(SoundInstance)` and `@ModifyExpressionValue` on the
+  `calculateVolume(FLSoundSource)` call in `play`, both multiplying by
+  `SoundControlHooks.factor` (§7.2).
+- `SoundManagerAccessor` (`soundEngine`) and `SoundEngineAccessor`
+  (`loaded`): read-only, used to show the no-audio-device message.
+
+### 15.3 As built, where the design left room
+
+- **Publication timing.** The Core gives features no settings callback
+  (M0 §3.2). `SoundControlFeature.sync()` runs at the end of every client
+  tick, compares the effective settings snapshot by identity, and
+  publishes new rules only if they changed. Confirmed changes therefore
+  reach the audio path on the next client tick. A failed save changes no
+  snapshot, so nothing is applied.
+- **History listener** is attached on the first client tick after enable
+  (the sound manager may not exist during client start), removed on
+  disable, and the history is cleared on disable.
+- **Screen.**
+  - The search box has focus when the screen opens and after a tab
+    change. The query and filters are kept across tabs.
+  - Under 420 GUI pixels wide, the search box moves to its own row.
+  - The slider always shows the configured volume. A muted sound shows a
+    "(muted)" badge after its name. Mute/Unmute and Reset are short
+    translated text buttons sized to their text.
+  - The Recent tab refreshes its data once per second ("last heard",
+    counts); the row order updates when the player changes tab or search,
+    so rows do not move under the cursor.
+  - The All sounds tab lists at most 200 matches and counts the rest.
+  - Opened from Music & Sound Options, the screen uses its own draft and
+    its Done saves and applies; Cancel discards. Opened from the QoL
+    settings, Done returns the edits to that screen's draft.
+- **Entry button** in Music & Sound Options is added as the last row of
+  vanilla's options list, so it may need a scroll on small windows.
+- **Persistence.** Entries are written as `{"volume": n, "muted": b}`. No
+  migration and no `schemaVersion` change.
+
+### 15.4 Tests
+
+- **Unit (JUnit 5):** `MapSettingConfigTest` (Core parsing, per-entry
+  preservation, limits, read-only), `SoundRulesTest`, `RecentSoundsTest`,
+  `SoundSearchTest`, `SoundControlFeatureTest` (lifecycle, LIVE
+  application, failed save, mute memory across restart, conflicts),
+  `LocalizationTest`. Full suite: 237 tests, 0 failures.
+- **Game tests:** `runGameTestSoundcontrol`, then
+  `runGameTestSoundcontrolrestart` in `build/run-gametest-soundcontrol`.
+  On the development machine (OpenAL device present) all 9 + 1 checks
+  passed with 0 skipped:
+  - engine gain at 0/25/50/100% against vanilla's own volume math;
+  - a muted event `NOT_STARTED` while an unrelated one is `STARTED`;
+  - history capture of a muted event;
+  - OpenAL `AL_GAIN` of a playing loop at 50%, muted (still playing),
+    disabled (vanilla gain), re-enabled (muted again) and reset;
+  - a draft without Done changes nothing;
+  - the screen from Music & Sound Options at GUI scales 1–4 and 854×480,
+    with Cancel discarding and Done saving and applying;
+  - resource reload;
+  - TNT fuse muted alone, then the explosion event muting both TNT and
+    Creeper explosions;
+  - restart restoring "25%, muted" and unmuting to 25%.
+
+  Without an audio device, play-result, history, OpenAL and TNT
+  assertions log SKIPPED and are never counted as passed.
+- **Regression:** Main, Restart, Newer, Corrupt, Food HUD, Chat Heads,
+  Keyboard Map and Target Info scenarios pass.
+
+### 15.5 Known limitations
+
+- TNT and Creeper (and other default) explosions are one event and cannot
+  be separated (§4).
+- A muted one-shot sound that was never started does not play when
+  unmuted; its next occurrence does (§5.2).
+- Never-heard sounds have no known category, so the category filter shows
+  only heard sounds.
+- Without an audio device nothing is heard or recorded; the screen says
+  so. This path was not exercised in game tests here (a device was
+  present); it is covered by the SKIPPED reporting and manual QA.
+- Delayed sounds and device switches use the same `play` path and need no
+  special handling. They are not covered by a dedicated automated test.
+- Co-installation with Extreme Sound Muffler, Sound Controller or Decibel
+  was not run in game. The conflict policy is unit-tested; behavior with
+  both active is not verified (§10).
+- No profiling numbers were taken. The design keeps the audio path to a
+  volatile read and a hash lookup, with no allocation, I/O or logging.
+  No performance claim is made.

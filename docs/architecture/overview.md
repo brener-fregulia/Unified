@@ -109,6 +109,15 @@ Sources: `meta.fabricmc.net` (game and loader versions),
 `maven.fabricmc.net` metadata (Loom, Fabric API), `services.gradle.org`
 (Gradle), and the official `FabricMC/fabric-example-mod` 26.3 setup.
 
+## Shared platform utilities [Approved 2026-11-23]
+
+Small helpers that more than one feature needs live in
+`io.github.brener_fregulia.qolunified.platform`, not inside a feature
+(feature isolation). The first one is `ModNames`: a mod's display name for
+a registry namespace from Fabric Loader metadata, falling back to the
+namespace. Target Info and Sound Control both use it
+([Sound Control V1 Q-SC10](../specifications/sound-control-v1.md#0-approval-approved-2026-11-23)).
+
 ## Open questions
 
 - **Q-A1 [Resolved 2026-11-21]** Fabric API is an approved dependency.

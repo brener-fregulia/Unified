@@ -79,3 +79,19 @@ released yet.
   knows the name. Players show their name only. Eight settings, all
   applied live. Disabled by default when Jade or WTHIT is installed, unless
   you enable it yourself.
+- Sound Control (`sound_control`, new Audio category): lower any individual
+  sound from 0% to 100%, or mute it, without touching vanilla's volume
+  sliders. Mute keeps the volume you set, also after a restart. A Recent
+  tab lists the last 128 sounds heard this session (muted ones included,
+  so they are easy to restore). Rules and All sounds tabs, with search by
+  name, id or mod, category and mod filters, per-sound reset and Reset all.
+  Works for modded sounds too. Changes apply after Done, including to
+  sounds that are already playing. Open it from the QoL: Unified settings
+  or with the new Sound Control... button in Music & Sound Options. Sounds
+  that share one event change together: TNT and Creeper explosions are the
+  same sound and can't be told apart. Disabled by default when Extreme
+  Sound Muffler, Sound Controller or Decibel is installed, unless you
+  enable it yourself.
+- Configuration: a map setting type for per-item rules (used by Sound
+  Control). Invalid or extra entries are ignored and kept in the file; no
+  schema version change.

@@ -49,7 +49,7 @@ assets may be copied.
 | World map | Maps & Navigation | `world_map` | M4 [Approved] | |
 | Waypoints | Maps & Navigation | `waypoints` | M4 [Approved] | |
 | Persistent exploration data | Maps & Navigation | `exploration_data` | M4 [Approved] | Stored separately from configuration |
-| Individual sound volume and mute (Sound Control) | Audio | `sound_control` [Approved 2026-11-23] | M1.5 [Approved 2026-11-23] | Extreme Sound Muffler, Sound Controller, Decibel; spec: [Sound Control V1](../specifications/sound-control-v1.md) [Approved 2026-11-23]. Event-level only: TNT and Creeper explosions share one sound event |
+| Individual sound volume and mute (Sound Control) | Audio | `sound_control` [Approved 2026-11-23] | M1.5 [Approved 2026-11-23] | Extreme Sound Muffler, Sound Controller, Decibel; spec: [Sound Control V1](../specifications/sound-control-v1.md) [Approved 2026-11-23]; implemented. Event-level only: TNT and Creeper explosions share one sound event |
 
 M3 and M4 assignments follow directly from the milestone names in the
 [vision](vision.md#milestones-approved).
