@@ -5,6 +5,7 @@ import io.github.brener_fregulia.qolunified.core.FeatureRegistry;
 import io.github.brener_fregulia.qolunified.feature.chatheads.ChatHeadsFeature;
 import io.github.brener_fregulia.qolunified.feature.foodhud.FoodHudFeature;
 import io.github.brener_fregulia.qolunified.feature.keyboardmap.KeyboardMapFeature;
+import io.github.brener_fregulia.qolunified.feature.soundcontrol.SoundControlFeature;
 import io.github.brener_fregulia.qolunified.feature.targetinfo.TargetInfoFeature;
 import java.util.List;
 
@@ -24,6 +25,7 @@ public final class Features {
         builder.register(new ChatHeadsFeature());
         builder.register(new KeyboardMapFeature());
         builder.register(new TargetInfoFeature());
+        builder.register(new SoundControlFeature());
         developmentFeatures.forEach(builder::register);
         return builder.build();
     }

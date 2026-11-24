@@ -4,6 +4,7 @@ import io.github.brener_fregulia.qolunified.core.SettingsSnapshot;
 import io.github.brener_fregulia.qolunified.feature.targetinfo.ToolAdvice.Category;
 import io.github.brener_fregulia.qolunified.feature.targetinfo.ToolAdvice.Probe;
 import io.github.brener_fregulia.qolunified.feature.targetinfo.ToolAdvice.Tier;
+import io.github.brener_fregulia.qolunified.platform.ModNames;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -12,7 +13,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.multiplayer.PlayerInfo;
@@ -285,8 +285,7 @@ final class TargetResolver {
     // ---- Shared ----
 
     private Component modName(String namespace) {
-        return modNames.computeIfAbsent(namespace, ns -> Component.literal(FabricLoader.getInstance()
-                .getModContainer(ns).map(c -> c.getMetadata().getName()).filter(n -> !n.isBlank()).orElse(ns)));
+        return modNames.computeIfAbsent(namespace, ns -> Component.literal(ModNames.displayName(ns)));
     }
 
     static Component text(DetailLine line) {
