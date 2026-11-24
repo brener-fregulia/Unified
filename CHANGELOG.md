@@ -95,3 +95,8 @@ released yet.
 - Configuration: a map setting type for per-item rules (used by Sound
   Control). Invalid or extra entries are ignored and kept in the file; no
   schema version change.
+- Sound Control live preview: moving a slider, muting, unmuting or
+  resetting a sound is heard immediately, including on sounds already
+  playing, so volumes can be set by ear. Nothing is saved until you confirm.
+  Cancel or Escape restores what you heard before, and canceling the QoL
+  settings after Done in Sound Control restores the saved rules.

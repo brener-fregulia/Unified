@@ -2,7 +2,8 @@
 
 Status labels follow [AGENTS.md](../../AGENTS.md#decision-status-labels).
 Approved by the Product Owner on 2026-11-23 (§0). Implemented on
-2026-11-23; see §15 for how it was built and tested. Verified facts about
+2026-11-23; see §15 for how it was built and tested. Live audio preview
+(M1.5.1) is specified and recorded in §16. Verified facts about
 Minecraft and other mods carry no label. Rows marked Future or Exclude in
 §14 stay **[Deferred]** or excluded.
 
@@ -17,7 +18,9 @@ assets, translations or configurations are used.
 - Q-SC2: new feature category Audio (`audio`).
 - Q-SC3: extend the Core with a minimal typed map setting that respects the
   configuration contracts (§8.2).
-- Q-SC4: changes apply after confirmation, not while sliders move.
+- Q-SC4: changes are **saved** only after confirmation, not while sliders
+  move. Amended by the Product Owner on 2026-11-23 (M1.5.1): edits are
+  **audible** at once through a runtime-only live preview (§16).
 - Q-SC5: **mute keeps the configured volume across restarts.** This
   replaces the single-integer proposal: volume and muted state are stored
   separately (§5.1, §8.1).
@@ -477,8 +480,8 @@ Done/Cancel at the bottom.
 - Rules are saved and applied when the player presses Done on the main
   QoL: Unified settings screen. This matches the approved M0 transaction
   rule (save before runtime apply) [Approved 2026-11-21, M0].
-- Whether the sound screen should preview edits live before confirmation
-  is Q-SC4.
+- Edits are audible at once through the live preview (§16). The preview is
+  runtime audio only. It writes nothing and ends when the transaction ends.
 - The generic feature settings screen shows a one-line summary
   ("3 sound rules") instead of a control for the rule table.
 
@@ -934,3 +937,129 @@ Prism instance or world.
 - No profiling numbers were taken. The design keeps the audio path to a
   volatile read and a hash lookup, with no allocation, I/O or logging.
   No performance claim is made.
+
+## 16. Live audio preview (M1.5.1) [Approved 2026-11-23]
+
+### 16.1 Requirement
+
+Product Owner feedback after manual testing: a change was audible only
+after Done in Sound Control and then Done in the QoL settings, so volume
+could not be set by ear. Edits must be audible immediately, without giving
+up the M0 transaction model.
+
+**Live preview changes runtime audio only, until the transaction is
+committed.** It never writes the configuration file, and it never changes
+the settings draft before Done.
+
+### 16.2 Effective rule selection
+
+For each sound, `SoundControlHooks.factor` uses, in order:
+
+1. the **preview override** for its event id, if the event is being
+   previewed;
+2. the **committed rule**, if any;
+3. **vanilla** (factor 1).
+
+While the feature is disabled there are no overrides and no committed
+rules, so every sound is vanilla.
+
+The preview is an immutable table of overrides, published through a
+volatile field. It holds only the events whose previewed factor differs
+from the committed one, so it is usually tiny. The audio path reads it
+exactly like the committed table: one volatile read and a hash lookup,
+with no locks.
+
+### 16.3 What updates the preview
+
+| Action | Preview |
+| --- | --- |
+| Opening Sound Control | Starts from the working copy (the draft's value) |
+| Slider move, Mute, Unmute, Reset | That event's override is updated at once |
+| Reset all (after confirmation) | Every committed rule previews vanilla |
+| Done, opened from the QoL settings | Edits go into the parent draft; the preview continues (it now equals the draft) |
+| Done, opened from Music & Sound Options | Saved and applied; the committed rules are published at once and the preview ends, so nothing audible changes |
+| Cancel or Escape, opened from the QoL settings | Returns to the parent draft's value (edits made before an earlier Done stay audible) |
+| Cancel or Escape, opened from Music & Sound Options | Ends; the committed rules are audible again |
+
+### 16.4 Lifetime and rollback
+
+The preview belongs to the settings draft being edited, not to one
+screen. Screens that edit a draft implement `ui.DraftScreen`: the main QoL
+settings screen, the feature settings screen, Sound Control and its
+Reset all confirmation.
+
+At the end of every client tick:
+- If the screen shown edits a different draft, that draft's value is
+  previewed.
+- If no draft screen is shown, the preview ends.
+
+This covers parent Done and parent Cancel, disconnecting, any screen
+replacing ours without Cancel, and leaving to another screen such as
+Keyboard Map (returning re-derives the draft's preview). Disabling the
+feature ends the preview immediately.
+
+After a resource reload, previews keep working because they are keyed by
+event id. Committed rules published while a preview is active rebuild its
+overrides against the new committed table.
+
+**Example: the nested transaction.**
+1. Open QoL settings, then Sound Control.
+2. Move a slider to 25%; it is audible.
+3. Press Done; 25% stays audible while the parent screen is open.
+4. Press Cancel in the parent; the persisted rules are audible again
+   within one tick, including on playing sounds.
+
+### 16.5 Refresh strategy
+
+Every effective change calls vanilla's
+`SoundManager.refreshCategoryVolume(MASTER)`, the same call vanilla's
+volume sliders make on every move. It recomputes the gain of playing sounds
+through the hooked `calculateVolume`. Pitch, range, position and category
+volumes are unchanged.
+
+A refresh happens only when an event's effective factor actually changes.
+A slider position that rounds to the same percentage, or an override equal
+to the committed value, does nothing.
+
+A slider step copies only the small override table. There is no disk I/O,
+and nothing waits on the audio thread (OpenAL updates are queued on the
+sound engine's executor, as vanilla does).
+
+### 16.6 Configuration contract
+
+Unchanged. Drafts, commit, Save → Apply, Cancel and read-only behavior work
+as in M0. The only shared addition is the `ui.DraftScreen` interface, which
+tells features which draft the shown screen is editing.
+
+### 16.7 Tests [Implemented 2026-11-23]
+
+- **Unit:** `SoundRulesTest` (overrides only for changed factors; reset
+  and reset all; mute equivalence) and `SoundControlFeatureTest` (disable
+  ends the preview).
+- **Game test** `runGameTestSoundcontrol`: on the development machine, all
+  checks passed with 0 skipped. It drives the real UI with mouse clicks on
+  the slider, and measures OpenAL `AL_GAIN` of a playing loop at every step:
+  - Music & Sound Options entry: slider 50%, Mute, Unmute, Reset, 75%,
+    then Escape restores; Reset all then Cancel restores; Done commits
+    with no audible jump.
+  - QoL settings entry: 70%, Done, Back, parent Cancel restores the
+    persisted 40%. Then: Cancel restores the draft; 60%, Done, Back,
+    parent Done persists 60%.
+  - No stale preview after the screen is replaced, or after the feature
+    is disabled and re-enabled.
+  - Before each confirmation, the configuration file is unchanged (bytes
+    and modification time).
+
+  Without an audio device, gain checks are reported SKIPPED; factor checks
+  still run.
+
+### 16.8 Known limitations
+
+- A one-shot sound muted before it started is not replayed when the
+  preview unmutes it (§5.2); repeating sounds are heard on their next
+  occurrence.
+- After a confirmed parent Done, committed rules are published on the next
+  client tick (§15.3). The preview stays active until then, so nothing
+  audible changes.
+- A preview set from the main settings screen follows the draft only for
+  Sound Control rules. Toggling the feature itself still applies on Done.
