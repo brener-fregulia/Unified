@@ -26,7 +26,7 @@ assets may be copied.
 | Chat & Social | `chat_social` |
 | Performance & Network | `performance_network` |
 | Maps & Navigation | `maps_navigation` |
-| Audio | `audio` [Proposed; Q-SC2] |
+| Audio | `audio` [Approved 2026-11-23] |
 
 ## Features
 
@@ -49,7 +49,7 @@ assets may be copied.
 | World map | Maps & Navigation | `world_map` | M4 [Approved] | |
 | Waypoints | Maps & Navigation | `waypoints` | M4 [Approved] | |
 | Persistent exploration data | Maps & Navigation | `exploration_data` | M4 [Approved] | Stored separately from configuration |
-| Individual sound volume and mute (Sound Control) | Audio [Proposed] | `sound_control` | M1.5 [Proposed] | Extreme Sound Muffler, Sound Controller, Decibel; spec: [Sound Control V1](../specifications/sound-control-v1.md) [Proposed]. Event-level only: TNT and Creeper explosions share one sound event |
+| Individual sound volume and mute (Sound Control) | Audio | `sound_control` [Approved 2026-11-23] | M1.5 [Approved 2026-11-23] | Extreme Sound Muffler, Sound Controller, Decibel; spec: [Sound Control V1](../specifications/sound-control-v1.md) [Approved 2026-11-23]. Event-level only: TNT and Creeper explosions share one sound event |
 
 M3 and M4 assignments follow directly from the milestone names in the
 [vision](vision.md#milestones-approved).
@@ -65,5 +65,5 @@ M3 and M4 assignments follow directly from the milestone names in the
   vanilla's own skin pipeline and cache (no extra service).
 - **Q-F4 [Open]** Should inventory features be disabled by default on
   multiplayer servers (some servers forbid automated inventory actions)?
-- **Q-F5 [Open]** Add an Audio category for `sound_control`, or place it
-  in an existing category (Q-SC2 in the Sound Control V1 spec).
+- **Q-F5 [Resolved 2026-11-23]** Audio category added for `sound_control`
+  (Q-SC2 in the Sound Control V1 spec).

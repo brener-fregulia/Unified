@@ -1,31 +1,54 @@
 # Sound Control V1 (M1.5)
 
 Status labels follow [AGENTS.md](../../AGENTS.md#decision-status-labels).
-Nothing in this document is approved yet. Verified facts about Minecraft
-and other mods carry no label; every decision is **[Proposed]**,
-**[Open]** or **[Deferred]**. The decisions the Product Owner needs to make
-are listed in §13.
+Approved by the Product Owner on 2026-11-23 (§0). Verified facts about
+Minecraft and other mods carry no label. Rows marked Future or Exclude in
+§14 stay **[Deferred]** or excluded.
 
 A client-side feature that lowers or mutes individual Minecraft sound
 events without muting a whole vanilla sound category. It is inspired by the
 behavior of Extreme Sound Muffler and similar mods. No third-party code,
 assets, translations or configurations are used.
 
+## 0. Approval [Approved 2026-11-23]
+
+- Q-SC1: `sound_control`, M1.5, enabled by default, LIVE.
+- Q-SC2: new feature category Audio (`audio`).
+- Q-SC3: extend the Core with a minimal typed map setting that respects the
+  configuration contracts (§8.2).
+- Q-SC4: changes apply after confirmation, not while sliders move.
+- Q-SC5: **mute keeps the configured volume across restarts.** This
+  replaces the single-integer proposal: volume and muted state are stored
+  separately (§5.1, §8.1).
+- Q-SC6: at most 128 recent events and 4,096 stored rules.
+- Q-SC7: recent history is session-only.
+- Q-SC8: muted sounds keep vanilla subtitle behavior.
+- Q-SC9: a secondary "Sound Control…" button in vanilla's Music & Sound
+  Options.
+- Q-SC10: friendly mod names come from a small shared utility, not from
+  Target Info's private code.
+- Q-SC11: soft conflicts with Extreme Sound Muffler
+  (`extremesoundmuffler`), Sound Controller (`soundcontroller`) and
+  Decibel (`decibel`), ids verified from the 26.3 JARs (§2.1).
+- Q-SC12: the V1 scope in §14 and the event-only limitation in §4.3. TNT and
+  Creeper explosions (both `minecraft:entity.generic.explode`) are never
+  told apart.
+
 ## 1. Feature identity and goals
 
-### 1.1 Identity [Proposed]
+### 1.1 Identity [Approved 2026-11-23]
 
 | Item | Proposal |
 | --- | --- |
 | Feature id | `sound_control` |
 | Milestone | M1.5 |
-| Category | Audio (`audio`). This is a new category; the approved list has none for audio (Q-SC2) |
+| Category | Audio (`audio`), a new category (Q-SC2) |
 | Default | Enabled. With no rules, playback is exactly vanilla |
 | Lifecycle | LIVE enable/disable. Disabling stops all adjustments, including on sounds that are already playing (§7.4) |
 | Platform | Minecraft Java 26.3, Fabric, Java 25 |
 | Side | Client only. No server mod, no packets, no change to the world or gameplay |
 
-### 1.2 Goals [Proposed]
+### 1.2 Goals [Approved 2026-11-23]
 
 - G-1 Set a volume from 0% to 100% for each sound-event id; 0% mutes it.
 - G-2 Show recently heard sounds so the player can find the annoying one
@@ -36,7 +59,7 @@ assets, translations or configurations are used.
 - G-5 Leave Minecraft's master and category volumes, pitch, positioning and
   scheduling untouched.
 
-### 1.3 Non-goals [Proposed]
+### 1.3 Non-goals [Approved 2026-11-23]
 
 - Telling sources apart when they share one sound event, such as a TNT
   explosion and a Creeper explosion (§4).
@@ -273,7 +296,7 @@ Related sounds that *are* separate events:
 | Rule per individual entity | **Not recommended** | Same limits, plus entity identity in config is fragile and personal |
 | Radius or region rule around the player | **Feasible** | `SoundInstance` has coordinates; it is a different feature (§14) |
 
-### 4.3 Conclusion [Proposed]
+### 4.3 Conclusion [Approved 2026-11-23]
 
 - A vanilla client **cannot** reliably mute TNT explosions without also
   muting Creeper, end crystal, bed, respawn anchor, fireball and Wither
@@ -290,11 +313,14 @@ Related sounds that *are* separate events:
 
 ## 5. V1 sound control
 
-### 5.1 Per-event volume [Proposed]
+### 5.1 Per-event volume [Approved 2026-11-23]
 
-- **Range.** An integer percentage from 0 to 100 per sound-event id, in 1%
-  steps. 0% is "muted". 100% is "no rule" and is never stored.
-- **Effective volume.** `vanilla result of calculateVolume × percent / 100`.
+- **Range.** Each sound-event id has a configured volume (an integer
+  percentage from 0 to 100, in 1% steps) and a separate muted flag. 0%
+  plays nothing, like muted. Volume 100% and not muted is "no rule" and is
+  never stored.
+- **Effective volume.** `vanilla result of calculateVolume × factor`, where
+  the factor is 0 when muted and `volume / 100` otherwise.
   Master and category sliders, instance volume, the variant volume, pitch,
   attenuation, position and relative mode all stay exactly vanilla, so
   the result can never exceed vanilla.
@@ -303,12 +329,14 @@ Related sounds that *are* separate events:
   (`canStartSilent()` or category `MUSIC`), which keeps playing inaudibly.
   No channel is used for a muted non-tickable sound. Vanilla debug logging
   ("volume was zero") is unchanged.
-- **Mute toggle.** Mute sets 0%. Unmute restores the value the slider held
-  before muting in this screen session, otherwise 100% (Q-SC5).
+- **Mute toggle.** Mute sets the flag and keeps the configured volume.
+  Unmute clears the flag, so the sound returns to that volume, also after
+  a restart (Q-SC5). Moving the slider of a muted sound changes the stored
+  volume and leaves it muted.
 - **Match.** Exact match on the requested event id
   (`SoundInstance.getIdentifier()`). No wildcards in V1.
 
-### 5.2 Live behavior for each kind of sound [Proposed]
+### 5.2 Live behavior for each kind of sound [Approved 2026-11-23]
 
 Changes take effect when the player confirms the settings (§6.4). Then the
 feature publishes the new rule table and calls
@@ -329,7 +357,7 @@ through the hooked `calculateVolume(SoundInstance)`.
 Disabling the feature works the same way: an empty table, then a refresh,
 so playing sounds return to vanilla volume.
 
-### 5.3 Recently heard sounds [Proposed]
+### 5.3 Recently heard sounds [Approved 2026-11-23]
 
 - **Capture.** A vanilla `SoundEventListener` registered with
   `SoundManager.addListener` while the feature is enabled, and removed on
@@ -352,7 +380,7 @@ so playing sounds return to vanilla volume.
   past its first check, so nothing is captured; the screen says so (§6.5).
   Sounds a mod plays outside `SoundManager` never appear.
 
-### 5.4 Search and discovery [Proposed]
+### 5.4 Search and discovery [Approved 2026-11-23]
 
 - **Catalog.** Built when the screen opens from
   `SoundManager.getAvailableSounds()`. That covers vanilla, mods using
@@ -375,7 +403,7 @@ so playing sounds return to vanilla volume.
   catalog (mod removed) is still listed in the Rules tab, marked "Not
   installed", and can be reset (§8.3).
 
-## 6. UI and interaction [Proposed]
+## 6. UI and interaction [Approved 2026-11-23]
 
 ### 6.1 Entry points
 
@@ -463,7 +491,7 @@ Done/Cancel at the bottom.
 | Search, no result | "No sound matches \"…\"." |
 | Footer (always) | "Sounds that share an event change together. For example, TNT and Creeper explosions are one event." |
 
-## 7. Audio interception strategy [Proposed]
+## 7. Audio interception strategy [Approved 2026-11-23]
 
 ### 7.1 Options evaluated
 
@@ -491,7 +519,8 @@ MixinExtras handlers that call the same static function
    covers the starting gain and vanilla's zero-volume decision.
 
 `factor` returns 1.0 when the feature is inactive or the table is empty,
-otherwise `percent / 100f` for the id (1.0 if absent). The result is
+otherwise the rule's factor for the id (0 when muted, else
+`volume / 100f`; 1.0 if absent). The result is
 multiplied, never replaced. Both handlers chain with other mods' handlers
 of the same kind.
 
@@ -522,7 +551,7 @@ changes.
   fails at startup (`defaultRequire: 1`), as the existing Mixins do. This
   is caught in development, not in silent production.
 
-## 8. Persistence [Proposed]
+## 8. Persistence [Approved 2026-11-23]
 
 ### 8.1 Representation
 
@@ -535,10 +564,10 @@ no separate file:
   "features": {
     "sound_control": {
       "settings": {
-        "event_volumes": {
-          "minecraft:entity.generic.explode": 0,
-          "minecraft:entity.villager.ambient": 25,
-          "examplemod:machine.hum": 50
+        "event_rules": {
+          "minecraft:entity.generic.explode": {"volume": 100, "muted": true},
+          "minecraft:entity.villager.ambient": {"volume": 25, "muted": true},
+          "examplemod:machine.hum": {"volume": 50, "muted": false}
         }
       }
     }
@@ -550,33 +579,54 @@ no separate file:
   namespace `[a-z0-9_.-]+`, path `[a-z0-9_.\-/]+`, joined by `:`, at most
   256 characters. An id without a namespace is invalid; it is not read as
   `minecraft:`.
-- Value: an integer percentage, 0–100. 100 is valid, but the UI never
-  writes it: reset removes the entry.
-- Versioning: the global `schemaVersion` and its migrations (CFG-P5). A
-  later shape change, such as remembering a pre-mute volume, would be a
-  migration or a new setting key.
+- Entry fields: `volume`, an integer 0–100 (default 100), and `muted`, a
+  boolean (default false). A missing field takes its default. Saves write
+  both fields of every entry they write.
+- An entry equal to the defaults (100, not muted) means "no rule". The UI
+  never writes one: reset removes the entry.
+- Versioning: the global `schemaVersion` and its migrations (CFG-P5). The
+  setting is new and the earlier single-integer proposal was never
+  released, so **no migration** is needed and `schemaVersion` stays 1.
 - Default: an empty object, so no rules.
-- Bound: at most 4,096 entries (Q-SC6). Extra entries are ignored at
-  runtime, kept in the file and reported once in the log.
+- Bound: at most 4,096 valid entries (Q-SC6). Further entries are ignored at
+  runtime, kept in the file and reported once in the log. The UI refuses to
+  add a rule beyond the limit.
 
-### 8.2 Fit with the Configuration Service
+### 8.2 Core contract change: `MapSetting` [Approved 2026-11-23]
 
 Today's `SettingDescriptor` is a sealed interface with boolean, integer
-and enum settings. Values are scalar JSON primitives that are validated as
-a whole, and an invalid value is replaced by its default in memory. A
-dynamic map **does not fit** as it stands.
+and enum settings. Values are scalar JSON primitives validated as a whole.
+A dynamic set of per-event rules does not fit, so the Core gains one more
+variant. It is not a new configuration framework:
 
-Smallest compatible extension (a Core change that the PO or tech lead
-must approve, Q-SC3). It is not a new configuration framework:
+```java
+record MapSetting(String key, Pattern keyPattern, int maxEntries,
+        List<SettingDescriptor> fields, ApplyMode applyMode)
+```
 
-| Part | Change |
+- **Value:** an immutable `Map<String, Map<String, Object>>`. Each entry
+  holds every declared field with a value that the field descriptor
+  accepts. The default is the empty map.
+- **Fields** reuse the existing scalar descriptors (`BooleanSetting`,
+  `IntegerSetting`, `EnumSetting`) for their key, default and range. Their
+  own apply mode is unused: the map's apply mode applies. Nested maps are
+  rejected.
+- **Why one entry record instead of two integer maps:** volume and muted
+  state belong to the same id and change together, and a single map keeps
+  "no rule" equal to "no entry". An `IntegerMapSetting` could not store the
+  muted flag next to the volume without an encoding trick.
+
+`ConfigurationService` behavior:
+
+| Step | Behavior |
 | --- | --- |
-| `SettingDescriptor` | New variant `IntegerMapSetting(key, keyPattern, min, max, maxEntries, applyMode)`; default = empty map; value = immutable sorted `Map<String,Integer>` |
-| `ConfigurationService` load | Reads a JSON object; validates **each entry**: valid entries go into the value, invalid ones (bad id, non-integer, out of range) are skipped and logged once as a count |
-| `ConfigurationService` save | When the setting changed, writes the new valid entries **and keeps the original invalid entries unchanged** unless the player set the same key. This follows CFG-P6 and the "keep the original value until the player changes that setting" rule at entry level |
-| `SettingsDraft` | A typed setter for map values |
-| Generic settings screen | Shows a summary row for map settings (no editor) |
-| Tests | Unit tests for parsing, preservation, bounds and round trip |
+| Load | The JSON value must be an object; otherwise the whole setting uses its default and the original stays in the file (existing rule). Each member is validated on its own: the key must match the pattern, the value must be an object, and each present field must be valid. Missing fields take their defaults; unknown fields are ignored. Invalid members and members beyond `maxEntries` are skipped, and a single warning gives their count |
+| Save | Only when the setting's value changed. The original JSON object is the starting point. Removed keys are deleted. Added or changed keys get their declared fields written; if the original member was an object, its unknown fields are kept. Every other member, invalid ones included, is written back unchanged. If the original value was not an object, it is replaced |
+| Transactions, backups, migrations, read-only | Unchanged. The setting is saved and applied through the same Save → Apply path |
+
+Other Core changes: `SettingsDraft.setValue` accepts map values through
+the descriptor's `accepts`; the generic feature settings screen shows a
+summary row (rule count) for a map setting instead of an editor.
 
 The Core stays free of Minecraft classes: the id pattern is a plain regex,
 not `Identifier`.
@@ -588,14 +638,14 @@ not `Identifier`.
 | Id from a removed mod | Kept and listed as "Not installed"; it applies again if the mod comes back |
 | Id valid but never played | Kept; it has no effect until played |
 | Invalid id or value | Ignored at runtime, kept in the file, logged once (count only) |
-| `event_volumes` not an object | Default (empty) at runtime; the original is kept until the player changes rules (existing policy) |
+| `event_rules` not an object | Default (empty) at runtime; the original is kept until the player changes rules (existing policy) |
 | Newer `schemaVersion` | Existing read-only behavior |
 | `options.txt` | Never read or written by the feature; vanilla category sliders are untouched |
 
 Saving happens only on settings confirmation (existing policy), never on
 the audio thread and never per sound.
 
-## 9. Performance and threading [Proposed]
+## 9. Performance and threading [Approved 2026-11-23]
 
 | Concern | Design |
 | --- | --- |
@@ -614,7 +664,7 @@ No numeric FPS or latency claims are made. A profiling pass during
 implementation (the debug profiler or spark, in a busy mob farm) is part
 of QA (§12).
 
-## 10. Compatibility [Proposed]
+## 10. Compatibility [Approved 2026-11-23]
 
 | Mod / situation | Verified fact | Interaction | Proposal |
 | --- | --- | --- | --- |
@@ -634,7 +684,7 @@ of QA (§12).
 
 No `breaks` entry in `fabric.mod.json`, so the player keeps the choice.
 
-## 11. Acceptance criteria [Proposed]
+## 11. Acceptance criteria [Approved 2026-11-23]
 
 | Id | Criterion |
 | --- | --- |
@@ -642,7 +692,7 @@ No `breaks` entry in `fabric.mod.json`, so the player keeps the choice.
 | SC-AC-2 | At 25%, 50% and 100%, the gain the hook computes equals the vanilla `calculateVolume` result × 0.25, 0.5 and 1.0 (within float tolerance); pitch and attenuation range are identical to vanilla |
 | SC-AC-3 | Sounds without a rule have exactly vanilla gain, pitch, position and `PlayResult`, with the feature enabled or disabled |
 | SC-AC-4 | Master and category sliders still change every sound, ruled or not; a ruled sound is never louder than with the feature disabled; `options.txt` is unchanged by the feature |
-| SC-AC-5 | Rules survive a restart and appear in `config.json` under `sound_control.settings.event_volumes`; resetting a sound removes its entry |
+| SC-AC-5 | Rules survive a restart and appear in `config.json` under `sound_control.settings.event_rules`; resetting a sound removes its entry; a sound set to 25% and muted unmutes to 25% after a restart |
 | SC-AC-6 | A muted event still appears in the Recent tab, marked muted, and can be unmuted from there |
 | SC-AC-7 | A dev-fixture mod sound (namespace `qol_unified_dev`) is captured in Recent, found by its mod name in All sounds, and can be muted |
 | SC-AC-8 | A rule for an id that is not installed stays in the file, shows as "Not installed" in Rules, can be reset, and causes no error; invalid ids and out-of-range values are ignored at runtime and kept in the file |
@@ -674,7 +724,7 @@ blocks away.
 Pass: these results hold exactly. The UI footer and docs state that TNT
 and Creeper explosions cannot be separated.
 
-## 12. QA plan [Proposed]
+## 12. QA plan [Approved 2026-11-23]
 
 ### 12.1 Automated
 
@@ -682,7 +732,7 @@ and Creeper explosions cannot be separated.
   - percent-to-factor math;
   - the id pattern;
   - the rule table (empty fast path, lookup, bounds);
-  - `IntegerMapSetting` parsing, per-entry preservation, round trip and
+  - `MapSetting` parsing, per-entry preservation, round trip and
     the entry limit;
   - recent-list capacity and eviction order with counts;
   - search matching (name, id, namespace, category; all words; case);
@@ -721,40 +771,40 @@ Prism instance or world.
 9. In a disposable profile, install Extreme Sound Muffler 4.06 and check
    the conflict notice.
 
-## 13. Open Product Owner decisions
+## 13. Product Owner decisions (resolutions in §0)
 
-- **Q-SC1 [Open]** Approve the identity in §1.1: id `sound_control`, M1.5,
+- **Q-SC1 [Approved 2026-11-23]** Approve the identity in §1.1: id `sound_control`, M1.5,
   enabled by default, LIVE.
-- **Q-SC2 [Open]** Add a new category **Audio** (`audio`) to the approved
+- **Q-SC2 [Approved 2026-11-23]** Add a new category **Audio** (`audio`) to the approved
   category list, or place the feature in an existing one (closest:
   Performance & Network or Visuals; neither fits well). Proposal: add
   `audio`.
-- **Q-SC3 [Open]** Approve the Core extension `IntegerMapSetting` with
+- **Q-SC3 [Approved 2026-11-23]** Approve the Core extension (`MapSetting`, as approved) with
   per-entry validation and preservation (§8.2). This is an M0 Core change,
   so the M0 specification and the configuration policy doc would be
   updated with it.
-- **Q-SC4 [Open]** Should slider changes preview live while the sound
+- **Q-SC4 [Approved 2026-11-23]** Should slider changes preview live while the sound
   screen is open (and revert on Cancel), or apply only on settings
   confirmation as M0 requires today? Proposal: confirmation only in V1.
-- **Q-SC5 [Open]** Mute memory. Proposal: one stored integer per event,
+- **Q-SC5 [Approved 2026-11-23]** Mute memory. Proposal: one stored integer per event,
   with an unmute that restores the in-screen value (else 100%).
   Alternative: store volume and muted flag separately so the pre-mute
   volume survives restarts.
-- **Q-SC6 [Open]** Limits: 128 recent entries; 4,096 stored rules.
-- **Q-SC7 [Open]** Recent sounds session-only (proposal) or persisted.
-- **Q-SC8 [Open]** Subtitles of muted sounds: keep vanilla behavior
+- **Q-SC6 [Approved 2026-11-23]** Limits: 128 recent entries; 4,096 stored rules.
+- **Q-SC7 [Approved 2026-11-23]** Recent sounds session-only (proposal) or persisted.
+- **Q-SC8 [Approved 2026-11-23]** Subtitles of muted sounds: keep vanilla behavior
   (shown; proposal) or hide them.
-- **Q-SC9 [Open]** Add a "Sound Control…" button to vanilla's Music &
+- **Q-SC9 [Approved 2026-11-23]** Add a "Sound Control…" button to vanilla's Music &
   Sound options screen (proposal: yes; that is where players look).
-- **Q-SC10 [Open]** The friendly mod name lookup already exists inside
+- **Q-SC10 [Approved 2026-11-23]** The friendly mod name lookup already exists inside
   Target Info. Feature isolation forbids reusing its private code: move a
   small helper to the Core, or duplicate the one-line lookup.
-- **Q-SC11 [Open]** Approve the soft conflicts with Extreme Sound Muffler,
+- **Q-SC11 [Approved 2026-11-23]** Approve the soft conflicts with Extreme Sound Muffler,
   Sound Controller and Decibel (ids verified from their 26.3 JARs, §2.1).
-- **Q-SC12 [Open]** Approve the V1 scope in §14 and the event-level-only
+- **Q-SC12 [Approved 2026-11-23]** Approve the V1 scope in §14 and the event-level-only
   TNT conclusion in §4.3.
 
-## 14. V1 scope and deferred features [Proposed]
+## 14. V1 scope and deferred features [Approved 2026-11-23]
 
 | Capability | Classification | Reason |
 | --- | --- | --- |
