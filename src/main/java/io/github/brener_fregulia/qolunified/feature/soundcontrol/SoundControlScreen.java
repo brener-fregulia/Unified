@@ -1,6 +1,7 @@
 package io.github.brener_fregulia.qolunified.feature.soundcontrol;
 
 import io.github.brener_fregulia.qolunified.platform.ModNames;
+import io.github.brener_fregulia.qolunified.ui.DraftScreen;
 import io.github.brener_fregulia.qolunified.ui.SettingsDraft;
 import io.github.brener_fregulia.qolunified.ui.UiKeys;
 import java.util.ArrayList;
@@ -37,11 +38,12 @@ import net.minecraft.sounds.SoundSource;
 
 /**
  * The sound list (sound-control-v1.md §6): Recent, Rules and All sounds tabs, search, filters, and per-sound volume,
- * mute and reset. Edits change a working copy; Done writes it to the settings draft. Opened from the QoL settings,
- * the draft is saved by that screen's Done; opened from vanilla's Music &amp; Sound options ({@code standalone}), this
- * screen's Done saves and applies it (Q-SC4).
+ * mute and reset. Edits change a working copy and are audible at once through the live preview (§16), which writes
+ * nothing. Done writes the copy to the settings draft. Opened from the QoL settings, the draft is saved by that screen's
+ * Done; opened from vanilla's Music &amp; Sound options ({@code standalone}), this screen's Done saves and applies it
+ * (Q-SC4). Cancel and Escape drop the copy and restore the previous audible state.
  */
-final class SoundControlScreen extends Screen {
+final class SoundControlScreen extends Screen implements DraftScreen {
     enum Tab {
         RECENT, RULES, ALL
     }
@@ -93,6 +95,12 @@ final class SoundControlScreen extends Screen {
         if (!draft.editable()) {
             setStatus(Component.translatable(UiKeys.MESSAGE_READ_ONLY), true);
         }
+        SoundControlHooks.preview(draft, working);
+    }
+
+    @Override
+    public SettingsDraft draft() {
+        return draft;
     }
 
     // ---- Layout ----
@@ -337,18 +345,36 @@ final class SoundControlScreen extends Screen {
             }
             working.put(id, rule);
         }
+        SoundControlHooks.previewRule(id, rule);
         tabButtons[Tab.RULES.ordinal()].setMessage(tabLabel(Tab.RULES));
         return true;
     }
 
     private void confirmResetAll() {
-        minecraft.gui.setScreen(new ConfirmScreen(yes -> {
+        minecraft.gui.setScreen(new ResetAllConfirm(yes -> {
             if (yes) {
                 working.clear();
+                SoundControlHooks.preview(draft, working);
             }
             minecraft.gui.setScreen(this);
         }, Component.translatable(SoundControlTexts.RESET_ALL_TITLE),
-                Component.translatable(SoundControlTexts.RESET_ALL_MESSAGE, working.size())));
+                Component.translatable(SoundControlTexts.RESET_ALL_MESSAGE, working.size()), draft));
+    }
+
+    /** The confirmation belongs to the same draft, so the preview continues while it is shown. */
+    private static final class ResetAllConfirm extends ConfirmScreen implements DraftScreen {
+        private final SettingsDraft draft;
+
+        ResetAllConfirm(it.unimi.dsi.fastutil.booleans.BooleanConsumer callback, Component title, Component message,
+                SettingsDraft draft) {
+            super(callback, title, message);
+            this.draft = draft;
+        }
+
+        @Override
+        public SettingsDraft draft() {
+            return draft;
+        }
     }
 
     // ---- Done / Cancel ----
@@ -360,12 +386,19 @@ final class SoundControlScreen extends Screen {
         }
         draft.setValue(SoundControlSettings.ID, SoundControlSettings.RULES, SoundRules.write(working));
         if (!standalone) {
+            // The draft now holds these rules; the preview continues until the parent settings are confirmed or
+            // canceled.
             minecraft.gui.setScreen(parent);
             return;
         }
         SettingsDraft.CommitOutcome outcome = draft.commit();
         switch (outcome.kind()) {
-            case NO_CHANGE, APPLIED -> minecraft.gui.setScreen(parent);
+            case NO_CHANGE, APPLIED -> {
+                // Saved and applied: publish the committed rules now, so ending the preview changes nothing audible.
+                SoundControlHooks.syncNow();
+                SoundControlHooks.endPreview();
+                minecraft.gui.setScreen(parent);
+            }
             case INVALID -> setStatus(Component.translatable(UiKeys.MESSAGE_INVALID), true);
             case READ_ONLY -> setStatus(Component.translatable(UiKeys.MESSAGE_READ_ONLY), true);
             case SAVE_FAILED -> setStatus(Component.translatable(UiKeys.MESSAGE_SAVE_FAILED), true);
@@ -374,9 +407,17 @@ final class SoundControlScreen extends Screen {
         }
     }
 
-    /** Cancel and Escape: the working copy is dropped; nothing reaches the draft or the file. */
+    /**
+     * Cancel and Escape: the working copy is dropped; nothing reaches the draft or the file. The audible state returns
+     * to the committed rules (standalone) or to the parent draft's value (opened from the QoL settings).
+     */
     @Override
     public void onClose() {
+        if (standalone) {
+            SoundControlHooks.endPreview();
+        } else {
+            SoundControlHooks.previewDraft(draft);
+        }
         minecraft.gui.setScreen(parent);
     }
 

@@ -60,6 +60,31 @@ class SoundRulesTest {
     }
 
     @Test
+    void previewOverridesOnlyWhatDiffersFromCommitted() {
+        var committed = Map.of("a:x", new SoundRule(25, false), "a:y", new SoundRule(50, true));
+        assertEquals(Map.of(), SoundRules.overrides(committed, committed), "no edits, no overrides");
+
+        var edited = Map.of("a:x", new SoundRule(25, true), "a:y", new SoundRule(30, true), "a:z",
+                new SoundRule(60, false));
+        assertEquals(Map.of("a:x", 0f, "a:z", 0.6f), SoundRules.overrides(edited, committed),
+                "a:y stays muted: same audible factor, no override");
+
+        assertEquals(Map.of("a:x", 1f, "a:y", 1f), SoundRules.overrides(Map.of(), committed),
+                "reset all previews vanilla for every committed rule");
+        assertEquals(0.5f, SoundRules.override(new SoundRule(50, false), null));
+        assertEquals(1f, SoundRules.override(null, new SoundRule(10, false)), "reset of a committed rule");
+        assertEquals(null, SoundRules.override(SoundRule.DEFAULT, null));
+        assertEquals(null, SoundRules.override(new SoundRule(25, true), new SoundRule(80, true)));
+    }
+
+    @Test
+    void keyedSkipsUnparsableIds() {
+        var keyed = SoundRules.keyed(Map.of("a:b", 0.5f, "bad id", 0f), id -> id.contains(" ") ? null : id);
+        assertEquals(Map.of("a:b", 0.5f), keyed);
+        assertEquals(Map.of(), SoundRules.keyed(Map.of(), id -> id));
+    }
+
+    @Test
     void eventIdPatternFollowsIdentifierSyntax() {
         var p = SoundControlSettings.EVENT_ID;
         assertTrue(p.matcher("minecraft:entity.generic.explode").matches());

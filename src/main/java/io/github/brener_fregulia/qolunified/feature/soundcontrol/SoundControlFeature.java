@@ -21,9 +21,11 @@ public final class SoundControlFeature implements Feature {
         /** Publishes {@code rules} to the audio path and refreshes playing sounds. */
         void publish(Map<String, SoundRule> rules);
 
-        void startHistory();
+        /** The feature became active: start the history. */
+        void start();
 
-        void stopHistory();
+        /** The feature became inactive: stop the history and end any preview. */
+        void stop();
     }
 
     private static volatile FeatureContext active;
@@ -46,13 +48,13 @@ public final class SoundControlFeature implements Feature {
             }
 
             @Override
-            public void startHistory() {
-                SoundControlHooks.startHistory();
+            public void start() {
+                SoundControlHooks.start();
             }
 
             @Override
-            public void stopHistory() {
-                SoundControlHooks.stopHistory();
+            public void stop() {
+                SoundControlHooks.stop();
             }
         });
     }
@@ -74,7 +76,7 @@ public final class SoundControlFeature implements Feature {
             installed = true;
         }
         active = context;
-        runtime.startHistory();
+        runtime.start();
         sync();
     }
 
@@ -83,8 +85,8 @@ public final class SoundControlFeature implements Feature {
         active = null;
         published = null;
         if (installed) {
+            runtime.stop();
             runtime.publish(Map.of());
-            runtime.stopHistory();
         }
     }
 

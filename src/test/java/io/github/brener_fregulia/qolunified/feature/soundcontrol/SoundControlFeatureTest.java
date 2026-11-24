@@ -48,12 +48,12 @@ class SoundControlFeatureTest {
         }
 
         @Override
-        public void startHistory() {
+        public void start() {
             history = true;
         }
 
         @Override
-        public void stopHistory() {
+        public void stop() {
             history = false;
         }
 
@@ -131,7 +131,7 @@ class SoundControlFeatureTest {
 
         core.saveAndApply(Map.of("sound_control", core.choices().get("sound_control").withEnabled(false)));
         assertEquals(Map.of(), runtime.last(), "disabling publishes no rules");
-        assertTrue(!runtime.history);
+        assertTrue(!runtime.history, "stopped: history off and any preview ended");
         assertNull(SoundControlFeature.activeSettings());
         int count = runtime.published.size();
         feature.sync();

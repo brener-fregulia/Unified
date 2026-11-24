@@ -4,6 +4,7 @@ import io.github.brener_fregulia.qolunified.core.ApplyMode;
 import io.github.brener_fregulia.qolunified.core.FeatureDescriptor;
 import io.github.brener_fregulia.qolunified.core.FeatureState;
 import io.github.brener_fregulia.qolunified.core.SettingDescriptor;
+import io.github.brener_fregulia.qolunified.ui.DraftScreen;
 import io.github.brener_fregulia.qolunified.ui.FeatureActions;
 import io.github.brener_fregulia.qolunified.ui.SettingsDraft;
 import io.github.brener_fregulia.qolunified.ui.UiKeys;
@@ -21,7 +22,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.client.gui.screens.Screen;
 
 /** Edits one feature's settings in the shared draft. Back returns to the main screen without saving. */
-final class FeatureSettingsScreen extends Screen {
+final class FeatureSettingsScreen extends Screen implements DraftScreen {
     private static final int GAP = 8;
 
     private final SettingsScreen parent;
@@ -34,6 +35,11 @@ final class FeatureSettingsScreen extends Screen {
         this.parent = parent;
         this.draft = draft;
         this.descriptor = descriptor;
+    }
+
+    @Override
+    public SettingsDraft draft() {
+        return draft;
     }
 
     @Override

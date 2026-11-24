@@ -6,6 +6,7 @@ import io.github.brener_fregulia.qolunified.core.FeatureDescriptor;
 import io.github.brener_fregulia.qolunified.core.TransitionOutcome;
 import io.github.brener_fregulia.qolunified.ui.FeatureSearch;
 import io.github.brener_fregulia.qolunified.ui.FeatureStatus;
+import io.github.brener_fregulia.qolunified.ui.DraftScreen;
 import io.github.brener_fregulia.qolunified.ui.SettingsDraft;
 import io.github.brener_fregulia.qolunified.ui.UiKeys;
 import java.util.ArrayList;
@@ -23,7 +24,7 @@ import net.minecraft.client.resources.language.I18n;
 import net.minecraft.network.chat.Component;
 
 /** Central QoL: Unified settings screen (UI-1–UI-10, TX-1–TX-9). Holds a draft until Done. */
-public final class SettingsScreen extends Screen {
+public final class SettingsScreen extends Screen implements DraftScreen {
     private static final int HEADER = 52;
     private static final int FOOTER = 44;
     private static final int GAP = 8;
@@ -51,7 +52,8 @@ public final class SettingsScreen extends Screen {
         }
     }
 
-    SettingsDraft draft() {
+    @Override
+    public SettingsDraft draft() {
         return draft;
     }
 
