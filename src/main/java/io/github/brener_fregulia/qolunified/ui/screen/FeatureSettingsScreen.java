@@ -72,6 +72,11 @@ final class FeatureSettingsScreen extends Screen {
         Component label = Component.translatable(setting.nameKey(id));
         Component detail = setting.applyMode() == ApplyMode.RESTART_REQUIRED
                 ? Component.translatable(UiKeys.RESTART_REQUIRED_SUFFIX) : null;
+        if (setting instanceof SettingDescriptor.MapSetting) {
+            // Map settings are edited by the feature's own screen; this row only summarizes them.
+            return RowList.row(font, label, Component.translatable(UiKeys.MAP_ENTRIES, ((java.util.Map<?, ?>) value).size()),
+                    List.of());
+        }
         AbstractWidget control = switch (setting) {
             case SettingDescriptor.BooleanSetting ignored -> CycleButton.onOffBuilder((Boolean) value)
                     .displayOnlyValue()
@@ -82,6 +87,7 @@ final class FeatureSettingsScreen extends Screen {
                     .displayOnlyValue()
                     .create(0, 0, 120, 20, label, (b, v) -> draft.setValue(id, key, v));
             case SettingDescriptor.IntegerSetting integer -> integerField(id, key, integer, value, label);
+            case SettingDescriptor.MapSetting ignored -> throw new IllegalStateException("handled above");
         };
         control.active = draft.editable();
         return RowList.row(font, label, detail, List.of(control));

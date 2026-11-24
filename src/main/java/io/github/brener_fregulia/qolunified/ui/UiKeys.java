@@ -21,6 +21,7 @@ public final class UiKeys {
     public static final String ENABLED = "qol_unified.settings.enabled";
     public static final String DISABLED = "qol_unified.settings.disabled";
     public static final String RESTART_REQUIRED_SUFFIX = "qol_unified.settings.restart_required_suffix";
+    public static final String MAP_ENTRIES = "qol_unified.settings.map_entries";
 
     public static final String STATUS_ACTIVE = "qol_unified.status.active";
     public static final String STATUS_INACTIVE = "qol_unified.status.inactive";

@@ -126,6 +126,31 @@ temporary file is deleted and the original is untouched.
 version 1 is the baseline. The mechanism is exercised by test-only
 migrations.
 
+## Map settings (M1.5)
+
+**[Approved 2026-11-23]** A map setting (`MapSetting`, see the
+[M0 specification](../specifications/m0-platform-foundations.md#32-setting-descriptor))
+is stored as a JSON object whose members are objects of scalar fields:
+
+```json
+"event_rules": {
+  "minecraft:entity.villager.ambient": {"volume": 25, "muted": true}
+}
+```
+
+The policy above applies entry by entry:
+
+| Situation | Behavior |
+| --- | --- |
+| Value is not an object | Default (empty) at runtime; the original stays until the player changes the setting, then it is replaced |
+| Member with an invalid key, a non-object value or an invalid field | Ignored at runtime, kept unchanged in the file; one warning with the count |
+| Missing field | Its declared default |
+| Unknown field | Ignored at runtime, kept when the entry is rewritten |
+| More valid members than `maxEntries` | The first ones in file order are used; the rest are kept in the file and counted in the warning |
+| Save after a change | Removed keys are deleted; added or changed keys get all declared fields; every other member is written back unchanged |
+
+No schema version change: a new setting needs no migration.
+
 ## Open questions
 
 - **Q-C1 [Resolved 2026-11-21]** CFG-P1 to CFG-P8 approved.

@@ -8,5 +8,6 @@ public enum FeatureCategory {
     CONTROLS,
     CHAT_SOCIAL,
     PERFORMANCE_NETWORK,
-    MAPS_NAVIGATION
+    MAPS_NAVIGATION,
+    AUDIO
 }

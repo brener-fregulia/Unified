@@ -58,13 +58,23 @@ implementation**. Names below describe the contract, not final Java types.
 | Field | Rules |
 | --- | --- |
 | `key` | Matches `^[a-z][a-z0-9_]{0,63}$`; unique within the feature. |
-| `type` | M0 supports `BOOLEAN`, `INTEGER` (with min/max), `ENUM` (fixed values). |
+| `type` | M0 supports `BOOLEAN`, `INTEGER` (with min/max), `ENUM` (fixed values). M1.5 adds `MAP` (see below). |
 | `default` | Valid for its type and constraints. |
 | `applyMode` | `LIVE` or `RESTART_REQUIRED`. |
 | `nameKey` | `qol_unified.feature.<id>.setting.<key>`. |
 
 Other setting types (floats, colors, key bindings, lists) are **[Deferred]**
 until a feature needs them.
+
+**[Approved 2026-11-23]** `MAP` (`SettingDescriptor.MapSetting`), added
+for Sound Control: a map from string keys that match a pattern to small
+records of scalar fields (boolean, integer, enum), with at most
+`maxEntries` entries. The default is the empty map. Entries are validated
+and preserved one by one; see
+[configuration](../architecture/configuration.md#map-settings-m15) and
+[Sound Control V1 §8.2](sound-control-v1.md#82-core-contract-change-mapsetting-approved-2026-11-23).
+The generic feature settings screen shows only the entry count; the
+owning feature provides the editor.
 
 **[Approved 2026-11-21]** Features read current values from an immutable
 **effective settings snapshot** owned by the Core. The Core replaces the

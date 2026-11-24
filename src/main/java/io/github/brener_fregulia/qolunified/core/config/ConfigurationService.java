@@ -31,6 +31,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.TreeMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -220,7 +221,10 @@ public final class ConfigurationService {
         }
         if (!changedSettings.isEmpty()) {
             JsonObject settings = childObject(feature, SETTINGS);
-            changedSettings.forEach((key, value) -> settings.add(key, toJson(value)));
+            changedSettings.forEach((key, value) -> settings.add(key,
+                    descriptor.setting(key).orElseThrow() instanceof SettingDescriptor.MapSetting map
+                            ? mergeMap(map, settings.get(key), old.settings().get(key), value)
+                            : toJson(value)));
         }
     }
 
@@ -347,7 +351,9 @@ public final class ConfigurationService {
                 if (raw == null) {
                     continue;
                 }
-                Object value = fromJson(setting, raw);
+                Object value = setting instanceof SettingDescriptor.MapSetting map
+                        ? mapFromJson(d.id(), map, raw)
+                        : fromJson(setting, raw);
                 if (value != null && setting.accepts(value)) {
                     values.put(setting.key(), value);
                 } else {
@@ -360,11 +366,87 @@ public final class ConfigurationService {
         return result;
     }
 
+    /**
+     * Reads a map setting entry by entry (sound-control-v1.md §8.2). Invalid entries and entries beyond the limit are
+     * skipped and counted in one warning; they stay in the file. Returns null if the value is not an object.
+     */
+    private static Map<String, Map<String, Object>> mapFromJson(String featureId, SettingDescriptor.MapSetting map,
+            JsonElement raw) {
+        if (!raw.isJsonObject()) {
+            return null;
+        }
+        var result = new TreeMap<String, Map<String, Object>>();
+        int skipped = 0;
+        for (var member : raw.getAsJsonObject().entrySet()) {
+            Map<String, Object> entry = result.size() < map.maxEntries() && map.acceptsKey(member.getKey())
+                    ? entryFromJson(map, member.getValue()) : null;
+            if (entry == null) {
+                skipped++;
+            } else {
+                result.put(member.getKey(), entry);
+            }
+        }
+        if (skipped > 0) {
+            LOGGER.warn("Configuration: setting {}.{} has {} invalid or excess entries; they are ignored and kept "
+                    + "in the file", featureId, map.key(), skipped);
+        }
+        return Collections.unmodifiableMap(result);
+    }
+
+    private static Map<String, Object> entryFromJson(SettingDescriptor.MapSetting map, JsonElement raw) {
+        if (!raw.isJsonObject()) {
+            return null;
+        }
+        JsonObject object = raw.getAsJsonObject();
+        var entry = new LinkedHashMap<String, Object>();
+        for (SettingDescriptor field : map.fields()) {
+            JsonElement fieldRaw = object.get(field.key());
+            Object value = fieldRaw == null ? field.defaultValue() : fromJson(field, fieldRaw);
+            if (value == null || !field.accepts(value)) {
+                return null;
+            }
+            entry.put(field.key(), value);
+        }
+        return Collections.unmodifiableMap(entry);
+    }
+
+    /**
+     * Writes a changed map setting onto its original JSON: removed keys are deleted, added or changed keys get their
+     * declared fields (keeping unknown fields of an original object), and every other member, invalid ones included,
+     * stays unchanged.
+     */
+    @SuppressWarnings("unchecked")
+    private static JsonObject mergeMap(SettingDescriptor.MapSetting map, JsonElement original, Object oldValue,
+            Object newValue) {
+        JsonObject out = original != null && original.isJsonObject() ? original.getAsJsonObject() : new JsonObject();
+        var before = (Map<String, Map<String, Object>>) oldValue;
+        var after = (Map<String, Map<String, Object>>) newValue;
+        for (String key : before.keySet()) {
+            if (!after.containsKey(key)) {
+                out.remove(key);
+            }
+        }
+        after.forEach((key, entry) -> {
+            if (entry.equals(before.get(key))) {
+                return;
+            }
+            JsonElement existing = out.get(key);
+            JsonObject target = existing != null && existing.isJsonObject() ? existing.getAsJsonObject()
+                    : new JsonObject();
+            for (SettingDescriptor field : map.fields()) {
+                target.add(field.key(), toJson(entry.get(field.key())));
+            }
+            out.add(key, target);
+        });
+        return out;
+    }
+
     private static Object fromJson(SettingDescriptor setting, JsonElement raw) {
         if (!(raw instanceof JsonPrimitive p)) {
             return null;
         }
         return switch (setting) {
+            case SettingDescriptor.MapSetting ignored -> null;
             case SettingDescriptor.BooleanSetting ignored -> p.isBoolean() ? p.getAsBoolean() : null;
             case SettingDescriptor.EnumSetting ignored -> p.isString() ? p.getAsString() : null;
             case SettingDescriptor.IntegerSetting ignored -> {
