@@ -171,7 +171,7 @@
   "qol_unified.sound_control.unmute": "Ativar",
   "qol_unified.sound_control.mute.tooltip": "Silenciar este som. O volume configurado é mantido.",
   "qol_unified.sound_control.unmute.tooltip": "Tocar este som de novo no volume configurado.",
-  "qol_unified.sound_control.reset": "↺",
+  "qol_unified.sound_control.reset": "Padrão",
   "qol_unified.sound_control.reset.tooltip": "Voltar ao volume normal (100%%)",
   "qol_unified.sound_control.reset_all": "Redefinir tudo",
   "qol_unified.sound_control.reset_all.title": "Redefinir todas as regras de som?",

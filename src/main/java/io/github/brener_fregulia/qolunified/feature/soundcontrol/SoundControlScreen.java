@@ -76,6 +76,8 @@ final class SoundControlScreen extends Screen {
     private int ticks;
 
     private SoundList list;
+    private EditBox search;
+    private boolean focusSearch;
     private Button emptyAction;
     private final Button[] tabButtons = new Button[3];
     private int listTop;
@@ -115,7 +117,7 @@ final class SoundControlScreen extends Screen {
         if (!wide) {
             y += 24;
         }
-        EditBox search = new EditBox(font, searchX, y, width - M - searchX, 20,
+        search = new EditBox(font, searchX, y, width - M - searchX, 20,
                 Component.translatable(SoundControlTexts.SEARCH_HINT));
         search.setHint(Component.translatable(SoundControlTexts.SEARCH_HINT).withStyle(ChatFormatting.DARK_GRAY));
         search.setMaxLength(64);
@@ -198,6 +200,9 @@ final class SoundControlScreen extends Screen {
     private void selectTab(Tab t) {
         tab = t;
         rebuildWidgets();
+        // Vanilla focuses the clicked (now removed) button after onPress returns; give focus back to the search box
+        // on the next tick, so typing keeps searching.
+        focusSearch = true;
     }
 
     // ---- Data ----
@@ -387,6 +392,10 @@ final class SoundControlScreen extends Screen {
         if (++ticks % 20 == 0) {
             refreshRecent();
         }
+        if (focusSearch) {
+            focusSearch = false;
+            setFocused(search);
+        }
     }
 
     // ---- Rendering ----
@@ -496,9 +505,12 @@ final class SoundControlScreen extends Screen {
             this.sound = sound;
             int rowWidth = list.getRowWidth();
             this.slider = new VolumeSlider(sound.id(), Math.clamp(rowWidth / 3, 70, 120));
-            this.mute = Button.builder(muteLabel(), b -> toggleMute()).size(48, 20).build();
-            this.reset = Button.builder(Component.translatable(SoundControlTexts.RESET), b -> resetRule())
-                    .size(20, 20).tooltip(Tooltip.create(Component.translatable(SoundControlTexts.RESET_TOOLTIP)))
+            int muteWidth = Math.max(font.width(Component.translatable(SoundControlTexts.MUTE)),
+                    font.width(Component.translatable(SoundControlTexts.UNMUTE))) + 10;
+            this.mute = Button.builder(muteLabel(), b -> toggleMute()).size(Math.max(40, muteWidth), 20).build();
+            Component resetLabel = Component.translatable(SoundControlTexts.RESET);
+            this.reset = Button.builder(resetLabel, b -> resetRule())
+                    .size(Math.max(20, font.width(resetLabel) + 10), 20).tooltip(Tooltip.create(Component.translatable(SoundControlTexts.RESET_TOOLTIP)))
                     .build();
             this.widgets = List.of(slider, mute, reset);
             boolean editable = draft.editable();

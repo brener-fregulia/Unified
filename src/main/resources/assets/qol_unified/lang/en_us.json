@@ -171,7 +171,7 @@
   "qol_unified.sound_control.unmute": "Unmute",
   "qol_unified.sound_control.mute.tooltip": "Silence this sound. Its volume setting is kept.",
   "qol_unified.sound_control.unmute.tooltip": "Play this sound again at its volume setting.",
-  "qol_unified.sound_control.reset": "↺",
+  "qol_unified.sound_control.reset": "Reset",
   "qol_unified.sound_control.reset.tooltip": "Reset to normal volume (100%%)",
   "qol_unified.sound_control.reset_all": "Reset all",
   "qol_unified.sound_control.reset_all.title": "Reset all sound rules?",
