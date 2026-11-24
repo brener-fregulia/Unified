@@ -92,6 +92,7 @@ final class SoundControlGameTest {
         loopingRuntimeChange();
         cancelWithoutApplying();
         screen();
+        livePreview();
         resourceReload();
         tntAndCreeper();
         // Left committed for the restart scenario: configured 25%, then muted.
@@ -255,6 +256,249 @@ final class SoundControlGameTest {
         commit(Map.of(VILLAGER, new SoundRule(100, true), CHICKEN, new SoundRule(25, false),
                 COW, new SoundRule(50, false)));
         pass("screen at scales 1-4 and 854x480; Cancel discards; Done saves and applies");
+    }
+
+    /**
+     * Live preview (§16): slider, mute, reset and reset all are audible before Done, measured on the OpenAL gain of a
+     * playing loop; Cancel, Escape, parent Cancel, screen replacement and feature disable restore the previous state;
+     * nothing is written until the transaction is confirmed.
+     */
+    private void livePreview() {
+        Map<String, SoundRule> base = Map.of(VILLAGER, new SoundRule(100, true), CHICKEN, new SoundRule(25, false),
+                COW, new SoundRule(50, false), PORTAL, new SoundRule(25, false));
+        commit(base);
+        ctx.getInput().resizeWindow(1920, 1080);
+        setScale(2);
+        SoundInstance loop = null;
+        float full = 1f;
+        if (audio) {
+            loop = startLoop();
+            full = vanillaGain(loop);
+        } else {
+            skip("live preview OpenAL gains (no audio device); factors are still checked");
+        }
+        final SoundInstance playing = loop;
+        final float vanilla = full;
+        java.util.function.DoubleConsumer expectGain = factor -> {
+            if (playing != null) {
+                float gain = channelGain(playing);
+                check(Math.abs(gain - vanilla * (float) factor) < 2e-3f,
+                        "loop gain " + gain + " = " + vanilla + " x " + factor);
+            }
+        };
+        Path config = configFile();
+        String persisted = read(config);
+        long modified = modified(config);
+        Runnable noWrite = () -> check(read(config).equals(persisted) && modified(config) == modified,
+                "no configuration write during preview");
+
+        // Direct entry from Music & Sound Options: slider, mute, unmute, reset, then Escape.
+        openStandalone();
+        searchExact(PORTAL);
+        expectGain.accept(0.25);
+        dragSlider(50);
+        check(effective(PORTAL) == 0.5f && committed(PORTAL) == 0.25f, "slider previews 50% before Done");
+        expectGain.accept(0.5);
+        click(SoundControlTexts.MUTE);
+        check(effective(PORTAL) == 0f, "mute previews at once");
+        expectGain.accept(0);
+        click(SoundControlTexts.UNMUTE);
+        check(effective(PORTAL) == 0.5f, "unmute returns to the slider volume");
+        expectGain.accept(0.5);
+        click(SoundControlTexts.RESET);
+        check(effective(PORTAL) == 1f, "reset previews vanilla");
+        expectGain.accept(1);
+        dragSlider(75);
+        expectGain.accept(0.75);
+        noWrite.run();
+        pressKey(InputConstants.KEY_ESCAPE);
+        check(ctx.computeOnClient(mc -> mc.gui.screen() instanceof SoundOptionsScreen), "Escape returns");
+        check(!previewing() && effective(PORTAL) == 0.25f, "Escape restores the committed state");
+        expectGain.accept(0.25);
+        noWrite.run();
+        pass("standalone: slider, mute, unmute and reset audible before Done; Escape restores; nothing written");
+
+        // Standalone Cancel and Reset all.
+        openFromOptions(null);
+        click(SoundControlTexts.TAB_RULES);
+        click(SoundControlTexts.RESET_ALL);
+        click("gui.yes");
+        check(effective(PORTAL) == 1f && effective(VILLAGER) == 1f, "reset all previews vanilla for every rule");
+        expectGain.accept(1);
+        check(committed(VILLAGER) == 0f, "reset all is not committed yet");
+        click(UiKeys.CANCEL);
+        check(!previewing() && effective(PORTAL) == 0.25f && effective(VILLAGER) == 0f, "Cancel restores");
+        expectGain.accept(0.25);
+        noWrite.run();
+        pass("standalone: reset all audible after confirmation; Cancel restores; nothing written");
+
+        // Standalone Done commits; the audible state does not change on confirmation.
+        openStandalone();
+        searchExact(PORTAL);
+        dragSlider(40);
+        expectGain.accept(0.4);
+        click(UiKeys.DONE);
+        check(!previewing() && committed(PORTAL) == 0.4f && effective(PORTAL) == 0.4f, "Done commits the preview");
+        expectGain.accept(0.4);
+        check(read(config).contains("\"volume\": 40"), "Done saved");
+        pass("standalone: Done saves and the preview matches the committed value");
+
+        // Nested: QoL settings -> Sound Control -> 70% -> Done -> parent Cancel restores the persisted 40%.
+        String persisted40 = read(config);
+        openNested();
+        searchExact(PORTAL);
+        dragSlider(70);
+        expectGain.accept(0.7);
+        click(UiKeys.DONE);
+        check(previewing() && effective(PORTAL) == 0.7f, "nested Done keeps previewing the parent draft");
+        expectGain.accept(0.7);
+        click(UiKeys.BACK);
+        ctx.waitTicks(2);
+        check(effective(PORTAL) == 0.7f, "still previewed on the main settings screen");
+        click(UiKeys.CANCEL);
+        ctx.waitTicks(2);
+        check(!previewing() && effective(PORTAL) == 0.4f && committed(PORTAL) == 0.4f,
+                "parent Cancel restores the persisted rules");
+        expectGain.accept(0.4);
+        check(read(config).equals(persisted40), "parent Cancel wrote nothing");
+        pass("nested: Done then parent Cancel restores the persisted rules on the playing loop");
+
+        // Nested Cancel restores the parent draft's value (here the persisted one), then parent Done persists.
+        openNested();
+        searchExact(PORTAL);
+        dragSlider(10);
+        expectGain.accept(0.1);
+        click(UiKeys.CANCEL);
+        check(effective(PORTAL) == 0.4f, "Sound Control Cancel restores the parent draft's value");
+        expectGain.accept(0.4);
+        click(SoundControlTexts.OPEN);
+        searchExact(PORTAL);
+        dragSlider(60);
+        click(UiKeys.DONE);
+        click(UiKeys.BACK);
+        click(UiKeys.DONE);
+        ctx.waitTicks(2);
+        check(!previewing() && committed(PORTAL) == 0.6f && effective(PORTAL) == 0.6f, "parent Done persists");
+        expectGain.accept(0.6);
+        check(read(config).contains("\"volume\": 60"), "parent Done saved");
+        pass("nested: Cancel restores the draft; Done then parent Done persists");
+
+        // No stale preview: replacing the screen, or disabling the feature, ends it.
+        openStandalone();
+        searchExact(PORTAL);
+        dragSlider(20);
+        expectGain.accept(0.2);
+        ctx.setScreen(TitleScreen::new);
+        ctx.waitTicks(2);
+        check(!previewing() && effective(PORTAL) == 0.6f, "screen replaced: preview ended");
+        expectGain.accept(0.6);
+        openStandalone();
+        searchExact(PORTAL);
+        dragSlider(20);
+        setEnabled(false);
+        check(!previewing() && effective(PORTAL) == 1f, "feature disabled: vanilla, no preview");
+        expectGain.accept(1);
+        ctx.setScreen(TitleScreen::new);
+        setEnabled(true);
+        ctx.waitTicks(2);
+        check(!previewing() && effective(PORTAL) == 0.6f, "re-enabled: committed rules, no stale preview");
+        expectGain.accept(0.6);
+        pass("no stale preview after screen replacement or feature disable");
+
+        if (playing != null) {
+            ctx.runOnClient(mc -> mc.getSoundManager().stop(playing));
+            pass("playing loop OpenAL gain followed every preview step");
+        }
+        ctx.setScreen(TitleScreen::new);
+        ctx.waitForScreen(TitleScreen.class);
+        commit(Map.of(VILLAGER, new SoundRule(100, true), CHICKEN, new SoundRule(25, false),
+                COW, new SoundRule(50, false)));
+    }
+
+    private SoundInstance startLoop() {
+        SoundInstance loop = ctx.computeOnClient(mc -> {
+            SoundInstance sound = new SimpleSoundInstance(Identifier.parse(PORTAL), SoundSource.BLOCKS, 1f, 1f,
+                    RandomSource.create(1), true, 0, SoundInstance.Attenuation.NONE, 0, 0, 0, true);
+            check(mc.getSoundManager().play(sound) == SoundEngine.PlayResult.STARTED, "loop started");
+            return sound;
+        });
+        ctx.waitTicks(5);
+        return loop;
+    }
+
+    /** The loop's gain without any rule: its committed gain divided by the committed factor. */
+    private float vanillaGain(SoundInstance loop) {
+        return channelGain(loop) / committed(PORTAL);
+    }
+
+    private void openStandalone() {
+        ctx.setScreen(() -> new SoundOptionsScreen(new TitleScreen(), Minecraft.getInstance().options));
+        ctx.waitTicks(3);
+        openFromOptions(null);
+    }
+
+    /** QoL settings -> Audio -> Sound Control settings -> "Open sound list". */
+    private void openNested() {
+        ctx.setScreen(() -> new io.github.brener_fregulia.qolunified.ui.screen.SettingsScreen(new TitleScreen(),
+                QolUnifiedClient.core()));
+        ctx.waitTicks(3);
+        click(UiKeys.category(io.github.brener_fregulia.qolunified.core.FeatureCategory.AUDIO));
+        click(UiKeys.FEATURE_SETTINGS);
+        click(SoundControlTexts.OPEN);
+        check(screenTitleKey().equals(SoundControlTexts.TITLE), "opened from the QoL settings");
+    }
+
+    /** Lists exactly one row in the All sounds tab. */
+    private void searchExact(String id) {
+        click(SoundControlTexts.TAB_ALL);
+        ctx.getInput().typeChars(id);
+        ctx.waitTicks(3);
+    }
+
+    /** Clicks the (only) row's slider where the value is {@code volume}%, as a player would. */
+    private void dragSlider(int volume) {
+        double[] position = ctx.computeOnClient(mc -> {
+            var sliders = new ArrayList<AbstractWidget>();
+            visit(mc.gui.screen(), w -> {
+                if (w instanceof net.minecraft.client.gui.components.AbstractSliderButton && w.visible) {
+                    sliders.add(w);
+                }
+            });
+            check(sliders.size() == 1, "one slider row: " + sliders.size());
+            AbstractWidget slider = sliders.getFirst();
+            int scale = mc.getWindow().getGuiScale();
+            double x = slider.getX() + 4 + (volume / 100.0) * (slider.getWidth() - 8);
+            return new double[] {x * scale, (slider.getY() + slider.getHeight() / 2.0) * scale};
+        });
+        ctx.getInput().setCursorPos(position[0], position[1]);
+        ctx.getInput().pressMouse(InputConstants.MOUSE_BUTTON_LEFT);
+        ctx.waitTicks(2);
+        check(Math.abs(effective(PORTAL) - volume / 100f) < 1e-6f,
+                "slider at " + volume + "%: " + effective(PORTAL));
+    }
+
+    private float effective(String id) {
+        return ctx.computeOnClient(mc -> SoundControlHooks.effectiveFactor(Identifier.parse(id)));
+    }
+
+    private float committed(String id) {
+        return ctx.computeOnClient(mc -> SoundControlHooks.publishedFactor(Identifier.parse(id)));
+    }
+
+    private boolean previewing() {
+        return ctx.computeOnClient(mc -> SoundControlHooks.previewing());
+    }
+
+    private static Path configFile() {
+        return FabricLoader.getInstance().getConfigDir().resolve("qol_unified").resolve("config.json");
+    }
+
+    private static long modified(Path file) {
+        try {
+            return Files.getLastModifiedTime(file).toMillis();
+        } catch (java.io.IOException e) {
+            throw new AssertionError(e);
+        }
     }
 
     /** SC-AC-10: rules still apply after a resource reload. */
