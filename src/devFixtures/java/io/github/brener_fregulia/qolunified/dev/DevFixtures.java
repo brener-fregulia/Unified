@@ -80,9 +80,9 @@ public final class DevFixtures implements DevelopmentFeatures {
                              "dev_live_toggle":{"settings":{"unknown_setting":"kept"}}}}""");
                 }
                 case "foodhud", "appleskin", "chatheads", "chatheads_reference", "keyboardmap", "targetinfo",
-                        "targetinfo_jade" -> deleteTree(dir);
-                case "restart" -> {
-                    // Reuse the configuration written by the "main" scenario.
+                        "targetinfo_jade", "soundcontrol" -> deleteTree(dir);
+                case "restart", "soundcontrolrestart" -> {
+                    // Reuse the configuration written by the "main" (or "soundcontrol") scenario.
                 }
                 case "newer" -> {
                     deleteTree(dir);

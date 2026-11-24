@@ -54,6 +54,8 @@ public final class CoreGameTest implements FabricClientGameTest {
             case "keyboardmap" -> new KeyboardMapGameTest(ctx).run();
             case "targetinfo" -> new TargetInfoGameTest(ctx).run();
             case "targetinfo_jade" -> new TargetInfoGameTest(ctx).compareWithJade();
+            case "soundcontrol" -> new SoundControlGameTest(ctx).run();
+            case "soundcontrolrestart" -> new SoundControlGameTest(ctx).restart();
             default -> throw new AssertionError("Unknown scenario " + scenario);
         }
         ctx.setScreen(TitleScreen::new);
