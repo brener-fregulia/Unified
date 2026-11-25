@@ -291,3 +291,72 @@ manual check by the PO on the Paper server.
   conflicts once their Fabric ids are read from their JARs.
 - **Q-SP7 [Approved 2026-11-25]** Approve Mixins SP-1 to SP-3.
 - **Q-SP8 [Approved 2026-11-25]** Approve the three settings in §7.
+
+## 14. Implementation notes [Implemented 2026-11-25]
+
+### 14.1 Code
+
+Package `feature/shulkerpreview`:
+
+- `ShulkerPreviewSettings`, `ShulkerPreviewFeature`: descriptor, three LIVE
+  booleans, soft conflicts on `shulkerboxtooltip` and `simpleshulkerpreview`
+  (ids read from the 26.3 JARs' `fabric.mod.json`), and the mode rule:
+  Shift + `full_preview_on_shift` → full; else `compact_preview` → compact;
+  else vanilla.
+- `ShulkerSummary` (pure, generic, unit-tested): kinds, totals, predominant
+  kind and tie rule, used slots, the 27 exact slots, the `+N` limit, the
+  normalized capacity and the bundle bar width.
+- `ShulkerContents`: reads `minecraft:container`; returns nothing for
+  non-shulkers, a missing component, `minecraft:container_loot`, a component
+  hidden by the item's `tooltip_display`, malformed contents and empty boxes.
+  Summaries are cached by component identity (LRU, 256): components are
+  immutable and a changed box carries a new one, so a cached summary can
+  never be stale; the cache holds copies made by `copyInto`, never live
+  stacks, and no render resources, so resource reloads do not affect it.
+- `ShulkerTooltip`, `ShulkerTooltipComponent`, `ShulkerPreviewHooks`: the
+  tooltip image and its original component, registered once through
+  `ClientTooltipComponentCallback`.
+- `ShulkerSlotDecorator`: the slot icon (representative stack at half scale,
+  glint kept, no count) and the capacity bar in the bundle's colors at the
+  vanilla item-bar position, skipped when the stack already shows a bar.
+
+### 14.2 Mixins
+
+| Id | Target | What |
+| --- | --- | --- |
+| SP-1 | `GuiGraphicsExtractor.itemDecorations(Font, ItemStack, int, int, String)` TAIL | Slot icon and capacity bar after vanilla's decorations |
+| SP-2 | `ItemStack.getTooltipImage` RETURN (the existing Food HUD Mixin, extended) | Shulker image first, otherwise the Food HUD image; never both |
+| SP-3 | `ItemStack.addToTooltip(DataComponentType, Getter, …)` HEAD | Cancels only the `minecraft:container` lines of a shulker box whose preview shows |
+
+SP-3 targets `ItemStack` rather than `ItemContainerContents.addToTooltip`
+(as first proposed): vanilla passes that method the component map, not the
+stack, so the stack could not be identified there. The scope is unchanged:
+one component on shulker boxes only.
+
+### 14.3 Tests
+
+- Unit: `ShulkerSummaryTest` (empty and malformed input, predominant, totals,
+  grouping without components, tie rule, representative stack, exact slots,
+  capacity for max stack sizes 1/16/64 at 0 %, ≈ 3.7 %, 50 % and 100 %,
+  oversized and broken stacks, `+N`, short counts, modes) and
+  `ShulkerPreviewFeatureTest` (descriptor, LIVE toggles, both conflicts and
+  the explicit choice); the localization test covers `ShulkerPreviewTexts`.
+- Client game test `runGameTestShulkerpreview` (disposable world): boxes of
+  all 17 colors; full, mixed, half, tie, 12-kind, empty, component-less,
+  named-with-lore boxes; enchanted sword, damaged pickaxe, three different
+  enchanted books; tooltip lines and images read from the game; Shift and
+  release; inventory, hotbar, chest (side by side) and creative screens; each
+  setting and the feature toggle; GUI scales 1–4 at 1920×1080 and 1–2 at
+  854×480 (larger scales are not available there).
+
+### 14.4 Known limitations
+
+- Placed boxes in the world, ender chests and loot boxes are not previewed
+  (no client data).
+- If server software strips the container component, the box looks unknown
+  and only the vanilla tooltip shows.
+- The 8×8 slot icon can make similar items hard to tell apart.
+- The full grid uses vanilla tooltip placement, which may cover the hovered
+  slot on small windows.
+- Comparison runs with Shulker Box Tooltip and Simple Shulker Preview were
+  not performed; the conflict default is covered by unit tests.

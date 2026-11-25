@@ -100,3 +100,12 @@ released yet.
   playing, so volumes can be set by ear. Nothing is saved until you confirm.
   Cancel or Escape restores what you heard before, and canceling the QoL
   settings after Done in Sound Control restores the saved rules.
+- Shulker Preview (`shulker_preview`, Inventory): shulker boxes in any
+  inventory, container, hotbar or creative screen show their main item in
+  the top-right corner and a fill bar like the bundle's. Hovering shows a
+  summary (main item and total, the other items largest first, used slots,
+  total items and kinds); holding Shift shows the exact 9×3 contents.
+  Custom names and lore are kept. Uses only what the game already sends;
+  nothing is shown when the contents are unknown. Three settings, all
+  applied live. Disabled by default when Shulker Box Tooltip or Simple
+  Shulker Preview is installed, unless you enable it yourself.
