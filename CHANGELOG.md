@@ -112,3 +112,15 @@ released yet.
 - Shulker Preview: a "Content icon" setting chooses whether the small slot
   icon shows the first occupied slot (new default) or the predominant item,
   and the hover hint now shows "Shift" in gold.
+- Unified settings workspace: categories expand into their features in a
+  sidebar, and choosing a feature shows all its settings in place, with a
+  green ON / red OFF switch, a "Vanilla / QoL ON" example for Food HUD and
+  Shulker Preview, and buttons for Keyboard Map and Sound Control. Search
+  now also finds individual settings and option names and jumps to them.
+  Narrow windows get a collapsible sidebar. Saving still happens only with
+  Done.
+
+### Removed
+
+- The separate per-feature settings screen and its Settings buttons; their
+  controls are now part of the settings workspace.

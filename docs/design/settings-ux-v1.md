@@ -475,3 +475,61 @@ setting-level search, a collapsible sidebar below 400 GUI px, and rendered
 comparisons limited to features whose own renderer can draw a frozen
 example. It is a UI-package refactor around the existing draft and
 descriptors, with no Core or configuration change.
+
+## 17. Implementation notes [Implemented 2026-11-25]
+
+### 17.1 Code (UI package only)
+
+| Class | Role |
+| --- | --- |
+| `ui/SettingsNavigation` | Pure sidebar model: categories with features (empty ones hidden), expansion, selection, preselection, search over names, descriptions, ids, setting names and enum labels (case- and accent-insensitive), expansion restored when search is cleared, invalid-input flags. Replaces `FeatureSearch`. |
+| `ui/FeatureComparisons` | Registry of "Vanilla / QoL ON" samples, like `FeatureActions` |
+| `ui/screen/SettingsScreen` | The workspace: search, sidebar, sticky header (name, status, switch or Retry disable), scrolling panel, footer. Implements `DraftScreen`; keeps navigation and scroll state in fields across tool screens. |
+| `ui/screen/NavList` | Sidebar tree of 20 px rows (arrow, count, `»` marker, `!` flag), Left/Right collapse/expand, tooltips with full names |
+| `ui/screen/FeatureSwitch` | The ON/OFF switch (§6) |
+| `ui/screen/PanelList`, `FeaturePanel`, `SettingRows` | Panel rows with their own heights; descriptor-driven controls moved unchanged from the retired screen; labels and details wrap |
+| `feature/foodhud/FoodHudComparison`, `feature/shulkerpreview/ShulkerComparison` | The two approved comparisons, drawn with the features' own math, sprites and decorator |
+
+Retired: `FeatureSettingsScreen`, `RowList`, `FeatureSearch` (Q-SU9). Core,
+registry, descriptors, configuration and `SettingsDraft` are unchanged.
+
+### 17.2 Behavior as built
+
+- Layout tiers: sidebar 160 px from 640 GUI px, 120 px from 400, otherwise a
+  "☰" rail with a drawer that closes after choosing; on wide screens the
+  sidebar and the panel (max 520 px) are centered together.
+- After every rebuild the selected feature is scrolled into view.
+- While searching, the panel follows the first match if the selection is not
+  among the results; a setting result selects its feature, scrolls to the row
+  and highlights it for 1.5 s.
+- Invalid integer input is shown in the footer and the feature gets "!" in
+  the sidebar until fixed.
+- Tool actions ("Open Keyboard Map", "Open Sound Control") and comparisons
+  are registered at client start, so they show even for features that were
+  never enabled; actions stay disabled with an explanation until the
+  feature is ACTIVE.
+- The Keyboard Map's Controls button keeps its own "Keyboard Map..." label;
+  the panel uses the new `open_tool` key.
+
+### 17.3 Limitation found: items need a world
+
+In Minecraft 26.3 item components are bound only when a world is loaded;
+creating an `ItemStack` on the title screen throws. The Shulker Preview
+comparison therefore shows "Example available while in a world." outside a
+world, and the Food HUD comparison omits its bread icon there (the hunger
+bar itself uses sprites only and always draws).
+
+### 17.4 Tests
+
+- Unit: `SettingsNavigationTest` (tree, expansion, preselection, search
+  normalization, setting and option results, restore after search, flags).
+- Game test `runGameTestSettings`: every real feature navigated in one
+  screen, descriptor types, switch by mouse, Enter and Space, draft kept
+  across features, nothing written by navigation or Cancel, Tab focus,
+  Left/Right on categories, search results and empty state, Keyboard Map
+  round trip, Done persistence, tiers at 854×480, 1100×760, 1280×720,
+  1920×1080 and 2560×1080 at every available scale, the drawer, comparisons
+  in a world.
+- Updated: the core scenarios (toggle, invalid input, read-only, Retry
+  disable, conflict override, restart notice) and Sound Control's nested
+  preview, which now also checks that switching features keeps the preview.

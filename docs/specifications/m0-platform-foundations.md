@@ -435,6 +435,12 @@ settings), TX-7 (runtime failure is not a save failure), and TX-T10–TX-T12.
 
 ### Settings UI implementation (M0.8)
 
+> **Superseded layout (M1.7, 2026-11-25).** The layout, feature rows, search
+> and feature settings screen below were replaced by the unified settings
+> workspace ([settings-ux-v1.md](../design/settings-ux-v1.md) §17). The
+> transaction rules (TX-1–TX-9), opening, conflicts, status texts and
+> read-only behavior described here are unchanged.
+
 - **Opening.** The key binding *Open QoL: Unified Settings* is listed under
   *QoL: Unified* in Controls and has no default key. It opens the screen in
   game when no other screen is open (so chat and text fields are unaffected)
