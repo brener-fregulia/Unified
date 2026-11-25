@@ -125,6 +125,7 @@ final class ShulkerPreviewGameTest {
             give("inventory.16", box(null, List.of(entry(0, item("glowstone_dust", 48)))));
             ctx.waitTicks(5);
             summaries();
+            iconSources();
             tooltips();
             inventoryScreens();
             settings();
@@ -153,6 +154,53 @@ final class ShulkerPreviewGameTest {
         }
         long builds = ctx.computeOnClient(mc -> ShulkerContents.builds());
         LOGGER.info("Shulker Preview: summaries built {}", builds);
+    }
+
+    // ---- Slot icon source (M1.6.1) ----
+
+    private void iconSources() {
+        give("inventory.18", box("cyan", List.of(entry(5, item("sand", 12)))));
+        give("inventory.19", box("yellow", List.of(entry(0, item("stone", 1)), entry(5, item("sand", 64)),
+                entry(6, item("sand", 64)))));
+        ctx.waitTicks(3);
+        check(source().equals("first_occupied"), "default is first_occupied");
+        check(icon(27) == Items.SAND, "slot 0 empty, sand in slot 5: sand");
+        check(icon(28) == Items.STONE, "first occupied: stone although sand leads");
+        check(icon(1) == Items.COBBLESTONE, "mixed box: cobblestone is in slot 0");
+        openInventory();
+        hoverHotbar(1);
+        shot("29-shift-hint");
+        ctx.getInput().setCursorPos(5, 5); // no tooltip over the slots
+        ctx.waitTicks(2);
+        shot("30-icon-first-occupied");
+        set(s -> s.with("slot_icon_source", "predominant"));
+        check(icon(28) == Items.SAND && icon(1) == Items.DIRT && icon(3) == Items.GOLD_INGOT,
+                "predominant, ties by slot order (LIVE)");
+        shot("31-icon-predominant");
+        set(s -> s.with("slot_icon", false));
+        long frozen = ctx.computeOnClient(mc -> ShulkerSlotDecorator.decorated());
+        ctx.waitTicks(3);
+        check(ctx.computeOnClient(mc -> ShulkerSlotDecorator.decorated()) == frozen,
+                "slot_icon off wins over either source");
+        set(s -> s.with("slot_icon", true).with("slot_icon_source", "first_occupied"));
+        check(icon(1) == Items.COBBLESTONE, "back to first occupied without restart");
+        ctx.setScreen(() -> null);
+    }
+
+    private String source() {
+        return ctx.computeOnClient(mc -> io.github.brener_fregulia.qolunified.feature.shulkerpreview
+                .ShulkerPreviewFeature.activeSettings().getEnum("slot_icon_source"));
+    }
+
+    /** The slot icon's item for an inventory index (0–8 hotbar, 9–35 main), as the decorator would choose it. */
+    private Item icon(int index) {
+        return ctx.computeOnClient(mc -> {
+            var summary = ShulkerContents.summary(mc.player.getInventory().getItem(index));
+            String src = io.github.brener_fregulia.qolunified.feature.shulkerpreview.ShulkerPreviewFeature
+                    .activeSettings().getEnum("slot_icon_source");
+            ItemStack stack = summary == null ? null : summary.iconStack(src);
+            return stack == null ? null : stack.getItem();
+        });
     }
 
     // ---- Tooltip content (lines and image) ----
