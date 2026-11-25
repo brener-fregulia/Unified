@@ -1,8 +1,25 @@
 # Settings UX V1 — Unified Settings Workspace (M1.7)
 
 Status labels follow [AGENTS.md](../../AGENTS.md#decision-status-labels).
-Design and discovery only; no production code is changed by this document.
-Everything below is **[Proposed]** unless marked otherwise.
+Concept A was approved by the Product Owner on 2026-11-25 (§0); the rest of
+the document is the approved design, with the decisions below.
+
+## 0. Approval [Approved 2026-11-25]
+
+- Q-SU1: Concept A, expandable sidebar.
+- Q-SU2: green ON / red OFF `FeatureSwitch` with knob, check/cross and text.
+- Q-SU3: settings of OFF features stay editable, slightly dimmed, with an
+  "Applies when ON" hint; text contrast stays readable.
+- Q-SU4: original rendered comparisons for Food HUD and Shulker Preview in
+  M1.7; Target Info and Chat Heads comparisons deferred.
+- Q-SU5: empty categories hidden.
+- Q-SU6: tool actions visible but disabled until the feature is ACTIVE, with
+  an explanation that activation must be confirmed first.
+- Q-SU7: action buttons renamed "Open Keyboard Map" and "Open Sound Control",
+  localized.
+- Q-SU8: contextual entry points preselect their feature.
+- Q-SU9: `FeatureSettingsScreen` retired once all callers are migrated.
+- SU-AC-1 to SU-AC-12 approved with these decisions.
 
 Direction from the Product Owner, 2026-11-25 **[Approved]**: one settings
 workspace with category navigation, expandable feature submenus and a
@@ -431,25 +448,25 @@ next to `FeatureActions.register`.
 - SU-AC-12 Comparisons (if in scope) render at every GUI scale and follow the
   active resource pack and language.
 
-## 15. Open Product Owner decisions
+## 15. Decisions (resolved in §0)
 
-- **Q-SU1 [Open]** Approve Concept A (expandable sidebar).
-- **Q-SU2 [Open]** Approve the `FeatureSwitch` appearance in §6 (green/red
+- **Q-SU1 [Approved 2026-11-25]** Approve Concept A (expandable sidebar).
+- **Q-SU2 [Approved 2026-11-25]** Approve the `FeatureSwitch` appearance in §6 (green/red
   track, knob side, check/cross glyph, "ON"/"OFF").
-- **Q-SU3 [Open]** Settings of an OFF feature: editable but dimmed with
+- **Q-SU3 [Approved 2026-11-25]** Settings of an OFF feature: editable but dimmed with
   "Applies when ON" (proposed), or locked until ON.
-- **Q-SU4 [Open]** Visual comparisons: approach B; ship in M1.7 for Food HUD
+- **Q-SU4 [Approved 2026-11-25]** Visual comparisons: approach B; ship in M1.7 for Food HUD
   and Shulker Preview only, or defer all comparisons to a follow-up.
-- **Q-SU5 [Open]** Empty categories: hidden (current behavior, proposed) or
+- **Q-SU5 [Approved 2026-11-25]** Empty categories: hidden (current behavior, proposed) or
   shown with "No features yet".
-- **Q-SU6 [Open]** Tool buttons for features turned ON in the draft but not
+- **Q-SU6 [Approved 2026-11-25]** Tool buttons for features turned ON in the draft but not
   yet active: disabled with "Press Done to enable first" (proposed, keeps the
   approved rule), or allowed.
-- **Q-SU7 [Open]** Rename the action labels to "Open Keyboard Map" and "Open
+- **Q-SU7 [Approved 2026-11-25]** Rename the action labels to "Open Keyboard Map" and "Open
   Sound Control".
-- **Q-SU8 [Open]** Opening from a feature's own entry point preselects that
+- **Q-SU8 [Approved 2026-11-25]** Opening from a feature's own entry point preselects that
   feature.
-- **Q-SU9 [Open]** Retire `FeatureSettingsScreen` (T-8).
+- **Q-SU9 [Approved 2026-11-25]** Retire `FeatureSettingsScreen` (T-8).
 
 ## 16. Recommended design
 
