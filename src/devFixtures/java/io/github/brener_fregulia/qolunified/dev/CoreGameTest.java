@@ -53,6 +53,7 @@ public final class CoreGameTest implements FabricClientGameTest {
             case "chatheads_reference" -> new ChatHeadsGameTest(ctx).compareWithReference();
             case "keyboardmap" -> new KeyboardMapGameTest(ctx).run();
             case "targetinfo" -> new TargetInfoGameTest(ctx).run();
+            case "settings" -> new SettingsWorkspaceGameTest(ctx).run();
             case "shulkerpreview" -> new ShulkerPreviewGameTest(ctx).run();
             case "targetinfo_jade" -> new TargetInfoGameTest(ctx).compareWithJade();
             case "soundcontrol" -> new SoundControlGameTest(ctx).run();
@@ -66,14 +67,13 @@ public final class CoreGameTest implements FabricClientGameTest {
     private void foodHud() {
         new FoodHudGameTest(ctx).run();
         ctx.waitForScreen(TitleScreen.class);
-        // The Food HUD row is first in its category; its settings screen lists all seven settings.
+        // Food HUD is the first feature: the workspace opens on its panel with all seven settings inline.
         open();
         // Leaving a world leaves the cursor grabbed for a moment; let it settle before clicking.
         ctx.waitTicks(10);
-        click(UiKeys.FEATURE_SETTINGS);
-        ctx.waitFor(mc -> !(mc.gui.screen() instanceof SettingsScreen), 40);
+        check(ctx.computeOnClient(mc -> ((SettingsScreen) mc.gui.screen()).navigation().selected())
+                .equals("food_hud"), "Food HUD selected first");
         shot("food-hud-settings");
-        click(UiKeys.BACK);
         closeIfOpen();
     }
 
@@ -108,7 +108,7 @@ public final class CoreGameTest implements FabricClientGameTest {
         byte[] before = configBytes();
         search("dev_live_toggle");
         shot("05b-search-live");
-        click(UiKeys.ENABLED);
+        click(UiKeys.SWITCH_ON);
         shot("05c-toggled");
         click(UiKeys.CANCEL);
         shot("05d-after-cancel");
@@ -119,7 +119,7 @@ public final class CoreGameTest implements FabricClientGameTest {
         // Escape discards edits.
         open();
         search("dev_live_toggle");
-        click(UiKeys.ENABLED);
+        click(UiKeys.SWITCH_ON);
         ctx.getInput().pressKey(KEY_ESCAPE);
         ctx.waitForScreen(TitleScreen.class);
         check(java.util.Arrays.equals(before, configBytes()), "Escape does not save");
@@ -127,7 +127,7 @@ public final class CoreGameTest implements FabricClientGameTest {
         // LIVE toggle applies on Done.
         open();
         search("dev_live_toggle");
-        click(UiKeys.ENABLED);
+        click(UiKeys.SWITCH_ON);
         click(UiKeys.DONE);
         ctx.waitForScreen(TitleScreen.class);
         on(core -> check(core.lifecycle().state("dev_live_toggle") == FeatureState.INACTIVE, "live toggle applied"));
@@ -136,7 +136,7 @@ public final class CoreGameTest implements FabricClientGameTest {
         // RESTART_REQUIRED toggle is saved but not applied.
         open();
         search("dev_restart_toggle");
-        click(UiKeys.ENABLED);
+        click(UiKeys.SWITCH_ON);
         click(UiKeys.DONE);
         shot("06-restart-required");
         on(core -> {
@@ -149,7 +149,7 @@ public final class CoreGameTest implements FabricClientGameTest {
         open();
         search("dev_conflict");
         shot("07-conflict-default");
-        click(UiKeys.DISABLED);
+        click(UiKeys.SWITCH_OFF);
         click(UiKeys.DONE);
         // Regression (M0.9): an earlier pending restart must not keep the screen open on a later success.
         ctx.waitForScreen(TitleScreen.class);
@@ -161,7 +161,7 @@ public final class CoreGameTest implements FabricClientGameTest {
         // Disable failure → UNKNOWN; no automatic retry; explicit Retry disable.
         open();
         search("dev_disable_fails");
-        click(UiKeys.ENABLED);
+        click(UiKeys.SWITCH_ON);
         click(UiKeys.DONE);
         shot("08-disable-failed-result");
         on(core -> check(core.lifecycle().state("dev_disable_fails") == FeatureState.UNKNOWN, "UNKNOWN after failure"));
@@ -171,7 +171,7 @@ public final class CoreGameTest implements FabricClientGameTest {
         check(DevFixtures.feature("dev_disable_fails").calls().size() == calls, "no automatic retry");
         open();
         search("dev_disable_fails");
-        check(locate(UiKeys.ENABLED).isEmpty() && locate(UiKeys.DISABLED).isEmpty(),
+        check(locate(UiKeys.SWITCH_ON).isEmpty() && locate(UiKeys.SWITCH_OFF).isEmpty(),
                 "no enable control while UNKNOWN");
         shot("09-unknown-row");
         click(UiKeys.RETRY_DISABLE);
@@ -186,28 +186,25 @@ public final class CoreGameTest implements FabricClientGameTest {
         // Feature settings: invalid input blocks Done; valid input saves; LIVE vs RESTART_REQUIRED.
         open();
         search("dev_all_settings");
-        click(UiKeys.FEATURE_SETTINGS);
-        ctx.waitFor(mc -> mc.gui.screen() != null
-                && mc.gui.screen().getClass().getSimpleName().equals("FeatureSettingsScreen"));
         shot("12-feature-settings");
         setIntegerField("abc");
         shot("13-invalid-integer");
-        click(UiKeys.BACK);
-        ctx.waitForScreen(SettingsScreen.class);
         byte[] beforeInvalid = configBytes();
         click(UiKeys.DONE);
         shot("14-invalid-done-blocked");
         check(currentScreen() instanceof SettingsScreen, "invalid draft keeps screen open");
         check(java.util.Arrays.equals(beforeInvalid, configBytes()), "invalid draft not saved");
-        click(UiKeys.FEATURE_SETTINGS);
-        ctx.waitFor(mc -> mc.gui.screen() != null
-                && mc.gui.screen().getClass().getSimpleName().equals("FeatureSettingsScreen"));
+        // The error stays findable after navigating away: the feature is flagged in the sidebar.
+        search("");
+        click(UiKeys.category(io.github.brener_fregulia.qolunified.core.FeatureCategory.HUD_INFORMATION));
+        check(ctx.computeOnClient(mc -> ((SettingsScreen) mc.gui.screen()).navigation()
+                .rows(id -> id.equals("dev_all_settings")).stream().anyMatch(
+                        io.github.brener_fregulia.qolunified.ui.SettingsNavigation.Row::flagged)), "flag model");
+        search("dev_all_settings");
         setIntegerField("48");
         click(UiKeys.enumValue("dev_all_settings", "layout", "compact"));
         click("options.off");
         shot("15-feature-settings-edited");
-        click(UiKeys.BACK);
-        ctx.waitForScreen(SettingsScreen.class);
         click(UiKeys.DONE);
         shot("16-settings-saved-restart");
         closeIfOpen();
@@ -281,7 +278,7 @@ public final class CoreGameTest implements FabricClientGameTest {
         open();
         search("dev_live_toggle");
         shot("01-recovered-defaults");
-        click(UiKeys.ENABLED);
+        click(UiKeys.SWITCH_ON);
         click(UiKeys.DONE);
         closeIfOpen();
         check(config().contains("\"schemaVersion\": 1") && config().contains("\"enabled\": false"),
@@ -363,6 +360,8 @@ public final class CoreGameTest implements FabricClientGameTest {
         ctx.runOnClient(mc -> {
             var boxes = new ArrayList<EditBox>();
             collect(mc.gui.screen(), boxes);
+            // The search field is a direct child of the screen; setting fields live in the panel.
+            boxes.removeIf(b -> mc.gui.screen().children().contains(b));
             check(boxes.size() == 1, "one integer field");
             boxes.getFirst().setValue(text);
         });

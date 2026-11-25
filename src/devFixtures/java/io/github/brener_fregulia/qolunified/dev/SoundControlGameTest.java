@@ -352,9 +352,14 @@ final class SoundControlGameTest {
         click(UiKeys.DONE);
         check(previewing() && effective(PORTAL) == 0.7f, "nested Done keeps previewing the parent draft");
         expectGain.accept(0.7);
-        click(UiKeys.BACK);
+        check(ctx.computeOnClient(mc -> mc.gui.screen() instanceof io.github.brener_fregulia.qolunified.ui.screen
+                .SettingsScreen s && "sound_control".equals(s.navigation().selected())),
+                "back on the workspace with Sound Control still selected");
+        // Switching features in the sidebar keeps the preview: the workspace is still the draft's screen.
+        click(UiKeys.category(io.github.brener_fregulia.qolunified.core.FeatureCategory.HUD_INFORMATION));
         ctx.waitTicks(2);
-        check(effective(PORTAL) == 0.7f, "still previewed on the main settings screen");
+        check(effective(PORTAL) == 0.7f, "still previewed after switching features");
+        click("qol_unified.feature.sound_control.name");
         click(UiKeys.CANCEL);
         ctx.waitTicks(2);
         check(!previewing() && effective(PORTAL) == 0.4f && committed(PORTAL) == 0.4f,
@@ -375,7 +380,6 @@ final class SoundControlGameTest {
         searchExact(PORTAL);
         dragSlider(60);
         click(UiKeys.DONE);
-        click(UiKeys.BACK);
         click(UiKeys.DONE);
         ctx.waitTicks(2);
         check(!previewing() && committed(PORTAL) == 0.6f && effective(PORTAL) == 0.6f, "parent Done persists");
@@ -443,7 +447,6 @@ final class SoundControlGameTest {
                 QolUnifiedClient.core()));
         ctx.waitTicks(3);
         click(UiKeys.category(io.github.brener_fregulia.qolunified.core.FeatureCategory.AUDIO));
-        click(UiKeys.FEATURE_SETTINGS);
         click(SoundControlTexts.OPEN);
         check(screenTitleKey().equals(SoundControlTexts.TITLE), "opened from the QoL settings");
     }
