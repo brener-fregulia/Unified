@@ -14,12 +14,20 @@ public final class UiKeys {
     public static final String NO_MATCHES = "qol_unified.settings.no_matches";
     public static final String DONE = "qol_unified.settings.done";
     public static final String CANCEL = "qol_unified.settings.cancel";
-    public static final String BACK = "qol_unified.settings.back";
-    public static final String FEATURE_SETTINGS = "qol_unified.settings.feature_settings";
     public static final String NO_SETTINGS = "qol_unified.settings.no_settings";
+    public static final String SWITCH_ON = "qol_unified.settings.switch.on";
+    public static final String SWITCH_OFF = "qol_unified.settings.switch.off";
+    public static final String SWITCH_NARRATION = "qol_unified.settings.switch.narration";
+    public static final String APPLIES_WHEN_ON = "qol_unified.settings.applies_when_on";
+    public static final String ACTION_NEEDS_ACTIVE = "qol_unified.settings.action_needs_active";
+    public static final String COMPARISON_VANILLA = "qol_unified.settings.comparison.vanilla";
+    public static final String COMPARISON_QOL = "qol_unified.settings.comparison.qol";
+    public static final String COMPARISON_IN_WORLD = "qol_unified.settings.comparison.in_world";
+    public static final String NAV_DRAWER = "qol_unified.settings.nav.drawer";
+    public static final String NAV_EXPANDED = "qol_unified.settings.nav.expanded";
+    public static final String NAV_COLLAPSED = "qol_unified.settings.nav.collapsed";
+    public static final String NAV_SELECTED = "qol_unified.settings.nav.selected";
     public static final String RETRY_DISABLE = "qol_unified.settings.retry_disable";
-    public static final String ENABLED = "qol_unified.settings.enabled";
-    public static final String DISABLED = "qol_unified.settings.disabled";
     public static final String RESTART_REQUIRED_SUFFIX = "qol_unified.settings.restart_required_suffix";
     public static final String MAP_ENTRIES = "qol_unified.settings.map_entries";
 

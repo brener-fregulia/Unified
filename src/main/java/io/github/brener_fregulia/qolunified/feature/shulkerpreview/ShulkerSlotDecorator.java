@@ -32,8 +32,15 @@ public final class ShulkerSlotDecorator {
         if (summary == null) {
             return;
         }
+        draw(g, stack, summary, settings.getEnum(ShulkerPreviewSettings.SLOT_ICON_SOURCE), x, y);
+        decorated++;
+    }
+
+    /** Draws the icon and bar for a known summary; also used by the settings comparison. */
+    static void draw(GuiGraphicsExtractor g, ItemStack stack, ShulkerSummary<ItemStack> summary, String source,
+            int x, int y) {
         // Content icon (first occupied slot or predominant kind): 8×8 in the top-right quadrant, glint kept, no count.
-        ItemStack icon = summary.iconStack(settings.getEnum(ShulkerPreviewSettings.SLOT_ICON_SOURCE));
+        ItemStack icon = summary.iconStack(source);
         if (icon != null) {
             g.pose().pushMatrix();
             g.pose().translate(x + 8, y);
@@ -48,7 +55,6 @@ public final class ShulkerSlotDecorator {
             g.fill(RenderPipelines.GUI, bx, by, bx + ShulkerSummary.BAR_WIDTH, by + 2, 0xFF000000);
             g.fill(RenderPipelines.GUI, bx, by, bx + summary.barWidth(), by + 1, summary.full() ? BAR_FULL : BAR);
         }
-        decorated++;
     }
 
     /** Slots decorated so far; for development game tests. */

@@ -7,6 +7,8 @@ public final class KeyboardMapTexts {
     public static final String KEY_OPEN = "key.qol_unified.open_keyboard_map";
     public static final String TITLE = P + "title";
     public static final String OPEN = P + "open";
+    /** The settings panel's tool button (Q-SU7). */
+    public static final String OPEN_TOOL = P + "open_tool";
     public static final String SEARCH_HINT = P + "search";
     public static final String ALL_CATEGORIES = P + "all_categories";
     public static final String CATEGORY = P + "category";

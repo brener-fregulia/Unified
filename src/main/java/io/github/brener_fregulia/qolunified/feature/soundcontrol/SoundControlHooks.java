@@ -97,13 +97,17 @@ public final class SoundControlHooks {
             owner.sync();
             followDraftScreen(minecraft);
         });
-        FeatureActions.register(SoundControlSettings.ID, new FeatureActions.Action(SoundControlTexts.OPEN,
-                (parent, draft) -> new SoundControlScreen(parent, draft, false)));
         ScreenEvents.AFTER_INIT.register((minecraft, screen, width, height) -> {
             if (screen instanceof SoundOptionsScreen && SoundControlFeature.activeSettings() != null) {
                 addOptionsButton(minecraft, screen);
             }
         });
+    }
+
+    /** The settings panel's "Open Sound Control" tool, registered at client start (settings-ux-v1.md Q-SU6). */
+    public static void registerAction() {
+        FeatureActions.register(SoundControlSettings.ID, new FeatureActions.Action(SoundControlTexts.OPEN,
+                (parent, draft) -> new SoundControlScreen(parent, draft, false)));
     }
 
     /** Replaces the table, then lets vanilla recompute the gain of every playing sound (§5.2). Client thread. */

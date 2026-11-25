@@ -52,7 +52,14 @@ public final class KeyboardMapHooks {
                 addControlsButton(minecraft, screen);
             }
         });
-        FeatureActions.register(KeyboardMapSettings.ID, new FeatureActions.Action(KeyboardMapTexts.OPEN,
+    }
+
+    /**
+     * The settings panel's "Open Keyboard Map" tool, registered at client start so the panel can show it (disabled)
+     * before the feature was ever enabled (settings-ux-v1.md Q-SU6). The screen class loads only when opened.
+     */
+    public static void registerAction() {
+        FeatureActions.register(KeyboardMapSettings.ID, new FeatureActions.Action(KeyboardMapTexts.OPEN_TOOL,
                 (parent, draft) -> new KeyboardMapScreen(parent,
                         draft.choice(KeyboardMapSettings.ID).settings().getEnum(KeyboardMapSettings.LAYOUT),
                         layout -> draft.setValue(KeyboardMapSettings.ID, KeyboardMapSettings.LAYOUT, layout))));
