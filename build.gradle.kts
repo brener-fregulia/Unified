@@ -44,7 +44,8 @@ loom {
                 "keyboardmap" to "build/run-gametest-keyboardmap",
                 "targetinfo" to "build/run-gametest-targetinfo",
                 "soundcontrol" to "build/run-gametest-soundcontrol",
-                "soundcontrolrestart" to "build/run-gametest-soundcontrol")) {
+                "soundcontrolrestart" to "build/run-gametest-soundcontrol",
+                "shulkerpreview" to "build/run-gametest-shulkerpreview")) {
             register("gameTest" + scenario.replaceFirstChar { it.uppercase() }) {
                 client()
                 name("Game Test ($scenario)")

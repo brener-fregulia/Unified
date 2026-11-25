@@ -53,6 +53,7 @@ public final class CoreGameTest implements FabricClientGameTest {
             case "chatheads_reference" -> new ChatHeadsGameTest(ctx).compareWithReference();
             case "keyboardmap" -> new KeyboardMapGameTest(ctx).run();
             case "targetinfo" -> new TargetInfoGameTest(ctx).run();
+            case "shulkerpreview" -> new ShulkerPreviewGameTest(ctx).run();
             case "targetinfo_jade" -> new TargetInfoGameTest(ctx).compareWithJade();
             case "soundcontrol" -> new SoundControlGameTest(ctx).run();
             case "soundcontrolrestart" -> new SoundControlGameTest(ctx).restart();
