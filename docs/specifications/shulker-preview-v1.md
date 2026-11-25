@@ -195,6 +195,7 @@ color is optional.
 | Setting | Type | Default |
 | --- | --- | --- |
 | `slot_icon` | boolean | true |
+| `slot_icon_source` | enum `first_occupied` / `predominant` (§15) | `first_occupied` |
 | `compact_preview` | boolean | true |
 | `full_preview_on_shift` | boolean | true |
 
@@ -360,3 +361,43 @@ one component on shulker boxes only.
   slot on small windows.
 - Comparison runs with Shulker Box Tooltip and Simple Shulker Preview were
   not performed; the conflict default is covered by unit tests.
+
+## 15. M1.6.1 polish [Approved 2026-11-25]
+
+The Product Owner validated V1 manually on 2026-11-25 and approved two
+refinements. Everything else in V1 is unchanged (capacity bar, compact
+grouping and totals, full grid, color accent, conflicts, tooltip
+suppression).
+
+### 15.1 Content icon source
+
+New LIVE enum setting `slot_icon_source` ("Content icon"):
+
+| Value | Label (en_us / pt_br) | Slot icon |
+| --- | --- | --- |
+| `first_occupied` (default) | First occupied slot / Primeiro slot ocupado | The original stack of the first non-empty slot, scanning 0 to 26 row by row; nothing for an empty box |
+| `predominant` | Predominant item / Item predominante | The V1 rule (§5): largest total ignoring components, ties by first slot, representative original stack |
+
+- `slot_icon = false` hides the icon whatever the source.
+- Only the small slot icon changes; the compact preview still leads with the
+  predominant kind.
+- Existing configurations have no value for the new key; the Configuration
+  Service fills in the default (`first_occupied`) and keeps every other
+  Shulker Preview setting. No schema change was needed.
+
+### 15.2 Shift hint
+
+The compact preview's hint is one translated line, `%s: full view` /
+`%s: visão completa`, whose argument is the key name `Shift` styled gold
+(`ChatFormatting.GOLD`); the rest keeps the muted hint color. The
+activation key is unchanged.
+
+### 15.3 Validation
+
+- Unit: first occupied with slot 0 filled and empty, each source on a box
+  whose first item is not the predominant one, predominant tie rule, empty
+  box, the default for an existing V1 configuration with its other settings
+  kept, LIVE switching, and the hint's styling.
+- Game test: the same cases on real items, both modes and `slot_icon` off,
+  with screenshots `29-shift-hint`, `30-icon-first-occupied` and
+  `31-icon-predominant`.

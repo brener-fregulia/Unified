@@ -109,3 +109,6 @@ released yet.
   nothing is shown when the contents are unknown. Three settings, all
   applied live. Disabled by default when Shulker Box Tooltip or Simple
   Shulker Preview is installed, unless you enable it yourself.
+- Shulker Preview: a "Content icon" setting chooses whether the small slot
+  icon shows the first occupied slot (new default) or the predominant item,
+  and the hover hint now shows "Shift" in gold.
