@@ -53,9 +53,12 @@ class ShulkerPreviewFeatureTest {
             assertEquals(ApplyMode.LIVE, s.applyMode(), s.key());
             defaults.put(s.key(), s.defaultValue());
         }
-        assertEquals(List.of("slot_icon", "compact_preview", "full_preview_on_shift"),
+        assertEquals(List.of("slot_icon", "compact_preview", "full_preview_on_shift", "slot_icon_source"),
                 List.copyOf(defaults.keySet()));
-        assertTrue(defaults.values().stream().allMatch(Boolean.TRUE::equals));
+        assertEquals(Map.of("slot_icon", true, "compact_preview", true, "full_preview_on_shift", true,
+                "slot_icon_source", "first_occupied"), defaults);
+        assertEquals(List.of("first_occupied", "predominant"),
+                ((SettingDescriptor.EnumSetting) d.setting("slot_icon_source").orElseThrow()).values());
         assertEquals(List.of("shulkerboxtooltip", "simpleshulkerpreview"), d.conflicts().stream().map(ConflictDescriptor::modId).toList());
     }
 
@@ -77,6 +80,29 @@ class ShulkerPreviewFeatureTest {
         core.saveAndApply(Map.of("shulker_preview", core.choices().get("shulker_preview").withEnabled(true)));
         assertEquals(FeatureState.ACTIVE, core.lifecycle().state("shulker_preview"));
         assertEquals(1, installs.get(), "the tooltip hook is registered once");
+    }
+
+    @Test
+    void existingConfigurationsGetTheFirstOccupiedDefaultAndKeepTheirSettings() throws Exception {
+        // A V1 configuration, written before slot_icon_source existed.
+        java.nio.file.Files.writeString(dir.resolve("config.json"), """
+                {"schemaVersion":1,"features":{"shulker_preview":{"enabled":true,
+                 "settings":{"slot_icon":false,"compact_preview":false,"full_preview_on_shift":true}}}}""");
+        var core = start(mod -> false);
+        var settings = ShulkerPreviewFeature.activeSettings();
+        assertEquals("first_occupied", settings.getEnum("slot_icon_source"));
+        assertFalse(settings.getBoolean("slot_icon"), "existing value kept");
+        assertFalse(settings.getBoolean("compact_preview"), "existing value kept");
+
+        var choice = core.choices().get("shulker_preview");
+        core.saveAndApply(Map.of("shulker_preview",
+                choice.withSettings(choice.settings().with("slot_icon_source", "predominant"))));
+        assertEquals("predominant", ShulkerPreviewFeature.activeSettings().getEnum("slot_icon_source"), "LIVE");
+        assertFalse(core.lifecycle().pendingRestart("shulker_preview"));
+        core.saveAndApply(Map.of("shulker_preview", core.choices().get("shulker_preview")
+                .withSettings(core.choices().get("shulker_preview").settings().with("slot_icon_source",
+                        "first_occupied"))));
+        assertEquals("first_occupied", ShulkerPreviewFeature.activeSettings().getEnum("slot_icon_source"));
     }
 
     @Test

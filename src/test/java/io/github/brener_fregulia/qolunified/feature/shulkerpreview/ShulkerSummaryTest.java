@@ -128,6 +128,34 @@ class ShulkerSummaryTest {
     }
 
     @Test
+    void firstOccupiedSkipsEmptySlotsButNeverPicksAnotherWhenTheBoxIsEmpty() {
+        var sandAt5 = new ArrayList<Slot<String>>(Collections.nCopies(5, null));
+        sandAt5.add(s("sand", 3, 64));
+        assertEquals("sand", ShulkerSummary.of(sandAt5).iconStack(ShulkerPreviewSettings.FIRST_OCCUPIED),
+                "slot 0 empty, sand in slot 5");
+        var stoneFirst = new ArrayList<Slot<String>>(sandAt5);
+        stoneFirst.set(0, s("stone#named", 1, 64));
+        assertEquals("stone#named", ShulkerSummary.of(stoneFirst).iconStack(ShulkerPreviewSettings.FIRST_OCCUPIED),
+                "the original stack of slot 0");
+        assertNull(ShulkerSummary.of(box()).iconStack(ShulkerPreviewSettings.FIRST_OCCUPIED), "empty box");
+        assertNull(ShulkerSummary.of(box()).iconStack(ShulkerPreviewSettings.PREDOMINANT), "empty box");
+    }
+
+    @Test
+    void eachSourceShowsItsOwnItem() {
+        // Stone is first, sand is predominant.
+        var summary = ShulkerSummary.of(box(s("stone", 1, 64), null, s("sand", 64, 64), s("sand#x", 10, 64)));
+        assertEquals("stone", summary.iconStack(ShulkerPreviewSettings.FIRST_OCCUPIED));
+        assertEquals("sand", summary.iconStack(ShulkerPreviewSettings.PREDOMINANT));
+        assertEquals("stone", summary.iconStack("unknown_value"), "anything else falls back to the default");
+        // Predominant ties keep the V1 rule: the first in slot order.
+        var tie = ShulkerSummary.of(box(null, s("gold", 8, 64), s("iron", 8, 64)));
+        assertEquals("gold", tie.iconStack(ShulkerPreviewSettings.PREDOMINANT));
+        // The compact summary is unchanged: it always leads with the predominant kind.
+        assertEquals("sand", summary.predominant().key());
+    }
+
+    @Test
     void shortCounts() {
         assertEquals("999", ShulkerSummary.shortCount(999));
         assertEquals("1k", ShulkerSummary.shortCount(1000));

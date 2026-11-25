@@ -202,5 +202,9 @@
   "qol_unified.shulker_preview.items": "%s items",
   "qol_unified.shulker_preview.more_kinds": "+%s",
   "qol_unified.shulker_preview.summary": "%s/%s slots · %s items · %s kinds",
-  "qol_unified.shulker_preview.shift_hint": "Shift: full view"
+  "qol_unified.shulker_preview.shift_hint": "%s: full view",
+  "qol_unified.shulker_preview.shift_key": "Shift",
+  "qol_unified.feature.shulker_preview.setting.slot_icon_source": "Content icon",
+  "qol_unified.feature.shulker_preview.setting.slot_icon_source.first_occupied": "First occupied slot",
+  "qol_unified.feature.shulker_preview.setting.slot_icon_source.predominant": "Predominant item"
 }

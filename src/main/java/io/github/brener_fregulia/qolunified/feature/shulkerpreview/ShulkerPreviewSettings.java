@@ -5,6 +5,7 @@ import io.github.brener_fregulia.qolunified.core.ConflictDescriptor;
 import io.github.brener_fregulia.qolunified.core.FeatureCategory;
 import io.github.brener_fregulia.qolunified.core.FeatureDescriptor;
 import io.github.brener_fregulia.qolunified.core.SettingDescriptor.BooleanSetting;
+import io.github.brener_fregulia.qolunified.core.SettingDescriptor.EnumSetting;
 import java.util.List;
 
 /** Shulker Preview descriptor and setting keys (shulker-preview-v1.md §1.1, §7). Free of Minecraft types. */
@@ -17,13 +18,19 @@ public final class ShulkerPreviewSettings {
     public static final String SLOT_ICON = "slot_icon";
     public static final String COMPACT_PREVIEW = "compact_preview";
     public static final String FULL_PREVIEW_ON_SHIFT = "full_preview_on_shift";
+    /** Which item the slot icon shows (shulker-preview-v1.md §15): the first occupied slot, or the predominant kind. */
+    public static final String SLOT_ICON_SOURCE = "slot_icon_source";
+    public static final String FIRST_OCCUPIED = "first_occupied";
+    public static final String PREDOMINANT = "predominant";
 
     public static final FeatureDescriptor DESCRIPTOR = new FeatureDescriptor(ID, FeatureCategory.INVENTORY,
             true, ApplyMode.LIVE,
             List.of(
                     new BooleanSetting(SLOT_ICON, true, ApplyMode.LIVE),
                     new BooleanSetting(COMPACT_PREVIEW, true, ApplyMode.LIVE),
-                    new BooleanSetting(FULL_PREVIEW_ON_SHIFT, true, ApplyMode.LIVE)),
+                    new BooleanSetting(FULL_PREVIEW_ON_SHIFT, true, ApplyMode.LIVE),
+                    new EnumSetting(SLOT_ICON_SOURCE, FIRST_OCCUPIED, List.of(FIRST_OCCUPIED, PREDOMINANT),
+                            ApplyMode.LIVE)),
             List.of(new ConflictDescriptor(SHULKER_BOX_TOOLTIP,
                             "qol_unified.feature.shulker_preview.conflict.shulkerboxtooltip"),
                     new ConflictDescriptor(SIMPLE_SHULKER_PREVIEW,

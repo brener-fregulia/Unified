@@ -7,9 +7,10 @@ import net.minecraft.util.ARGB;
 import net.minecraft.world.item.ItemStack;
 
 /**
- * Mixin SP-1 (shulker-preview-v1.md §6.1, §6.1a): after vanilla's slot decorations, draws the predominant item at
- * half size in the top-right quadrant and a bundle-style capacity bar on the item-bar row. Nothing is drawn for other
- * items, empty or unknown boxes, or while the feature or setting is off.
+ * Mixin SP-1 (shulker-preview-v1.md §6.1, §6.1a, §15): after vanilla's slot decorations, draws the content icon
+ * (first occupied slot or predominant item, per {@code slot_icon_source}) at half size in the top-right quadrant
+ * and a bundle-style capacity bar on the item-bar row. Nothing is drawn for other items, empty or unknown boxes, or
+ * while the feature or setting is off.
  */
 public final class ShulkerSlotDecorator {
     /** The bundle's bar colors in Minecraft 26.3 ({@code BundleItem.BAR_COLOR}, {@code FULL_BAR_COLOR}). */
@@ -31,12 +32,15 @@ public final class ShulkerSlotDecorator {
         if (summary == null) {
             return;
         }
-        // Predominant item: 8×8 in the top-right quadrant, glint kept, no count.
-        g.pose().pushMatrix();
-        g.pose().translate(x + 8, y);
-        g.pose().scale(0.5f, 0.5f);
-        g.item(summary.predominant().representative(), 0, 0);
-        g.pose().popMatrix();
+        // Content icon (first occupied slot or predominant kind): 8×8 in the top-right quadrant, glint kept, no count.
+        ItemStack icon = summary.iconStack(settings.getEnum(ShulkerPreviewSettings.SLOT_ICON_SOURCE));
+        if (icon != null) {
+            g.pose().pushMatrix();
+            g.pose().translate(x + 8, y);
+            g.pose().scale(0.5f, 0.5f);
+            g.item(icon, 0, 0);
+            g.pose().popMatrix();
+        }
         // Capacity bar where vanilla draws item bars; never over an existing one (e.g. durability).
         if (!stack.isBarVisible()) {
             int bx = x + 2;

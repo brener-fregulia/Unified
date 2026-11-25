@@ -129,6 +129,28 @@ public final class ShulkerSummary<S> {
         return Math.max(0, kinds.size() - 1 - MAX_OTHER_KINDS);
     }
 
+    /** The original stack of the first non-empty slot (0 to 26, row by row), or {@code null} when empty. */
+    public S firstOccupied() {
+        for (Slot<S> slot : slots) {
+            if (!slot.empty()) {
+                return slot.stack();
+            }
+        }
+        return null;
+    }
+
+    /**
+     * The slot icon's stack for a {@link ShulkerPreviewSettings#SLOT_ICON_SOURCE} value: the first occupied slot
+     * (default) or the predominant kind's representative; {@code null} when the box is empty.
+     */
+    public S iconStack(String source) {
+        if (ShulkerPreviewSettings.PREDOMINANT.equals(source)) {
+            Kind<S> main = predominant();
+            return main == null ? null : main.representative();
+        }
+        return firstOccupied();
+    }
+
     public int usedSlots() {
         return usedSlots;
     }
