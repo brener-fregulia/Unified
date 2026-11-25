@@ -69,7 +69,7 @@ public final class ShulkerTooltipComponent implements ClientTooltipComponent {
         width = Math.max(width, others);
         width = Math.max(width, font.width(summaryText()));
         if (data.shiftHint()) {
-            width = Math.max(width, font.width(Component.translatable(ShulkerPreviewTexts.SHIFT_HINT)));
+            width = Math.max(width, font.width(shiftHint()));
         }
         return width;
     }
@@ -110,7 +110,7 @@ public final class ShulkerTooltipComponent implements ClientTooltipComponent {
         g.text(font, summaryText(), x, y, DIM, true);
         y += 10;
         if (data.shiftHint()) {
-            g.text(font, Component.translatable(ShulkerPreviewTexts.SHIFT_HINT), x, y, HINT, true);
+            g.text(font, shiftHint(), x, y, HINT, true);
         }
     }
 
@@ -134,6 +134,11 @@ public final class ShulkerTooltipComponent implements ClientTooltipComponent {
     private static Component kindName(Kind<ItemStack> kind) {
         // Grouping ignores components, so the kind is named after the item, not a stack's custom name.
         return kind.representative().getItem().getName(kind.representative().getItem().getDefaultInstance());
+    }
+
+    /** "Shift: full view" with the key in gold and the rest in the muted hint color (shulker-preview-v1.md §15). */
+    static Component shiftHint() {
+        return ShulkerHint.text();
     }
 
     private static Component itemsText(long total) {
