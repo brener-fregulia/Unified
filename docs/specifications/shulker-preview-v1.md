@@ -1,9 +1,8 @@
 # Shulker Preview V1
 
 Status labels follow [AGENTS.md](../../AGENTS.md#decision-status-labels).
-Specification and discovery only; no code. Items marked **[Approved]** are
-the Product Owner's stated direction of 2026-11-25; everything else awaits
-approval.
+Approved by the Product Owner on 2026-11-25 (§1, §1.1). Items still marked
+[Proposed] in the text are covered by §1.1 unless stated otherwise.
 
 Show what is inside a shulker box item without placing it: a small icon of
 the main content on the slot, a compact preview on hover and the exact 9×3
@@ -19,13 +18,30 @@ Shulker Preview; no third-party code, textures or translations.
 - The slot icon shows the predominant item.
 - No server mod required.
 
-## 2. Feature identity [Proposed]
+### 1.1 Decisions [Approved 2026-11-25]
+
+- Q-SP1: milestone **M1.6**, after Sound Control (M1.5).
+- Q-SP2: tie rule: the kind whose first stack has the lowest slot index wins.
+- Q-SP3: grouping by item, ignoring components; a representative original
+  stack is used for icons.
+- Q-SP4: capacity bar in V1, following the vanilla bundle bar (§6.1a).
+- Q-SP5: the box's dye color as a subtle accent of the preview.
+- Q-SP6: soft conflicts with Shulker Box Tooltip and Simple Shulker Preview,
+  after verifying their Fabric ids.
+- Q-SP7: Mixins SP-1, SP-2 and SP-3, narrowly scoped.
+- Q-SP8: the three LIVE settings of §7. With `compact_preview` off, vanilla
+  lines stay unless the full preview is showing.
+- Identity: `shulker_preview`, Inventory, enabled by default, client-only.
+- Unknown contents (no component sent, or ungenerated loot) and known empty
+  contents show no icon, no bar and the vanilla tooltip; nothing is invented.
+
+## 2. Feature identity [Approved 2026-11-25]
 
 | Item | Proposal |
 | --- | --- |
 | Feature id | `shulker_preview` (already in the catalog) |
 | Category | Inventory (`inventory`) |
-| Milestone | M1.5 (catalog says M2; see Q-SP1) |
+| Milestone | M1.6 |
 | Default | Enabled |
 | Lifecycle | LIVE (render-only; nothing to restore) |
 | Side | Client-only; no packets, no gameplay change |
@@ -117,6 +133,22 @@ from the tooltip, any server component.
   quadrant, as in the PO reference image; no count on the small icon.
 - Not drawn for empty boxes.
 
+### 6.1a Capacity bar [Approved 2026-11-25]
+
+- Drawn where and like the vanilla bundle's fill bar: the item-bar position
+  at the bottom of the slot icon (13×2 px with a black backing, filled
+  width `min(1 + floor(fraction × 12), 13)`), in the bundle's colors: the
+  bundle's blue while partly full, the bundle's red when full.
+- `fraction = Σ(count ÷ maxStackSize) ÷ 27` over the 27 slots, clamped to
+  [0, 1]; stacks with a non-positive max stack size count as full slots. It is
+  an approximate normalized storage occupancy, not the number of used slots:
+  one full stack of a 64-item is 1/27 (≈ 3.7 %), 27 full stacks or 27
+  unstackable items are 100 %.
+- Not drawn for empty or unknown boxes, and not drawn when the stack already
+  shows a vanilla item bar, so a durability bar is never hidden.
+- The predominant icon sits in the top-right quadrant and the bar on the
+  bottom two pixels, so they never overlap.
+
 ### 6.2 Compact preview (hover)
 
 ```
@@ -193,8 +225,8 @@ Shift still opens the full grid (if on).
 
 | Mod | Overlap | Proposal |
 | --- | --- | --- |
-| Shulker Box Tooltip | Same tooltip | Conflict; ids must be read from its JAR (Q-SP6) |
-| Simple Shulker Preview | Same slot icon | Conflict; id from its JAR (Q-SP6) |
+| Shulker Box Tooltip | Same tooltip | Soft conflict on `shulkerboxtooltip` (5.4.3+26.3 JAR) |
+| Simple Shulker Preview | Same slot icon | Soft conflict on `simpleshulkerpreview` (2.6.0-mc26.3 JAR) |
 | REI / EMI / JEI | Use vanilla tooltips | Expected to work, not a V1 requirement |
 
 Core policy applies: off by default when a conflicting mod is present,
@@ -245,17 +277,17 @@ manual check by the PO on the Paper server.
 - Icon position/scale settings, minimum-count thresholds.
 - Preview while hovering a placed box in the world.
 
-## 13. Open decisions for the Product Owner
+## 13. Decisions (resolved in §1.1)
 
-- **Q-SP1 [Open]** Milestone: M1.5 (next) or keep M2?
-- **Q-SP2 [Open]** Approve the tie rule (lowest first slot wins).
-- **Q-SP3 [Open]** "Kind" = same item ignoring components (proposed), or same
+- **Q-SP1 [Approved 2026-11-25]** Milestone: M1.5 (next) or keep M2?
+- **Q-SP2 [Approved 2026-11-25]** Approve the tie rule (lowest first slot wins).
+- **Q-SP3 [Approved 2026-11-25]** "Kind" = same item ignoring components (proposed), or same
   item and components (enchanted books split by enchantment).
-- **Q-SP4 [Open]** Optional fill bar under the box, like the PO image
+- **Q-SP4 [Approved 2026-11-25]** Optional fill bar under the box, like the PO image
   (proposed: items stored ÷ (27 × max stack size of each slot's item), drawn
   like the durability bar). In V1 or Deferred?
-- **Q-SP5 [Open]** Tint the preview with the box color in V1?
-- **Q-SP6 [Open]** Declare Shulker Box Tooltip and Simple Shulker Preview as
+- **Q-SP5 [Approved 2026-11-25]** Tint the preview with the box color in V1?
+- **Q-SP6 [Approved 2026-11-25]** Declare Shulker Box Tooltip and Simple Shulker Preview as
   conflicts once their Fabric ids are read from their JARs.
-- **Q-SP7 [Open]** Approve Mixins SP-1 to SP-3.
-- **Q-SP8 [Open]** Approve the three settings in §7.
+- **Q-SP7 [Approved 2026-11-25]** Approve Mixins SP-1 to SP-3.
+- **Q-SP8 [Approved 2026-11-25]** Approve the three settings in §7.
