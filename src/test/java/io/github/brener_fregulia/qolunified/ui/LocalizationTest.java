@@ -13,6 +13,7 @@ import io.github.brener_fregulia.qolunified.core.SettingDescriptor;
 import io.github.brener_fregulia.qolunified.feature.foodhud.FoodHudSettings;
 import io.github.brener_fregulia.qolunified.feature.keyboardmap.KeyboardMapTexts;
 import io.github.brener_fregulia.qolunified.feature.soundcontrol.SoundControlTexts;
+import io.github.brener_fregulia.qolunified.feature.shulkerpreview.ShulkerPreviewTexts;
 import io.github.brener_fregulia.qolunified.feature.targetinfo.TargetInfoTexts;
 import java.io.InputStreamReader;
 import java.lang.reflect.Modifier;
@@ -56,6 +57,11 @@ class LocalizationTest {
             }
         }
         keys.add(FoodHudSettings.DEBUG_LINE_KEY);
+        for (var field : ShulkerPreviewTexts.class.getFields()) {
+            if (Modifier.isStatic(field.getModifiers()) && field.getType() == String.class) {
+                keys.add((String) field.get(null));
+            }
+        }
         for (var field : TargetInfoTexts.class.getFields()) {
             if (Modifier.isStatic(field.getModifiers()) && field.getType() == String.class) {
                 keys.add((String) field.get(null));

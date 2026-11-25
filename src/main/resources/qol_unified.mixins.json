@@ -11,6 +11,8 @@
     "HudHeartsMixin",
     "ItemStackTooltipMixin",
     "MultiPlayerGameModeAccessor",
+    "ShulkerContainerTooltipMixin",
+    "ShulkerSlotDecorationsMixin",
     "SoundEngineAccessor",
     "SoundEngineVolumeMixin",
     "SoundManagerAccessor"

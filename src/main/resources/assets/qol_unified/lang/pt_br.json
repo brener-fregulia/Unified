@@ -191,5 +191,16 @@
   "qol_unified.sound_control.no_audio": "O Minecraft está sem dispositivo de áudio, então nenhum som está sendo ouvido.",
   "qol_unified.sound_control.no_match": "Nenhum som corresponde a \"%s\".",
   "qol_unified.sound_control.note": "Sons que compartilham um evento mudam juntos: explosões de TNT e de Creeper são um único evento.",
-  "qol_unified.sound_control.limit": "Limite atingido: no máximo %s sons podem ser alterados."
+  "qol_unified.sound_control.limit": "Limite atingido: no máximo %s sons podem ser alterados.",
+  "qol_unified.feature.shulker_preview.name": "Prévia de Shulker",
+  "qol_unified.feature.shulker_preview.description": "Mostra o que há dentro das shulker boxes: o item principal e uma barra de ocupação no slot, um resumo ao passar o mouse e a grade 9×3 completa segurando Shift. Usa só o que o jogo já envia.",
+  "qol_unified.feature.shulker_preview.conflict.shulkerboxtooltip": "O Shulker Box Tooltip mostra a própria prévia na mesma dica.",
+  "qol_unified.feature.shulker_preview.conflict.simpleshulkerpreview": "O Simple Shulker Preview desenha o próprio ícone nos mesmos slots.",
+  "qol_unified.feature.shulker_preview.setting.slot_icon": "Item principal e barra de ocupação no slot",
+  "qol_unified.feature.shulker_preview.setting.compact_preview": "Resumo ao passar o mouse",
+  "qol_unified.feature.shulker_preview.setting.full_preview_on_shift": "Grade completa segurando Shift",
+  "qol_unified.shulker_preview.items": "%s itens",
+  "qol_unified.shulker_preview.more_kinds": "+%s",
+  "qol_unified.shulker_preview.summary": "%s/%s slots · %s itens · %s tipos",
+  "qol_unified.shulker_preview.shift_hint": "Shift: visão completa"
 }

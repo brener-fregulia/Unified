@@ -191,5 +191,16 @@
   "qol_unified.sound_control.no_audio": "Minecraft has no audio device right now, so no sounds are being heard.",
   "qol_unified.sound_control.no_match": "No sound matches \"%s\".",
   "qol_unified.sound_control.note": "Sounds that share an event change together: TNT and Creeper explosions are one event.",
-  "qol_unified.sound_control.limit": "Limit reached: at most %s sounds can be changed."
+  "qol_unified.sound_control.limit": "Limit reached: at most %s sounds can be changed.",
+  "qol_unified.feature.shulker_preview.name": "Shulker Preview",
+  "qol_unified.feature.shulker_preview.description": "Shows what is inside shulker boxes: the main item and a fill bar on the slot, a summary on hover and the full 9×3 grid while holding Shift. Uses only what the game already sends.",
+  "qol_unified.feature.shulker_preview.conflict.shulkerboxtooltip": "Shulker Box Tooltip shows its own preview in the same tooltip.",
+  "qol_unified.feature.shulker_preview.conflict.simpleshulkerpreview": "Simple Shulker Preview draws its own icon on the same slots.",
+  "qol_unified.feature.shulker_preview.setting.slot_icon": "Main item and fill bar on the slot",
+  "qol_unified.feature.shulker_preview.setting.compact_preview": "Summary on hover",
+  "qol_unified.feature.shulker_preview.setting.full_preview_on_shift": "Full grid while holding Shift",
+  "qol_unified.shulker_preview.items": "%s items",
+  "qol_unified.shulker_preview.more_kinds": "+%s",
+  "qol_unified.shulker_preview.summary": "%s/%s slots · %s items · %s kinds",
+  "qol_unified.shulker_preview.shift_hint": "Shift: full view"
 }
