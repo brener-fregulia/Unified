@@ -440,6 +440,13 @@ settings), TX-7 (runtime failure is not a save failure), and TX-T10–TX-T12.
 > workspace ([settings-ux-v1.md](../design/settings-ux-v1.md) §17). The
 > transaction rules (TX-1–TX-9), opening, conflicts, status texts and
 > read-only behavior described here are unchanged.
+>
+> **Auto-apply (M1.7.1, 2026-11-25).** The workspace now commits each valid
+> change at once and has Back instead of Done/Cancel; TX-1–TX-3 (one draft
+> until Done, Cancel discards, invalid input blocks Done) no longer describe
+> it. Save-before-apply, atomic writes, backups, validation and read-only
+> handling (TX-4–TX-9) are unchanged. See
+> [settings-ux-v1.md §18](../design/settings-ux-v1.md).
 
 - **Opening.** The key binding *Open QoL: Unified Settings* is listed under
   *QoL: Unified* in Controls and has no default key. It opens the screen in

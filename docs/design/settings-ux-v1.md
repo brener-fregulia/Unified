@@ -548,3 +548,82 @@ bar itself uses sprites only and always draws).
 - Updated: the core scenarios (toggle, invalid input, read-only, Retry
   disable, conflict override, restart notice) and Sound Control's nested
   preview, which now also checks that switching features keeps the preview.
+
+## 18. M1.7.1 auto-apply and polish [Implemented 2026-11-25]
+
+### 18.1 M0 contract findings
+
+- `CoreRuntime.saveAndApply` already validates the choices, writes the file
+  atomically (temporary file, then move; backups and newer-schema read-only
+  mode unchanged) and applies only after the save succeeded. Nothing in Core,
+  `ConfigurationService` or the descriptors had to change.
+- `SettingsDraft.commit()` already returns NO_CHANGE without writing for an
+  unchanged draft and rebases on the saved state after success.
+- What changed is the UI contract: TX-1's "one draft until Done" and TX-2's
+  "Cancel discards" no longer describe the workspace.
+
+### 18.2 New workspace contract (supersedes TX-1/TX-2/TX-3 for the workspace)
+
+| Control | Commit |
+| --- | --- |
+| Feature switch, boolean, enum | Immediately after the value changes |
+| Integer | Only a complete valid value, on Enter or focus loss; invalid or partial text stays in the field (red, tooltip, footer message, `!` in the sidebar) and never enters the draft, so it neither blocks other commits nor touches the saved value |
+| Map | In its tool screen (Sound Control); the panel shows a summary |
+| Tool screens editing the draft (Keyboard Map layout) | When the workspace is shown again |
+
+- Every commit is validate → save → apply → refresh, synchronously on the
+  client thread. It is a small JSON write per user action and is skipped for
+  unchanged values, so no queue or debounce is needed and nothing can be lost
+  on close.
+- **Save failure:** nothing is applied; the footer shows the error with
+  **Retry** (same change again) and **Undo change** (revert the draft to the
+  stored state); closing with a failed change pending reverts it.
+- **Read-only (newer schema):** controls stay locked; nothing is written.
+- **Restart-required:** saved at once, not claimed active: the status line
+  shows "Restart required" while the feature is selected and the footer
+  announces it once.
+- **Conflicts and UNKNOWN:** unchanged (explicit enable overrides the conflict
+  default; UNKNOWN shows Retry disable, never the switch).
+- **Back / Escape:** only close. There is no shared Cancel, because every
+  change is already saved and applied the moment it is made; a Cancel would
+  have to undo applied runtime changes, which M0 never guaranteed.
+- **Sound Control:** its screen keeps its working copy, live preview, Done and
+  Cancel. Done now saves and applies directly also when opened from the
+  workspace; Cancel restores the committed rules. The workspace never holds a
+  stale draft: it is the same draft object, rebased after every commit.
+- Sound Control's preview follower no longer starts a preview for a draft
+  screen whose rules equal the committed ones (the workspace after any
+  commit), so returning from a confirmed Sound Control edit leaves no
+  preview running.
+- **Temporary audio preview** is distinct from persistence: it changes what is
+  heard while the Sound Control screen is open and writes nothing.
+
+### 18.3 Visual polish
+
+- Switch: 54×20, one-pixel dark border with clipped corners, muted green/red
+  track with a top highlight and bottom shade, a beveled white knob, "ON ✔"
+  left or "✕ OFF" right, lighter track on hover, white focus outline, gray
+  when locked.
+- Panel: setting rows left-aligned and capped at 380 px so labels stay near
+  their controls; one-pixel dividers between description, comparison, tools
+  and settings; the panel list shrinks to its content, so one-setting features
+  leave no large empty area.
+- Target Info comparison: a stone block under a crosshair, alone and with the
+  Target Info panel drawn by its own renderer from a fixed sample (Stone,
+  Minecraft, wooden pickaxe, check). The tool and source rows follow the
+  current `show_tools` / `show_source` settings. Outside a world it shows the
+  same note as the Shulker comparison.
+
+### 18.4 Tests
+
+- Unit `SettingsAutoApplyTest`: switch, boolean and enum commits; no write for
+  unchanged values; validation before saving; save failure applies nothing,
+  retry and revert; read-only; restart-required; conflict override and
+  UNKNOWN; closing without a commit.
+- Game tests: the core scenarios now check auto-apply, Back and Escape,
+  invalid integer text never saved; `settings` checks switch auto-apply, a
+  simulated save failure (blocked temporary file) with Retry and Undo, Food
+  HUD OFF in a world removing the overlay, the Target Info comparison;
+  `settingsrestart` checks Food HUD OFF after a real restart; Sound Control's
+  nested Done saves directly, Cancel restores, Back reverts nothing, and the
+  workspace switch restores vanilla audio at once.

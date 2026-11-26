@@ -117,10 +117,17 @@ released yet.
   green ON / red OFF switch, a "Vanilla / QoL ON" example for Food HUD and
   Shulker Preview, and buttons for Keyboard Map and Sound Control. Search
   now also finds individual settings and option names and jumps to them.
-  Narrow windows get a collapsible sidebar. Saving still happens only with
-  Done.
+  Narrow windows get a collapsible sidebar.
+- Settings apply and save immediately: flipping a switch or choosing an
+  option takes effect at once, and Back (or Escape) just closes the screen.
+  Number fields save when you press Enter or leave the field. If a change
+  cannot be saved, nothing is applied and you can retry or undo it. A
+  refreshed ON/OFF switch, a "Vanilla / QoL ON" example for Target Info, and
+  a tighter settings panel.
 
 ### Removed
 
 - The separate per-feature settings screen and its Settings buttons; their
   controls are now part of the settings workspace.
+- Done and Cancel in the QoL: Unified settings; changes apply as you make
+  them.
