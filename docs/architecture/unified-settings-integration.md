@@ -559,7 +559,7 @@ Fabric API for development runs.
 - **Key:** `key.unified_settings.open`, "Open Unified Settings", default
   physical **`U`**, in the "Unified" category. Registered only by the
   library, so it exists once. It opens the shell when no screen is open.
-- **Legacy key (temporary):** Unified: QoL still registers
+- **Legacy key (temporary, removed in M2.1.2, §20.6):** Unified: QoL still registers
   `key.qol_unified.open_settings` (unbound by default), unchanged. With QoL
   installed there are therefore **two settings keys** in this stage: the
   shared one and QoL's legacy one. Duplicates are not eliminated yet; M2.1.2
@@ -632,3 +632,96 @@ Fabric API for development runs.
 - Sound Control's preview hook (R2) and Keyboard Map/Sound Control action
   screens through the contract.
 - Optimizations' own minimal persistence once it has a setting (Q-US8).
+
+## 20. Integrated workspace (M2.1.2, implemented 2026-11-26)
+
+The PO rejected the M2.1.1 module-selection screen after manual testing. `U`
+and Options → Unified Settings… now open one workspace directly.
+
+### 20.1 UI ownership
+
+| Owner | Responsibility |
+| --- | --- |
+| Library (`unified.settings.ui`) | `UnifiedSettingsScreen`: title, search, sidebar (`NavList`, `WorkspaceNavigation`), compact drawer below 400 GUI px, layout breakpoints (120/150/170 px sidebar, 400 px panel, centered on wide screens), footer message line, Back, Retry/Undo after a failed save, provider-failure isolation; the `U` key (in game and on the title screen) and the Options button. |
+| Module (`SettingsWorkspace`) | Feature list and categories, the feature panel (switch, status, description, comparison, tools, setting rows), values, validation, persistence and applying. |
+
+The frame is QoL's approved workspace code moved into the library (layout
+constants, sidebar rendering, narration, search normalization). QoL's panel
+code (`FeaturePanel`, `PanelList`, `FeatureSwitch`, `SettingRows`) stays in
+QoL, unchanged, because it is bound to QoL's descriptors and draft. Moving
+those controls into the library would need a descriptor/session contract;
+that is left **[Open]** (Q-US9) until a second module has settings.
+
+### 20.2 Contract 1.1 (library 1.1.0)
+
+Additive, every new member has a default; 1.0 providers keep working.
+
+- `UnifiedSettingsProvider.workspace(): SettingsWorkspace?` (default null):
+  one session per opened workspace screen.
+- `SettingsWorkspace`: `features()`, `attach(WorkspaceHost)`, `opened()`
+  (every rebuild, e.g. back from a tool screen), `panel(featureId,
+  PanelArea)`, `beforeRebuild()`, `flagged()`, `saveFailed()`,
+  `retrySave()`, `undoChange()`, `closed()`.
+- `WorkspaceHost`: footer message, rebuild requests.
+- `PanelArea`: bounds, font, parent screen for tool screens, the setting a
+  search result should reveal, `add(widget)`.
+- `WorkspaceFeature` / `WorkspaceSetting`: ids, translation keys and
+  translated texts for search.
+- `openSettings` is no longer called for a module that offers a workspace.
+
+The library never reads or writes module configuration. Every provider call
+is wrapped: a throw is logged with the module id; that module shows "Could not
+be loaded" (or a panel error) and the others keep working.
+
+### 20.3 Navigation
+
+- Both mods: `Unified: QoL` and `Unified: Optimizations` top-level groups,
+  expandable (click, Enter, Left/Right). Optimizations shows a disabled
+  "No configurable features yet" row; no placeholder features.
+- One mod: its group row is omitted; categories are shown directly, exactly
+  as before (Q-US6).
+- Optimizations only: the workspace says "Unified: Optimizations has no
+  configurable features yet." No QoL class is loaded.
+- Search spans all modules; results are listed under their owning module
+  group (module rows only when more than one module is installed); modules
+  without matches are hidden. Feature ids are qualified by module.
+
+### 20.4 QoL adapter
+
+`QolWorkspace` holds a `SettingsDraft` per session and commits each valid
+change through QoL's Configuration Service (validate, save, apply), exactly
+as the former `SettingsScreen`. Pending invalid number text, sidebar flags,
+save failure with Retry/Undo, the read-only message, Retry disable and the
+restart message are unchanged. `QolWorkspace.open(parent, featureId)` is the
+contextual entry point. Sound Control's preview follows the draft of the
+shown screen through `QolWorkspace.draftShown`, so Live Preview and rollback
+end when the workspace closes. Keyboard Map and Sound Control open over the
+workspace and return to the same selected feature and scroll position.
+
+Removed from QoL: `SettingsScreen`, `NavList`, `SettingsNavigation` (moved
+to the library) and their now-unused translation keys.
+
+### 20.5 Configuration
+
+Unchanged: `config/qol_unified/config.json`, its schema and auto-apply. No
+global config and no migration.
+
+### 20.6 Key binding migration
+
+QoL no longer registers `key.qol_unified.open_settings`; only
+`key.unified_settings.open` (default `U`) remains. `LegacyKeyMigration`
+reads options.txt (read-only) during QoL's client initialization, before
+anything saves options. If the legacy line names a key and the shared key is
+still at its default, at client start it calls `KeyMapping.setKey`,
+`KeyMapping.resetMapping()` and `Options.save()`. Minecraft's save drops the
+unregistered legacy line, so the migration runs once. A customized shared key
+is never overwritten. Errors leave the bindings as they were. Limitation: if
+the player had bound the legacy key while the shared key was customized, the
+legacy binding is dropped (logged).
+
+### 20.7 Validation
+
+See the M2.1.2 report: library, QoL and Optimizations unit tests; every QoL
+game-test scenario; the three runtime scenarios with the production JARs
+(including migration from a seeded options.txt and search across modules);
+screenshots of combined, single-mod, narrow and ultrawide layouts.

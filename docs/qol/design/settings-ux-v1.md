@@ -645,3 +645,14 @@ Layout only; behavior, persistence and auto-apply are unchanged.
 - **Comparisons:** both boxes share one width, capped at the sample + 48 px; samples sit on a stage at least 24 px
   tall and are vertically centered, so Food HUD, Shulker and Target Info boxes look alike. Side by side whenever both
   samples fit, otherwise stacked.
+
+## 20. M2.1.2 shared workspace [Implemented 2026-11-26]
+
+The workspace frame described above (search, sidebar, drawer, footer, layout)
+now lives in Unified Settings (Library) as `UnifiedSettingsScreen`; QoL
+contributes its features and panels through `ui/screen/QolWorkspace`
+([integration §20](../../architecture/unified-settings-integration.md)). The
+look and behavior are unchanged; with another Unified mod installed the
+sidebar gains a top-level "Unified: QoL" group. The workspace opens with the
+shared `U` key or Options → Unified Settings…; QoL's own settings key is gone
+(a custom binding is migrated once).
