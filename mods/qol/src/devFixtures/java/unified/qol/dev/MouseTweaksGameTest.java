@@ -62,6 +62,9 @@ final class MouseTweaksGameTest {
             leftCollect();
             vanillaEvenSplit();
             shiftDragChest();
+            shiftCollectWithCursor();
+            shiftDoubleClick(true);
+            shiftDoubleClick(false);
             resultSlotsUntouched();
             wheelChest();
             wheelInventoryAndRestrictions();
@@ -147,6 +150,106 @@ final class MouseTweaksGameTest {
         shot("02-shift-drag-chest");
         synced(total);
         close();
+    }
+
+    // Shift + drag with a matching item on the cursor still quick-moves each visited stack; nothing is spread.
+    private void shiftCollectWithCursor() {
+        clear();
+        server.runCommand("item replace entity @a hotbar.8 with stone 1"); // chest menu slot 62
+        openBlock("chest", "{Items:[{Slot:0b,id:\"stone\",count:10},{Slot:1b,id:\"stone\",count:6},"
+                + "{Slot:2b,id:\"stone\",count:3},{Slot:3b,id:\"dirt\",count:4}]}");
+        int total = total();
+        click(62, LEFT); // cursor: 1 stone
+        shiftHold(0);
+        moveTo(1);
+        moveTo(2);
+        moveTo(3); // unrelated item: untouched
+        shiftRelease();
+        check(count(0) == 0 && count(1) == 0 && count(2) == 0, "visited stone quick-moved: "
+                + ctx.computeOnClient(mc -> describe(menu(mc))));
+        check(count(3) == 4, "dirt untouched");
+        check(carried() == 1, "cursor unchanged, was " + carried());
+        check(ctx.computeOnClient(mc -> mc.player.containerMenu.slots.subList(0, 27).stream()
+                .noneMatch(sl -> sl.getItem().getItem().toString().contains("stone"))), "nothing spread into the chest");
+        synced(total);
+        close();
+    }
+
+    /**
+     * Vanilla's Shift + double-click with an item on the cursor moves every matching stack of the clicked side, with
+     * the feature on (its Shift + collect gesture must leave this to vanilla) and off: chest to player, player to
+     * chest, unrelated items untouched, a nearly full destination keeps the rest, cursor unchanged, server agrees.
+     */
+    private void shiftDoubleClick(boolean enabled) {
+        setEnabled(enabled);
+        String label = enabled ? "on" : "off";
+        // Chest to player: three stone stacks, dirt stays.
+        clear();
+        server.runCommand("item replace entity @a hotbar.8 with stone 1");
+        openBlock("chest", "{Items:[{Slot:0b,id:\"stone\",count:10},{Slot:1b,id:\"stone\",count:20},"
+                + "{Slot:5b,id:\"stone\",count:5},{Slot:2b,id:\"dirt\",count:7}]}");
+        int total = total();
+        click(62, LEFT);
+        shiftDoubleClickSlot(1);
+        check(count(0) == 0 && count(1) == 0 && count(5) == 0, label + ": all chest stone moved: "
+                + ctx.computeOnClient(mc -> describe(menu(mc))));
+        check(count(2) == 7, label + ": dirt stays in the chest");
+        check(carried() == 1, label + ": cursor unchanged");
+        check(ctx.computeOnClient(mc -> menu(mc).slots.subList(27, 63).stream().filter(sl -> sl.getItem().getItem()
+                .toString().contains("stone")).mapToInt(sl -> sl.getItem().getCount()).sum()) == 35,
+                label + ": 35 stone in the player inventory");
+        shot("05-shift-double-click-chest-" + label);
+        synced(total);
+        close();
+
+        // Player to chest: stone from main inventory and hotbar (one container), dirt stays.
+        clear();
+        server.runCommand("item replace entity @a inventory.0 with stone 12"); // 27
+        server.runCommand("item replace entity @a inventory.3 with stone 8"); // 30
+        server.runCommand("item replace entity @a hotbar.1 with stone 4"); // 55
+        server.runCommand("item replace entity @a inventory.1 with dirt 9"); // 28
+        server.runCommand("item replace entity @a hotbar.8 with stone 1");
+        openBlock("chest", "{Items:[]}");
+        total = total();
+        click(62, LEFT);
+        shiftDoubleClickSlot(27);
+        check(count(27) == 0 && count(30) == 0 && count(55) == 0, label + ": all player stone moved: "
+                + ctx.computeOnClient(mc -> describe(menu(mc))));
+        check(count(28) == 9, label + ": dirt stays with the player");
+        check(countOf("stone") == 24 && carried() == 1, label + ": 24 stone in the chest, cursor 1");
+        synced(total);
+        close();
+
+        // Nearly full destination: only what fits moves; the rest stays, nothing is lost.
+        clear();
+        StringBuilder items = new StringBuilder("{Items:[");
+        for (int i = 0; i < 26; i++) {
+            items.append("{Slot:").append(i).append("b,id:\"dirt\",count:64},");
+        }
+        items.append("{Slot:26b,id:\"stone\",count:60}]}");
+        server.runCommand("item replace entity @a inventory.0 with stone 10");
+        server.runCommand("item replace entity @a inventory.1 with stone 10");
+        server.runCommand("item replace entity @a hotbar.8 with stone 1");
+        openBlock("chest", items.toString());
+        total = total();
+        click(62, LEFT);
+        shiftDoubleClickSlot(27);
+        check(count(26) == 64, label + ": the chest stack filled to 64");
+        check(count(27) + count(28) == 16, label + ": 16 stone stay with the player, was " + (count(27) + count(28)));
+        check(carried() == 1, label + ": cursor unchanged");
+        synced(total);
+        close();
+        setEnabled(true);
+    }
+
+    /** Shift + left double-click in place: press, release, press, release, one tick apart (vanilla's double-click). */
+    private void shiftDoubleClickSlot(int slot) {
+        moveTo(slot);
+        shiftButton(com.mojang.blaze3d.platform.InputConstants.PRESS);
+        shiftButton(com.mojang.blaze3d.platform.InputConstants.RELEASE);
+        shiftButton(com.mojang.blaze3d.platform.InputConstants.PRESS);
+        shiftButton(com.mojang.blaze3d.platform.InputConstants.RELEASE);
+        ctx.waitTicks(3);
     }
 
     // MT-AC-5: dragging over a crafting result never crafts.

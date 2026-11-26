@@ -9,6 +9,12 @@ released yet.
 
 ## [Unreleased]
 
+### Fixed
+
+- Inventory Mouse Tweaks no longer blocks vanilla's Shift + double-click with an
+  item on the cursor, which moves every matching stack between a container and
+  the player inventory.
+
 ### Changed
 
 - Settings open in the shared **Unified Settings** workspace (key `U` or

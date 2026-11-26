@@ -9,8 +9,9 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 import org.spongepowered.asm.mixin.gen.Invoker;
 
 /**
- * Inventory Mouse Tweaks (mouse-tweaks-v1.md §9): read-only access to the slot under a point and to vanilla's
- * item-specific wheel actions (bundles), so vanilla keeps those. No injection.
+ * Inventory Mouse Tweaks (mouse-tweaks-v1.md §9): access to the slot under a point, to vanilla's item-specific
+ * wheel actions (bundles), so vanilla keeps those, and to its drag-to-spread state, so a Shift + drag collection can
+ * end it without a click. No injection.
  */
 @Mixin(AbstractContainerScreen.class)
 public interface ContainerScreenSlotsAccessor {
@@ -19,4 +20,11 @@ public interface ContainerScreenSlotsAccessor {
 
     @Accessor("itemSlotMouseActions")
     List<ItemSlotMouseAction> qolUnified$itemSlotMouseActions();
+
+    /** Ends vanilla's drag-to-spread after a Shift + drag collection the gesture handled; no click is sent. */
+    @Accessor("isQuickCrafting")
+    void qolUnified$setQuickCrafting(boolean quickCrafting);
+
+    @Accessor("quickCraftSlots")
+    java.util.Set<Slot> qolUnified$quickCraftSlots();
 }

@@ -38,6 +38,11 @@ final class InventoryGestures {
         COLLECT_PENDING,
         /** Left-drag collection into the cursor (§4.2). */
         COLLECT,
+        /**
+         * Shift + left press with a matching item, not dragged yet: vanilla owns the press and, without a drag, the
+         * release, so its Shift-click and Shift + double-click (move all matching stacks) work unchanged.
+         */
+        SHIFT_COLLECT_PENDING,
         /** Shift + left drag with an item: quick-moves matching stacks (§4.2). */
         SHIFT_COLLECT,
         /** Shift + left drag with an empty cursor (§4.3); vanilla keeps the press. */
@@ -53,6 +58,8 @@ final class InventoryGestures {
     private Mode mode = Mode.NONE;
     /** True when vanilla handled the press (Shift + drag with an empty cursor); it then keeps drag and release. */
     private boolean vanillaPress;
+    /** The gesture began as Shift + press with a matching item (SHIFT_COLLECT_PENDING). */
+    private boolean shiftCollect;
     private int button = -1;
     private int containerId = -1;
     private Slot last;
@@ -85,8 +92,12 @@ final class InventoryGestures {
         if (!carried.isEmpty() && config.lmbCollect() && canTake(slot)
                 && ItemStack.isSameItemSameComponents(slot.getItem(), carried)) {
             if (shift) {
-                begin(Mode.SHIFT_COLLECT, event.button(), slot);
-                quickMove(slot, carried);
+                // Vanilla handles this press (it records the slot for its double-click); the pressed slot is
+                // quick-moved by vanilla on release, or by the gesture once the mouse drags to another slot.
+                begin(Mode.SHIFT_COLLECT_PENDING, event.button(), slot);
+                vanillaPress = true;
+                shiftCollect = true;
+                return true;
             } else {
                 begin(Mode.COLLECT_PENDING, event.button(), slot);
             }
@@ -106,15 +117,23 @@ final class InventoryGestures {
         }
         if (mode == Mode.STOPPED || !ready()) {
             stop();
-            return vanillaPress;
+            return vanillaDrags();
         }
         Slot slot = slotAt(event.x(), event.y());
         if (slot == last) {
-            return vanillaPress;
+            return vanillaDrags();
         }
         if (mode == Mode.COLLECT_PENDING) {
             mode = Mode.COLLECT;
             collect(pressed); // the press slot is the first visit
+        }
+        if (mode == Mode.SHIFT_COLLECT_PENDING) {
+            mode = Mode.SHIFT_COLLECT;
+            ItemStack carried = menu().getCarried();
+            if (canTake(pressed) && ItemStack.isSameItemSameComponents(pressed.getItem(), carried)) {
+                quickMove(pressed, carried); // the press slot is the first visit
+            }
+            moved.add(pressed);
         }
         last = slot; // leaving to empty space and coming back counts as a new visit (Q-MT2)
         if (slot != null && mode != Mode.STOPPED) {
@@ -141,7 +160,15 @@ final class InventoryGestures {
                 }
             }
         }
-        return vanillaPress;
+        return vanillaDrags();
+    }
+
+    /**
+     * Whether vanilla may see this gesture's drags: only Shift + drag with an empty cursor. A Shift press with an item
+     * started vanilla's drag-to-spread state; its drags are kept from vanilla so it never spreads the cursor.
+     */
+    private boolean vanillaDrags() {
+        return vanillaPress && !shiftCollect;
     }
 
     boolean release(MouseButtonEvent event) {
@@ -149,6 +176,18 @@ final class InventoryGestures {
             return true;
         }
         boolean vanillaSawPress = vanillaPress;
+        if (shiftCollect) {
+            // Not dragged: vanilla's own release (Shift-click, or move-all on a double-click). Dragged or stopped: the
+            // gesture moved the stacks, so vanilla's pending drag-to-spread ends without a click.
+            boolean plainClick = mode == Mode.SHIFT_COLLECT_PENDING;
+            if (!plainClick) {
+                var accessor = (ContainerScreenSlotsAccessor) screen;
+                accessor.qolUnified$setQuickCrafting(false);
+                accessor.qolUnified$quickCraftSlots().clear();
+            }
+            reset();
+            return plainClick;
+        }
         if (mode == Mode.COLLECT_PENDING && ready()) {
             // A press and release on the same matching stack: the plain vanilla left click (merge into the slot).
             click(pressed, LEFT, ContainerInput.PICKUP);
@@ -425,6 +464,7 @@ final class InventoryGestures {
     private void reset() {
         mode = Mode.NONE;
         vanillaPress = false;
+        shiftCollect = false;
         button = -1;
         containerId = -1;
         last = null;
