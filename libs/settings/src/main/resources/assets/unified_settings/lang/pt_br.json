@@ -1,0 +1,10 @@
+{
+  "modmenu.nameTranslation.unified_settings": "Unified Settings (Library)",
+  "key.unified_settings.open": "Abrir configurações do Unified",
+  "key.category.unified_settings.unified": "Unified",
+  "unified_settings.title": "Configurações do Unified",
+  "unified_settings.options_button": "Configurações do Unified…",
+  "unified_settings.no_settings": "%s ainda não tem recursos configuráveis.",
+  "unified_settings.provider_failed": "Não foi possível carregar %s. Veja o log para detalhes.",
+  "unified_settings.no_modules": "Nenhum mod Unified oferece configurações."
+}

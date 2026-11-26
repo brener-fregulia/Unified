@@ -1,0 +1,10 @@
+{
+  "modmenu.nameTranslation.unified_settings": "Unified Settings (Library)",
+  "key.unified_settings.open": "Open Unified Settings",
+  "key.category.unified_settings.unified": "Unified",
+  "unified_settings.title": "Unified Settings",
+  "unified_settings.options_button": "Unified Settings…",
+  "unified_settings.no_settings": "%s has no configurable features yet.",
+  "unified_settings.provider_failed": "%s could not be loaded. See the log for details.",
+  "unified_settings.no_modules": "No Unified mod provides settings."
+}
