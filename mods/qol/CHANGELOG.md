@@ -1,6 +1,6 @@
 # Changelog: Unified: QoL
 
-All notable changes to QoL: Unified are documented in this file.
+All notable changes to Unified: QoL (formerly "QoL: Unified") are documented in this file. Tags use `qol/v<version>`.
 
 The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/).
 Versions follow the Minecraft-aligned, SemVer-compatible scheme described in
