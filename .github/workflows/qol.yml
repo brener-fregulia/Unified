@@ -1,12 +1,13 @@
 name: qol
 
 # Builds and unit-tests only the :mods:qol module. Runs for changes in that module or in the shared build
-# files; changes limited to mods/optimizations or docs do not trigger it. Never publishes or tags.
+# files or the nested Unified Settings library; changes limited to mods/optimizations or docs do not trigger it. Never publishes or tags.
 on:
   push:
     branches: [main]
     paths:
       - 'mods/qol/**'
+      - 'libs/settings/**'
       - 'settings.gradle.kts'
       - 'build.gradle.kts'
       - 'gradle.properties'
@@ -17,6 +18,7 @@ on:
   pull_request:
     paths:
       - 'mods/qol/**'
+      - 'libs/settings/**'
       - 'settings.gradle.kts'
       - 'build.gradle.kts'
       - 'gradle.properties'

@@ -1,0 +1,60 @@
+name: settings
+
+# Builds and unit-tests the Unified Settings library and compiles its runtime tests. Both mods nest the library,
+# so their own workflows also run for library changes. Never publishes or tags.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tests/settings-runtime/**'
+      - 'libs/settings/**'
+      - 'settings.gradle.kts'
+      - 'build.gradle.kts'
+      - 'gradle.properties'
+      - 'gradle/**'
+      - 'gradlew'
+      - 'gradlew.bat'
+      - '.github/workflows/settings.yml'
+  pull_request:
+    paths:
+      - 'tests/settings-runtime/**'
+      - 'libs/settings/**'
+      - 'settings.gradle.kts'
+      - 'build.gradle.kts'
+      - 'gradle.properties'
+      - 'gradle/**'
+      - 'gradlew'
+      - 'gradlew.bat'
+      - '.github/workflows/settings.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v6
+      - name: Build and unit-test :libs:settings
+        run: ./gradlew :libs:settings:build :tests:settings-runtime:compileJava
+      - name: Upload settings JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: unified-settings-jar
+          path: libs/settings/build/libs/*.jar
+          if-no-files-found: error
+      - name: Upload settings test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unified-settings-test-reports
+          path: |
+            libs/settings/build/reports/tests/
+            libs/settings/build/test-results/
+          if-no-files-found: ignore
