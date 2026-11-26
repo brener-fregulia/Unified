@@ -35,12 +35,14 @@ import net.minecraft.network.chat.Component;
  */
 public final class SettingsScreen extends Screen implements DraftScreen, SettingRows.Host {
     private static final int GAP = 6;
-    private static final int TOP = 46;
-    private static final int FOOTER = 44;
-    private static final int HEADER = 34;
-    private static final int PANEL_MAX = 520;
+    private static final int TOP = 44;
+    /** Footer: the Back row, plus a message line above it while there is a message. */
+    private static final int FOOTER = 28;
+    private static final int MESSAGE_LINE = 12;
+    private static final int HEADER = 28;
+    private static final int PANEL_MAX = 400;
     /** Setting rows stop growing here, so labels stay near their controls on wide screens. */
-    private static final int ROW_MAX = 380;
+    private static final int ROW_MAX = 384;
 
     private final Screen parent;
     private final SettingsDraft draft;
@@ -98,9 +100,13 @@ public final class SettingsScreen extends Screen implements DraftScreen, Setting
 
     // ---- Layout ----
 
+    /** Breakpoints (settings-ux-v1.md §19): below 400 a drawer, then 120, 150 and 170 GUI px. */
     private int sidebarWidth() {
+        if (width >= 960) {
+            return 170;
+        }
         if (width >= 640) {
-            return 160;
+            return 150;
         }
         return width >= 400 ? 120 : 0;
     }
@@ -112,6 +118,15 @@ public final class SettingsScreen extends Screen implements DraftScreen, Setting
     private int workspaceLeft() {
         int used = sidebarWidth() + GAP + PANEL_MAX;
         return width - 2 * GAP > used ? (width - used) / 2 : GAP;
+    }
+
+    /** Width of the sidebar and panel together, or of the whole window when that is narrower. */
+    private int workspaceWidth() {
+        return Math.min(sidebarWidth() + GAP + PANEL_MAX, width - 2 * GAP);
+    }
+
+    private int footerHeight() {
+        return FOOTER + (message.getString().isEmpty() ? 0 : MESSAGE_LINE);
     }
 
     /** Below 400 GUI px the sidebar becomes a rail with a drawer (settings-ux-v1.md §10). */
@@ -129,10 +144,11 @@ public final class SettingsScreen extends Screen implements DraftScreen, Setting
             commitNow(); // a tool screen (e.g. the Keyboard Map layout) changed the draft
         }
         int titleWidth = Math.min(font.width(title), width - 2 * GAP);
-        addRenderableWidget(new StringWidget((width - titleWidth) / 2, 6, titleWidth, font.lineHeight, title, font));
-        int searchWidth = Math.min(300, width - 2 * GAP - (compact() ? 26 : 0));
-        int searchX = compact() ? GAP + 26 : (width - searchWidth) / 2;
-        EditBox search = new EditBox(font, searchX, 20, searchWidth, 20, Component.translatable(UiKeys.SEARCH_HINT));
+        addRenderableWidget(new StringWidget((width - titleWidth) / 2, 5, titleWidth, font.lineHeight, title, font));
+        // The search box spans the workspace (sidebar + panel) so it lines up with what it filters.
+        int searchX = compact() ? GAP + 24 : workspaceLeft();
+        int searchWidth = compact() ? width - searchX - GAP : workspaceWidth();
+        EditBox search = new EditBox(font, searchX, 18, searchWidth, 20, Component.translatable(UiKeys.SEARCH_HINT));
         search.setHint(Component.translatable(UiKeys.SEARCH_HINT));
         search.setValue(navigation.query());
         search.setResponder(value -> {
@@ -151,12 +167,12 @@ public final class SettingsScreen extends Screen implements DraftScreen, Setting
             empty.setY(TOP + 20);
             addRenderableWidget(empty);
         } else {
-            int bodyHeight = Math.max(40, height - TOP - FOOTER);
+            int bodyHeight = Math.max(40, height - TOP - footerHeight());
             if (compact()) {
                 Button rail = Button.builder(Component.literal("☰"), b -> {
                     drawerOpen = !drawerOpen;
                     rebuildWidgets();
-                }).bounds(GAP, 20, 20, 20).tooltip(Tooltip.create(Component.translatable(UiKeys.NAV_DRAWER))).build();
+                }).bounds(GAP, 18, 20, 20).tooltip(Tooltip.create(Component.translatable(UiKeys.NAV_DRAWER))).build();
                 addRenderableWidget(rail);
             }
             if (!compact() || drawerOpen) {
@@ -181,15 +197,17 @@ public final class SettingsScreen extends Screen implements DraftScreen, Setting
             }
         }
 
-        messageWidget = new StringWidget(GAP, height - FOOTER + 4, width - 2 * GAP, font.lineHeight, message, font);
-        messageWidget.setMaxWidth(width - 2 * GAP);
+        int left = compact() ? GAP : workspaceLeft();
+        int span = compact() ? width - 2 * GAP : workspaceWidth();
+        messageWidget = new StringWidget(left, height - footerHeight() + 3, span, font.lineHeight, message, font);
+        messageWidget.setMaxWidth(span);
         addRenderableWidget(messageWidget);
         setMessage(message, messageIsError);
-        int footerY = height - 26;
+        int footerY = height - 24;
         if (saveFailed) {
             // A failed save: try the same change again, or drop it and show what is stored.
-            int w = Math.min(110, (width - 4 * GAP) / 3);
-            int x = (width - 3 * w - 2 * GAP) / 2;
+            int w = Math.min(110, (span - 2 * GAP) / 3);
+            int x = left + (span - 3 * w - 2 * GAP) / 2;
             addRenderableWidget(Button.builder(Component.translatable(UiKeys.RETRY_SAVE), b -> changed())
                     .bounds(x, footerY, w, 20).build());
             addRenderableWidget(Button.builder(Component.translatable(UiKeys.UNDO_CHANGE), b -> {
@@ -201,9 +219,9 @@ public final class SettingsScreen extends Screen implements DraftScreen, Setting
             addRenderableWidget(Button.builder(Component.translatable(UiKeys.BACK), b -> onClose())
                     .bounds(x + 2 * (w + GAP), footerY, w, 20).build());
         } else {
-            int w = Math.min(200, width - 2 * GAP);
+            int w = Math.min(150, span);
             addRenderableWidget(Button.builder(Component.translatable(UiKeys.BACK), b -> onClose())
-                    .bounds((width - w) / 2, footerY, w, 20).build());
+                    .bounds(left + (span - w) / 2, footerY, w, 20).build());
         }
     }
 
@@ -217,9 +235,9 @@ public final class SettingsScreen extends Screen implements DraftScreen, Setting
         CoreRuntime core = draft.core();
         String id = descriptor.id();
         int left = compact() ? GAP : workspaceLeft() + sidebarWidth() + GAP;
-        int area = width - left - GAP;
+        int area = compact() ? width - 2 * GAP : workspaceLeft() + workspaceWidth() - left;
         int panelWidth = Math.min(PANEL_MAX, area);
-        int px = left + (area - panelWidth) / 2;
+        int px = left;
         int contentWidth = panelWidth - 16;
 
         // Header: name and switch (or Retry disable for an UNKNOWN feature), then the status line.
@@ -254,7 +272,7 @@ public final class SettingsScreen extends Screen implements DraftScreen, Setting
         addRenderableWidget(nameWidget);
         Component status = Texts.status(core, id).copy()
                 .withColor(Texts.needsAttention(core, id) ? PanelList.WARNING : 0xFFB8D8B8);
-        StringWidget statusWidget = new StringWidget(px + 4, TOP + 12, panelWidth - controlWidth - 8,
+        StringWidget statusWidget = new StringWidget(px + 4, TOP + 11, panelWidth - controlWidth - 8,
                 font.lineHeight, status, font);
         statusWidget.setMaxWidth(panelWidth - controlWidth - 8);
         addRenderableWidget(statusWidget);
@@ -452,6 +470,9 @@ public final class SettingsScreen extends Screen implements DraftScreen, Setting
     }
 
     private void setMessage(Component text, boolean error) {
+        if (messageWidget != null && message.getString().isEmpty() != text.getString().isEmpty()) {
+            rebuildRequested = true; // the footer grows or shrinks by the message line
+        }
         message = text;
         messageIsError = error;
         if (messageWidget != null) {

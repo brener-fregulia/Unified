@@ -127,6 +127,7 @@ final class NavList extends ContainerObjectSelectionList<NavList.Entry> {
             int h = getHeight();
             if (row.selected()) {
                 g.fill(x, y, x + w, y + h, SELECTED_BG);
+                g.fill(x, y, x + 2, y + h, CATEGORY); // accent bar on the selected feature
             } else if (isHoveredOrFocused()) {
                 g.fill(x, y, x + w, y + h, 0x28FFFFFF);
             }
@@ -139,8 +140,8 @@ final class NavList extends ContainerObjectSelectionList<NavList.Entry> {
                     String arrow = row.expanded() ? "▼" : "▶";
                     String count = Integer.toString(row.count());
                     int countWidth = font.width(count);
-                    g.text(font, arrow, x + 3, ty, CATEGORY, true);
-                    int textX = x + 3 + font.width(arrow) + 3;
+                    g.text(font, arrow, x + 4, ty, CATEGORY, true);
+                    int textX = x + 14;
                     boolean showCount = w - (textX - x) - countWidth - 6 > 30;
                     int textWidth = w - (textX - x) - (showCount ? countWidth + 8 : 3);
                     g.text(font, fit(getMessage().getString(), textWidth), textX, ty, CATEGORY, true);
@@ -149,11 +150,8 @@ final class NavList extends ContainerObjectSelectionList<NavList.Entry> {
                     }
                 }
                 case FEATURE -> {
-                    int textX = x + 12;
-                    String marker = row.selected() ? "»" : "";
-                    if (!marker.isEmpty()) {
-                        g.text(font, marker, x + 3, ty, TEXT, true);
-                    }
+                    // Indented under the category name; the accent bar and background mark the selection.
+                    int textX = x + 18;
                     String flag = row.flagged() ? " !" : "";
                     int flagWidth = font.width(flag);
                     String name = fit(getMessage().getString(), w - (textX - x) - flagWidth - 3);
@@ -163,7 +161,7 @@ final class NavList extends ContainerObjectSelectionList<NavList.Entry> {
                     }
                 }
                 case SETTING -> {
-                    int textX = x + 22;
+                    int textX = x + 26;
                     g.text(font, fit("· " + getMessage().getString(), w - (textX - x) - 3), textX, ty, MUTED,
                             true);
                 }
