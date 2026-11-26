@@ -9,6 +9,12 @@ released yet.
 
 ## [Unreleased]
 
+### Changed
+
+- Settings workspace visual polish: search box aligned with the workspace, compact
+  footer, refined sidebar hierarchy and selection, controls sized to their text
+  and consistent comparison boxes.
+
 ### Added
 
 - Spec-Driven Development documentation: product vision, feature catalog,

@@ -627,3 +627,21 @@ bar itself uses sprites only and always draws).
   `settingsrestart` checks Food HUD OFF after a real restart; Sound Control's
   nested Done saves directly, Cancel restores, Back reverts nothing, and the
   workspace switch restores vanilla audio at once.
+
+## 19. M1.7.2 visual polish [Implemented 2026-11-26]
+
+Layout only; behavior, persistence and auto-apply are unchanged.
+
+- **Breakpoints:** below 400 GUI px a drawer; sidebar 120 px (400–639), 150 px (640–959), 170 px (960+). The panel is
+  at most 400 px; sidebar and panel are centered together, so ultrawide windows keep the content grouped.
+- **Top and footer:** the search box spans the workspace and lines up with it. The footer is one 28 px row with a
+  150 px Back; a message line is added above it only while there is a message.
+- **Header:** 28 px; name and status are aligned with the 20 px switch.
+- **Sidebar:** arrow and category name at fixed offsets, features indented under the name, setting results one level
+  deeper; the selected feature has a background plus a gold accent bar (the "»" marker is gone). Rows stay 20 px.
+- **Controls:** widths come from font metrics: on/off buttons fit the wider of ON/OFF (min 44), option buttons the
+  widest translated value (min 60, max half the row), number fields the longest number in range (min 44), tool
+  buttons their label (100–200). Setting rows fill the panel and are at least 22 px tall.
+- **Comparisons:** both boxes share one width, capped at the sample + 48 px; samples sit on a stage at least 24 px
+  tall and are vertically centered, so Food HUD, Shulker and Target Info boxes look alike. Side by side whenever both
+  samples fit, otherwise stacked.
