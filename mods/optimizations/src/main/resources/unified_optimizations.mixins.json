@@ -4,6 +4,9 @@
   "package": "unified.optimizations.mixin",
   "compatibilityLevel": "JAVA_25",
   "client": [
+    "LevelStorageSourceMixin",
+    "MinecraftAccessor",
+    "MinecraftFastQuitMixin",
     "ServerNameResolverAccessor",
     "ServerStatusPingerMixin"
   ],
