@@ -17,3 +17,6 @@ include(":mods:optimizations")
 
 // Unified Settings (Library): nested into each mod; never installed on its own.
 include(":libs:settings")
+
+// Development-only runtime tests (installation scenarios) for Unified Settings; never published.
+include(":tests:settings-runtime")

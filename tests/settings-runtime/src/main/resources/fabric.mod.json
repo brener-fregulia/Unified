@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "id": "unified_settings_runtime_test",
+  "version": "0.0.0",
+  "name": "Unified Settings runtime tests (development only)",
+  "environment": "client",
+  "entrypoints": {
+    "fabric-client-gametest": ["unified.settings.runtimetest.SettingsRuntimeGameTest"]
+  },
+  "depends": { "fabricloader": "*", "fabric-client-gametest-api-v1": "*" }
+}
