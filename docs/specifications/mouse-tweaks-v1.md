@@ -1,14 +1,40 @@
 # Inventory Mouse Tweaks V1 (M1.9)
 
 Status labels follow [AGENTS.md](../../AGENTS.md#decision-status-labels).
-Nothing in this document is approved yet. Every product decision is
-**[Proposed]** or **[Open]** until the Product Owner approves it; §12 lists
-the questions.
+Approved by the Product Owner on 2026-11-26 (§0). The sections below keep
+their original labels; §0 records the resolution of each.
 
 Faster inventory handling with mouse drags and the wheel, inspired by the
 behavior of Mouse Tweaks (YaLTeR). Every item movement is an ordinary vanilla
 container click sent through vanilla's own path, so the server stays the
 authority. No third-party code, assets or translations are used.
+
+## 0. Approval [Approved 2026-11-26]
+
+- Identity: `mouse_tweaks`, M1.9, Inventory, enabled by default, LIVE,
+  client-only; no custom networking or server mod.
+- V1 scope and MT-AC-1 to MT-AC-17, with the safety qualifications below.
+- **Q-MT1:** name "Inventory Mouse Tweaks" (pt-BR "Ajustes do Mouse no
+  Inventário").
+- **Q-MT2:** right-drag distribution with repeated slot visits.
+- **Q-MT3:** left collection starts only when the first visited slot matches
+  the cursor; otherwise vanilla behavior.
+- **Q-MT4:** default wheel search order `last_to_first`.
+- **Q-MT5:** wheel transfers between hotbar and main inventory in the player
+  inventory screen.
+- **Q-MT6:** at most 8 items per wheel event.
+- **Q-MT7:** at most 24 generated vanilla clicks per client tick per screen.
+- **Q-MT8:** soft conflicts with `mousetweaks`, `mousewheelie`, `itemscroller`.
+- **Q-MT9:** a brief settings note that creative inventory gestures are
+  excluded.
+- **Safety qualifications:**
+  - Validate before acting, and recheck the predicted state after every
+    generated click. Stop at the first divergence.
+  - Never start a multi-click sequence without enough click budget to finish
+    it, and discard excess input instead of queueing it.
+  - Skip any operation whose safety cannot be guaranteed, and keep vanilla
+    behavior.
+  - No claim of atomicity across the network.
 
 ## 1. Identity, goals and non-goals [Proposed]
 
