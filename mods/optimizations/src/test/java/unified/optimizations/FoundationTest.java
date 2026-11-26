@@ -30,7 +30,15 @@ class FoundationTest {
         JsonObject depends = mod.getAsJsonObject("depends");
         assertFalse(depends.has("qol_unified"), "never requires Unified: QoL");
         assertFalse(mod.has("recommends") && mod.getAsJsonObject("recommends").has("qol_unified"));
-        assertEquals(List.of("fabricloader", "minecraft", "java"), List.copyOf(depends.keySet()));
+        assertEquals(List.of("fabricloader", "minecraft", "java", "fabric-language-kotlin"),
+                List.copyOf(depends.keySet()));
+        assertFalse(depends.get("fabric-language-kotlin").getAsString().contains("$"));
+    }
+
+    @Test
+    void javaCallsTheKotlinStartupReport() {
+        String message = StartupReport.message(Path.of("config"));
+        assertTrue(message.endsWith(OptimizationsPaths.configDirectory(Path.of("config")).toString()));
     }
 
     @Test

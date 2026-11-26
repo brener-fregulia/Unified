@@ -16,7 +16,6 @@ public final class UnifiedOptimizationsClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
-        LOGGER.info("Unified: Optimizations initialized (no optimizations enabled yet). Configuration directory: {}",
-                OptimizationsPaths.configDirectory(FabricLoader.getInstance().getConfigDir()));
+        LOGGER.info(StartupReport.message(FabricLoader.getInstance().getConfigDir()));
     }
 }
