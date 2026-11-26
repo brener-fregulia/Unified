@@ -14,6 +14,9 @@ project's [versioning policy](../../docs/development/versioning.md). Tags use
 
 ### Added
 
+- Unified Settings: listed as its own group in the shared settings workspace
+  ("No configurable features yet"); carries Unified Settings (Library) 1.1.0.
+
 - Unified Settings: the shared **Open Unified Settings** key (default `U`)
   and Options button list this mod, which has no settings yet. The mod
   carries Unified Settings (Library) 1.0.0 and now also requires Fabric API.

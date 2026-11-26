@@ -5,8 +5,8 @@ import unified.settings.api.ModuleOrder
 import unified.settings.api.UnifiedSettingsProvider
 
 /**
- * Unified: Optimizations' entry in Unified Settings (contract 1.0). No optimization is configurable yet, so it offers
- * no categories and no screen; the shared screen says so instead of showing placeholders.
+ * Unified: Optimizations' entry in Unified Settings (contract 1.1). No optimization is configurable yet, so it offers
+ * no workspace; the shared workspace lists it with "No configurable features yet" instead of placeholders.
  */
 class OptimizationsSettingsProvider : UnifiedSettingsProvider {
     override val moduleId: String = UnifiedOptimizationsClient.MOD_ID
