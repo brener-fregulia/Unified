@@ -5,6 +5,7 @@ import io.github.brener_fregulia.qolunified.core.FeatureRegistry;
 import io.github.brener_fregulia.qolunified.feature.chatheads.ChatHeadsFeature;
 import io.github.brener_fregulia.qolunified.feature.foodhud.FoodHudFeature;
 import io.github.brener_fregulia.qolunified.feature.keyboardmap.KeyboardMapFeature;
+import io.github.brener_fregulia.qolunified.feature.mousetweaks.MouseTweaksFeature;
 import io.github.brener_fregulia.qolunified.feature.shulkerpreview.ShulkerPreviewFeature;
 import io.github.brener_fregulia.qolunified.feature.soundcontrol.SoundControlFeature;
 import io.github.brener_fregulia.qolunified.feature.targetinfo.TargetInfoFeature;
@@ -30,6 +31,7 @@ public final class Features {
         builder.register(new SoundControlFeature());
         builder.register(new ShulkerPreviewFeature());
         builder.register(new ZoomFeature());
+        builder.register(new MouseTweaksFeature());
         developmentFeatures.forEach(builder::register);
         return builder.build();
     }
