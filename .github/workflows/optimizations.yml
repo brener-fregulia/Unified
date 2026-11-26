@@ -1,0 +1,58 @@
+name: optimizations
+
+# Builds and unit-tests only the :mods:optimizations module. Runs for changes in that module or in the shared build
+# files; changes limited to mods/qol or docs do not trigger it. Never publishes or tags.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'mods/optimizations/**'
+      - 'settings.gradle.kts'
+      - 'build.gradle.kts'
+      - 'gradle.properties'
+      - 'gradle/**'
+      - 'gradlew'
+      - 'gradlew.bat'
+      - '.github/workflows/optimizations.yml'
+  pull_request:
+    paths:
+      - 'mods/optimizations/**'
+      - 'settings.gradle.kts'
+      - 'build.gradle.kts'
+      - 'gradle.properties'
+      - 'gradle/**'
+      - 'gradlew'
+      - 'gradlew.bat'
+      - '.github/workflows/optimizations.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v6
+      - name: Build and unit-test :mods:optimizations
+        run: ./gradlew :mods:optimizations:build
+      - name: Upload optimizations JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: unified-optimizations-jar
+          path: mods/optimizations/build/libs/*.jar
+          if-no-files-found: error
+      - name: Upload optimizations test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unified-optimizations-test-reports
+          path: |
+            mods/optimizations/build/reports/tests/
+            mods/optimizations/build/test-results/
+          if-no-files-found: ignore

@@ -1,0 +1,58 @@
+name: qol
+
+# Builds and unit-tests only the :mods:qol module. Runs for changes in that module or in the shared build
+# files; changes limited to mods/optimizations or docs do not trigger it. Never publishes or tags.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'mods/qol/**'
+      - 'settings.gradle.kts'
+      - 'build.gradle.kts'
+      - 'gradle.properties'
+      - 'gradle/**'
+      - 'gradlew'
+      - 'gradlew.bat'
+      - '.github/workflows/qol.yml'
+  pull_request:
+    paths:
+      - 'mods/qol/**'
+      - 'settings.gradle.kts'
+      - 'build.gradle.kts'
+      - 'gradle.properties'
+      - 'gradle/**'
+      - 'gradlew'
+      - 'gradlew.bat'
+      - '.github/workflows/qol.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v6
+      - name: Build and unit-test :mods:qol
+        run: ./gradlew :mods:qol:build
+      - name: Upload qol JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: unified-qol-jar
+          path: mods/qol/build/libs/*.jar
+          if-no-files-found: error
+      - name: Upload qol test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unified-qol-test-reports
+          path: |
+            mods/qol/build/reports/tests/
+            mods/qol/build/test-results/
+          if-no-files-found: ignore
