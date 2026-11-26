@@ -17,15 +17,22 @@ import net.minecraft.client.gui.components.AbstractButton;
  * text carry the state without relying on color. It only reports the new value; the caller writes it to the draft.
  */
 public final class FeatureSwitch extends AbstractButton {
-    public static final int WIDTH = 52;
+    public static final int WIDTH = 54;
     public static final int HEIGHT = 20;
-    private static final int KNOB = 12;
-    private static final int GREEN = 0xFF2E7D32;
-    private static final int RED = 0xFFA33A3A;
-    private static final int GRAY = 0xFF5A5A5A;
-    private static final int KNOB_FACE = 0xFFE6E6E6;
-    private static final int KNOB_SHADOW = 0xFF8A8A8A;
-    private static final int FRAME = 0xFF000000;
+    private static final int KNOB_W = 14;
+    // Muted pixel-art palette: border, track, a one-pixel top highlight and bottom shade on the track.
+    private static final int BORDER = 0xFF161616;
+    private static final int GREEN = 0xFF3E7B3A;
+    private static final int GREEN_HOVER = 0xFF4A8F45;
+    private static final int RED = 0xFF8C3535;
+    private static final int RED_HOVER = 0xFFA03E3E;
+    private static final int GRAY = 0xFF4E4E4E;
+    private static final int HIGHLIGHT = 0x30FFFFFF;
+    private static final int SHADE = 0x40000000;
+    private static final int KNOB_FACE = 0xFFEDEDED;
+    private static final int KNOB_LIGHT = 0xFFFFFFFF;
+    private static final int KNOB_DARK = 0xFF9A9A9A;
+    private static final int FOCUS = 0xFFFFFFFF;
 
     private final Component featureName;
     private final Consumer<Boolean> onChange;
@@ -58,26 +65,36 @@ public final class FeatureSwitch extends AbstractButton {
     protected void extractContents(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTick) {
         Font font = Minecraft.getInstance().font;
         int x = getX();
-        int y = getY() + 2;
+        int y = getY();
         int w = getWidth();
-        int h = getHeight() - 4;
-        int track = !active ? GRAY : on ? GREEN : RED;
-        g.fill(x, y, x + w, y + h, FRAME);
+        int h = getHeight();
+        boolean hot = active && isHovered();
+        int track = !active ? GRAY : on ? (hot ? GREEN_HOVER : GREEN) : (hot ? RED_HOVER : RED);
+        // Border, track, then a one-pixel highlight on top and a shade at the bottom of the track.
+        g.fill(x, y + 1, x + w, y + h - 1, BORDER);
+        g.fill(x + 1, y, x + w - 1, y + h, BORDER);
         g.fill(x + 1, y + 1, x + w - 1, y + h - 1, track);
-        // Knob: right when ON, left when OFF.
-        int kx = on ? x + w - 1 - KNOB - 1 : x + 2;
-        g.fill(kx, y + 2, kx + KNOB, y + h - 2, KNOB_SHADOW);
-        g.fill(kx, y + 2, kx + KNOB - 1, y + h - 3, KNOB_FACE);
-        // Symbol and text on the free side.
-        String symbol = on ? "✔" : "✕";
+        g.fill(x + 2, y + 1, x + w - 2, y + 2, HIGHLIGHT);
+        g.fill(x + 2, y + h - 2, x + w - 2, y + h - 1, SHADE);
+        // Knob: right when ON, left when OFF, with a light top-left edge and a dark bottom-right edge.
+        int kx = on ? x + w - 2 - KNOB_W : x + 2;
+        int ky = y + 2;
+        int kh = h - 4;
+        g.fill(kx, ky, kx + KNOB_W, ky + kh, BORDER);
+        g.fill(kx + 1, ky + 1, kx + KNOB_W - 1, ky + kh - 1, active ? KNOB_FACE : 0xFFB8B8B8);
+        g.fill(kx + 1, ky + 1, kx + KNOB_W - 1, ky + 2, KNOB_LIGHT);
+        g.fill(kx + 1, ky + 1, kx + 2, ky + kh - 1, KNOB_LIGHT);
+        g.fill(kx + 1, ky + kh - 2, kx + KNOB_W - 1, ky + kh - 1, KNOB_DARK);
+        g.fill(kx + KNOB_W - 2, ky + 1, kx + KNOB_W - 1, ky + kh - 1, KNOB_DARK);
+        // Label and symbol on the free side: "ON ✔" on the left, "✕ OFF" on the right.
         String text = Component.translatable(on ? UiKeys.SWITCH_ON : UiKeys.SWITCH_OFF).getString();
-        String content = on ? text + " " + symbol : symbol + " " + text;
-        int freeLeft = on ? x + 2 : kx + KNOB;
-        int freeRight = on ? kx : x + w - 2;
+        String content = on ? text + " ✔" : "✕ " + text;
+        int freeLeft = on ? x + 3 : kx + KNOB_W;
+        int freeRight = on ? kx : x + w - 3;
         int tx = freeLeft + (freeRight - freeLeft - font.width(content)) / 2;
         g.text(font, content, tx, y + (h - font.lineHeight) / 2 + 1, active ? 0xFFFFFFFF : 0xFFB0B0B0, true);
-        if (isHoveredOrFocused() && active) {
-            g.outline(x - 1, getY() + 1, w + 2, h + 2, 0xFFFFFFFF);
+        if (isFocused() && active) {
+            g.outline(x - 1, y - 1, w + 2, h + 2, FOCUS);
         }
     }
 
