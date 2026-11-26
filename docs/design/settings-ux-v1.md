@@ -27,6 +27,21 @@ contextual settings panel, so a feature is configured without opening another
 settings screen; native vanilla widgets; it must scale to at least 30
 features. The PO's initial preference is Concept A.
 
+### 0.1 M1.7.1 auto-apply [Approved 2026-11-25]
+
+After manual review of M1.7 the Product Owner approved:
+
+- The workspace applies and saves each valid change immediately; Done and
+  Cancel are replaced by Back (Escape behaves the same). Save-before-apply is
+  kept for every change.
+- Integer fields commit only a complete valid value, on Enter or focus loss.
+- Map settings keep their specialized tool; Sound Control keeps its own
+  Done/Cancel and live preview, and its Done now saves directly.
+- A refined ON/OFF switch, a Target Info comparison, and a denser panel
+  layout. Sidebar and navigation unchanged.
+
+See §18 for the contract changes.
+
 ## 1. Current UI problems
 
 Observed in the code at `eae539b` (`ui/screen/SettingsScreen.java`,
