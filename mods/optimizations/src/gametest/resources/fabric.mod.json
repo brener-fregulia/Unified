@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "id": "unified_optimizations_gametest",
+  "version": "0.0.0-dev",
+  "name": "Unified: Optimizations Game Tests",
+  "description": "Development-only client game tests. Not distributed.",
+  "environment": "client",
+  "entrypoints": {
+    "fabric-client-gametest": ["unified.optimizations.gametest.OptimizationsGameTest"]
+  },
+  "depends": {
+    "unified_optimizations": "*"
+  }
+}

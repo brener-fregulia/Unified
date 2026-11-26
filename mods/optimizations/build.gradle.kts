@@ -12,6 +12,16 @@ base {
     archivesName = property("archives_base_name") as String
 }
 
+// Development-only client game tests (never in the distributable JAR: the jar task packages only main).
+val gametest: SourceSet by sourceSets.creating {
+    compileClasspath += sourceSets.main.get().compileClasspath + sourceSets.main.get().output
+    runtimeClasspath += sourceSets.main.get().runtimeClasspath + sourceSets.main.get().output
+}
+
+// Development-only DNS probe for the fastipping game test: a counting java.net resolver provider. The JDK loads
+// resolver providers through the system class loader, so it goes on the boot class path of that run only.
+val dnsprobe: SourceSet by sourceSets.creating
+
 loom {
     mods {
         register("unified_settings") {
@@ -19,6 +29,28 @@ loom {
         }
         register("unified_optimizations") {
             sourceSet(sourceSets.main.get())
+        }
+        register("unified_optimizations_gametest") {
+            sourceSet(gametest)
+        }
+    }
+    runs {
+        // Focused client game tests, each in its own disposable game directory.
+        for (scenario in listOf("fastipping", "fastquit")) {
+            register("gameTest" + scenario.replaceFirstChar { it.uppercase() }) {
+                client()
+                name("Game Test ($scenario)")
+                source(gametest)
+                runDir("build/run-gametest-$scenario")
+                property("fabric.client.gametest")
+                property("fabric.client.gametest.modid", "unified_optimizations_gametest")
+                property("unified_optimizations.test.scenario", scenario)
+                if (scenario == "fastipping") {
+                    vmArg("-Xbootclasspath/a:" + layout.buildDirectory.dir("classes/java/dnsprobe").get().asFile.absolutePath +
+                        File.pathSeparator + dnsprobe.output.resourcesDir!!.absolutePath)
+                }
+                ideConfigGenerated(false)
+            }
         }
     }
 }
@@ -70,6 +102,14 @@ tasks.withType<JavaCompile>().configureEach {
 // ">=<library version compiled against> <<next major>.0.0" (spike rule §18.4: never be served an older contract).
 val settingsRange = (project(":libs:settings").property("mod_version") as String).let {
     ">=$it <${it.substringBefore('.').toInt() + 1}.0.0"
+}
+
+// Keep the game tests compiling in CI without packaging them.
+tasks.check {
+    dependsOn(gametest.classesTaskName, dnsprobe.classesTaskName)
+}
+tasks.matching { it.name == "runGameTestFastipping" }.configureEach {
+    dependsOn(dnsprobe.classesTaskName)
 }
 
 tasks.processResources {
