@@ -343,49 +343,57 @@ final class SoundControlGameTest {
         check(read(config).contains("\"volume\": 40"), "Done saved");
         pass("standalone: Done saves and the preview matches the committed value");
 
-        // Nested: QoL settings -> Sound Control -> 70% -> Done -> parent Cancel restores the persisted 40%.
-        String persisted40 = read(config);
+        // Nested: workspace -> Sound Control -> 70% -> Done saves and applies at once; the workspace, which applies
+        // every change itself, needs no second confirmation (settings-ux-v1.md §18).
         openNested();
         searchExact(PORTAL);
         dragSlider(70);
         expectGain.accept(0.7);
         click(UiKeys.DONE);
-        check(previewing() && effective(PORTAL) == 0.7f, "nested Done keeps previewing the parent draft");
+        ctx.waitTicks(2);
+        check(!previewing() && committed(PORTAL) == 0.7f && effective(PORTAL) == 0.7f, "nested Done saves and applies");
         expectGain.accept(0.7);
+        check(read(config).contains("\"volume\": 70"), "nested Done wrote the rule");
         check(ctx.computeOnClient(mc -> mc.gui.screen() instanceof io.github.brener_fregulia.qolunified.ui.screen
                 .SettingsScreen s && "sound_control".equals(s.navigation().selected())),
                 "back on the workspace with Sound Control still selected");
-        // Switching features in the sidebar keeps the preview: the workspace is still the draft's screen.
         click(UiKeys.category(io.github.brener_fregulia.qolunified.core.FeatureCategory.HUD_INFORMATION));
         ctx.waitTicks(2);
-        check(effective(PORTAL) == 0.7f, "still previewed after switching features");
-        click("qol_unified.feature.sound_control.name");
-        click(UiKeys.CANCEL);
+        check(effective(PORTAL) == 0.7f, "switching features changes nothing audible");
+        click(UiKeys.BACK);
         ctx.waitTicks(2);
-        check(!previewing() && effective(PORTAL) == 0.4f && committed(PORTAL) == 0.4f,
-                "parent Cancel restores the persisted rules");
-        expectGain.accept(0.4);
-        check(read(config).equals(persisted40), "parent Cancel wrote nothing");
-        pass("nested: Done then parent Cancel restores the persisted rules on the playing loop");
+        check(effective(PORTAL) == 0.7f && read(config).contains("\"volume\": 70"), "Back keeps the saved rule");
+        expectGain.accept(0.7);
+        pass("nested: Done saves and applies; returning and Back need no confirmation and revert nothing");
 
-        // Nested Cancel restores the parent draft's value (here the persisted one), then parent Done persists.
+        // Nested Cancel restores the committed rules; a later Done persists the new value.
         openNested();
         searchExact(PORTAL);
         dragSlider(10);
         expectGain.accept(0.1);
         click(UiKeys.CANCEL);
-        check(effective(PORTAL) == 0.4f, "Sound Control Cancel restores the parent draft's value");
-        expectGain.accept(0.4);
+        ctx.waitTicks(2);
+        check(effective(PORTAL) == 0.7f, "Sound Control Cancel restores the committed rules");
+        expectGain.accept(0.7);
         click(SoundControlTexts.OPEN);
         searchExact(PORTAL);
         dragSlider(60);
         click(UiKeys.DONE);
-        click(UiKeys.DONE);
         ctx.waitTicks(2);
-        check(!previewing() && committed(PORTAL) == 0.6f && effective(PORTAL) == 0.6f, "parent Done persists");
+        check(!previewing() && committed(PORTAL) == 0.6f && effective(PORTAL) == 0.6f, "Done persists");
         expectGain.accept(0.6);
-        check(read(config).contains("\"volume\": 60"), "parent Done saved");
-        pass("nested: Cancel restores the draft; Done then parent Done persists");
+        check(read(config).contains("\"volume\": 60"), "Done saved");
+        // The workspace switch turns Sound Control off and on at once: vanilla audio, then the rules again.
+        click(UiKeys.SWITCH_ON);
+        ctx.waitTicks(2);
+        check(effective(PORTAL) == 1f, "switch OFF restores vanilla audio immediately");
+        expectGain.accept(1);
+        click(UiKeys.SWITCH_OFF);
+        ctx.waitTicks(2);
+        check(effective(PORTAL) == 0.6f, "switch ON restores the rules immediately");
+        expectGain.accept(0.6);
+        click(UiKeys.BACK);
+        pass("nested: Cancel restores; Done persists; the workspace switch applies at once");
 
         // No stale preview: replacing the screen, or disabling the feature, ends it.
         openStandalone();

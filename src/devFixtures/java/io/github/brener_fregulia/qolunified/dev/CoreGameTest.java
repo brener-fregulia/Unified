@@ -54,6 +54,7 @@ public final class CoreGameTest implements FabricClientGameTest {
             case "keyboardmap" -> new KeyboardMapGameTest(ctx).run();
             case "targetinfo" -> new TargetInfoGameTest(ctx).run();
             case "settings" -> new SettingsWorkspaceGameTest(ctx).run();
+            case "settingsrestart" -> new SettingsWorkspaceGameTest(ctx).afterRestart();
             case "shulkerpreview" -> new ShulkerPreviewGameTest(ctx).run();
             case "targetinfo_jade" -> new TargetInfoGameTest(ctx).compareWithJade();
             case "soundcontrol" -> new SoundControlGameTest(ctx).run();
@@ -104,70 +105,58 @@ public final class CoreGameTest implements FabricClientGameTest {
         search("sample");
         shot("05-search-across-categories");
 
-        // Cancel discards edits.
+        // Navigation and search write nothing.
         byte[] before = configBytes();
         search("dev_live_toggle");
         shot("05b-search-live");
+        check(java.util.Arrays.equals(before, configBytes()), "navigation and search do not save");
+
+        // Auto-apply (settings-ux-v1.md §18): the switch saves and applies at once; Back only closes.
         click(UiKeys.SWITCH_ON);
         shot("05c-toggled");
-        click(UiKeys.CANCEL);
-        shot("05d-after-cancel");
-        ctx.waitForScreen(TitleScreen.class);
-        check(java.util.Arrays.equals(before, configBytes()), "Cancel does not save");
-        on(core -> check(core.lifecycle().state("dev_live_toggle") == FeatureState.ACTIVE, "Cancel does not apply"));
-
-        // Escape discards edits.
-        open();
-        search("dev_live_toggle");
-        click(UiKeys.SWITCH_ON);
-        ctx.getInput().pressKey(KEY_ESCAPE);
-        ctx.waitForScreen(TitleScreen.class);
-        check(java.util.Arrays.equals(before, configBytes()), "Escape does not save");
-
-        // LIVE toggle applies on Done.
-        open();
-        search("dev_live_toggle");
-        click(UiKeys.SWITCH_ON);
-        click(UiKeys.DONE);
-        ctx.waitForScreen(TitleScreen.class);
         on(core -> check(core.lifecycle().state("dev_live_toggle") == FeatureState.INACTIVE, "live toggle applied"));
         check(config().contains("\"enabled\": false"), "live toggle saved");
+        byte[] afterToggle = configBytes();
+        click(UiKeys.BACK);
+        ctx.waitForScreen(TitleScreen.class);
+        check(java.util.Arrays.equals(afterToggle, configBytes()), "Back writes nothing more");
+        on(core -> check(core.lifecycle().state("dev_live_toggle") == FeatureState.INACTIVE, "Back keeps it"));
 
-        // RESTART_REQUIRED toggle is saved but not applied.
+        // Escape behaves like Back.
+        open();
+        search("dev_live_toggle");
+        ctx.getInput().pressKey(KEY_ESCAPE);
+        ctx.waitForScreen(TitleScreen.class);
+        check(java.util.Arrays.equals(afterToggle, configBytes()), "Escape writes nothing");
+
+        // RESTART_REQUIRED toggle is saved at once but not applied; the screen says so and stays usable.
         open();
         search("dev_restart_toggle");
         click(UiKeys.SWITCH_ON);
-        click(UiKeys.DONE);
         shot("06-restart-required");
         on(core -> {
             check(core.lifecycle().state("dev_restart_toggle") == FeatureState.ACTIVE, "restart toggle not applied");
             check(core.lifecycle().pendingRestart("dev_restart_toggle"), "restart pending");
         });
-        closeIfOpen();
+        check(config().contains("dev_restart_toggle"), "restart toggle saved");
 
-        // Conflict default overridden explicitly.
-        open();
+        // Conflict default overridden explicitly, without leaving the screen.
         search("dev_conflict");
         shot("07-conflict-default");
         click(UiKeys.SWITCH_OFF);
-        click(UiKeys.DONE);
-        // Regression (M0.9): an earlier pending restart must not keep the screen open on a later success.
-        ctx.waitForScreen(TitleScreen.class);
         on(core -> {
             check(core.lifecycle().state("dev_conflict") == FeatureState.ACTIVE, "explicit enable despite conflict");
             check(core.compatibility("dev_conflict").playerOverride(), "override flagged");
         });
 
         // Disable failure → UNKNOWN; no automatic retry; explicit Retry disable.
-        open();
         search("dev_disable_fails");
         click(UiKeys.SWITCH_ON);
-        click(UiKeys.DONE);
         shot("08-disable-failed-result");
         on(core -> check(core.lifecycle().state("dev_disable_fails") == FeatureState.UNKNOWN, "UNKNOWN after failure"));
         int calls = DevFixtures.feature("dev_disable_fails").calls().size();
-        click(UiKeys.DONE); // acknowledge the result
-        closeIfOpen();
+        click(UiKeys.BACK);
+        ctx.waitForScreen(TitleScreen.class);
         check(DevFixtures.feature("dev_disable_fails").calls().size() == calls, "no automatic retry");
         open();
         search("dev_disable_fails");
@@ -180,23 +169,18 @@ public final class CoreGameTest implements FabricClientGameTest {
         click(UiKeys.RETRY_DISABLE);
         shot("11-retry-succeeded");
         on(core -> check(core.lifecycle().state("dev_disable_fails") == FeatureState.INACTIVE, "retry 2 succeeds"));
-        click(UiKeys.CANCEL);
-        ctx.waitForScreen(TitleScreen.class);
 
-        // Feature settings: invalid input blocks Done; valid input saves; LIVE vs RESTART_REQUIRED.
-        open();
+        // Integer input: invalid text is never saved and leaves the saved value intact; Enter commits a valid one.
         search("dev_all_settings");
         shot("12-feature-settings");
+        byte[] beforeInvalid = configBytes();
         setIntegerField("abc");
         shot("13-invalid-integer");
-        byte[] beforeInvalid = configBytes();
-        click(UiKeys.DONE);
-        shot("14-invalid-done-blocked");
-        check(currentScreen() instanceof SettingsScreen, "invalid draft keeps screen open");
-        check(java.util.Arrays.equals(beforeInvalid, configBytes()), "invalid draft not saved");
+        check(java.util.Arrays.equals(beforeInvalid, configBytes()), "invalid text not saved");
+        on(core -> check(core.choices().get("dev_all_settings").settings().getInt("slot_limit") == 16,
+                "saved value intact"));
         // The error stays findable after navigating away: the feature is flagged in the sidebar.
         search("");
-        click(UiKeys.category(io.github.brener_fregulia.qolunified.core.FeatureCategory.HUD_INFORMATION));
         check(ctx.computeOnClient(mc -> ((SettingsScreen) mc.gui.screen()).navigation()
                 .rows(id -> id.equals("dev_all_settings")).stream().anyMatch(
                         io.github.brener_fregulia.qolunified.ui.SettingsNavigation.Row::flagged)), "flag model");
@@ -205,9 +189,9 @@ public final class CoreGameTest implements FabricClientGameTest {
         click(UiKeys.enumValue("dev_all_settings", "layout", "compact"));
         click("options.off");
         shot("15-feature-settings-edited");
-        click(UiKeys.DONE);
         shot("16-settings-saved-restart");
-        closeIfOpen();
+        click(UiKeys.BACK);
+        ctx.waitForScreen(TitleScreen.class);
         on(core -> {
             var effective = core.lifecycle().effectiveSettings("dev_all_settings");
             var desired = core.lifecycle().desiredSettings("dev_all_settings");
@@ -246,7 +230,7 @@ public final class CoreGameTest implements FabricClientGameTest {
         check(text.contains("futureField") && text.contains("removed_feature"), "unknown data still preserved");
         open();
         shot("01-after-restart");
-        click(UiKeys.CANCEL);
+        click(UiKeys.BACK);
     }
 
     private void newer() {
@@ -258,8 +242,9 @@ public final class CoreGameTest implements FabricClientGameTest {
         });
         open();
         shot("01-read-only");
-        check(!isActive(UiKeys.DONE), "Done disabled while read-only");
-        click(UiKeys.CANCEL);
+        check(locate(UiKeys.SWITCH_ON).isEmpty() && locate(UiKeys.SWITCH_OFF).isEmpty(),
+                "switches locked while read-only");
+        click(UiKeys.BACK);
         check(java.util.Arrays.equals(before, configBytes()), "newer file never modified");
     }
 
@@ -279,7 +264,6 @@ public final class CoreGameTest implements FabricClientGameTest {
         search("dev_live_toggle");
         shot("01-recovered-defaults");
         click(UiKeys.SWITCH_ON);
-        click(UiKeys.DONE);
         closeIfOpen();
         check(config().contains("\"schemaVersion\": 1") && config().contains("\"enabled\": false"),
                 "file replaced with valid configuration on save");
@@ -335,7 +319,7 @@ public final class CoreGameTest implements FabricClientGameTest {
 
     private void closeIfOpen() {
         if (currentScreen() instanceof SettingsScreen) {
-            click(UiKeys.CANCEL);
+            click(UiKeys.BACK);
         }
         ctx.waitForScreen(TitleScreen.class);
     }
@@ -356,6 +340,7 @@ public final class CoreGameTest implements FabricClientGameTest {
         ctx.waitTicks(2);
     }
 
+    /** Types into the (only) integer field and presses Enter, which commits a valid value. */
     private void setIntegerField(String text) {
         ctx.runOnClient(mc -> {
             var boxes = new ArrayList<EditBox>();
@@ -364,8 +349,9 @@ public final class CoreGameTest implements FabricClientGameTest {
             boxes.removeIf(b -> mc.gui.screen().children().contains(b));
             check(boxes.size() == 1, "one integer field");
             boxes.getFirst().setValue(text);
+            boxes.getFirst().keyPressed(new net.minecraft.client.input.KeyEvent(InputConstants.KEY_RETURN, 0, 0));
         });
-        ctx.waitTicks(2);
+        ctx.waitTicks(3);
     }
 
     private static void collect(GuiEventListener listener, List<EditBox> boxes) {

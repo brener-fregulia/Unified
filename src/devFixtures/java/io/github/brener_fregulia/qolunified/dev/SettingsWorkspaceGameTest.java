@@ -50,7 +50,8 @@ final class SettingsWorkspaceGameTest {
             mc.resizeGui();
         });
         navigation();
-        switchAndCancel();
+        switchAutoApply();
+        saveFailure();
         keyboard();
         search();
         tools();
@@ -58,9 +59,106 @@ final class SettingsWorkspaceGameTest {
         sizes();
         try (TestSingleplayerContext world = ctx.worldBuilder().create()) {
             world.getConnection().waitForChunksRender();
+            world.getServer().runCommand("gamemode survival @a");
             comparisonsInWorld();
+            foodHudOffInWorld();
         }
         ctx.setScreen(TitleScreen::new);
+    }
+
+    /** Second launch (scenario "settingsrestart"): the Food HUD switched OFF in the previous run is still OFF. */
+    void afterRestart() {
+        check(!QolUnifiedClient.core().choices().get("food_hud").enabled(), "Food HUD OFF survived the restart");
+        check(QolUnifiedClient.core().lifecycle().state("food_hud").name().equals("INACTIVE"), "and is inactive");
+        open();
+        check(locate(UiKeys.SWITCH_OFF).isPresent(), "the switch shows OFF after restart");
+        shot("30-after-restart");
+        click(UiKeys.SWITCH_OFF);
+        check(QolUnifiedClient.core().choices().get("food_hud").enabled(), "re-enabled for later runs");
+        back();
+    }
+
+    // ---- In a world: Food HUD OFF removes the HUD at once, and reopening shows OFF ----
+
+    private void foodHudOffInWorld() {
+        ctx.setScreen(() -> null);
+        ctx.waitTicks(5);
+        long before = ctx.computeOnClient(mc ->
+                io.github.brener_fregulia.qolunified.feature.foodhud.FoodHudRenderer.foodOverlayFrames());
+        ctx.waitTicks(5);
+        check(ctx.computeOnClient(mc -> io.github.brener_fregulia.qolunified.feature.foodhud.FoodHudRenderer
+                .foodOverlayFrames()) > before, "Food HUD draws while ON");
+        open();
+        selectFeature("food_hud");
+        click(UiKeys.SWITCH_ON);
+        check(QolUnifiedClient.core().lifecycle().state("food_hud").name().equals("INACTIVE"),
+                "Food HUD OFF applied without Done");
+        check(config().contains("food_hud"), "and saved");
+        back();
+        ctx.waitTicks(5);
+        long off = ctx.computeOnClient(mc ->
+                io.github.brener_fregulia.qolunified.feature.foodhud.FoodHudRenderer.foodOverlayFrames());
+        ctx.waitTicks(5);
+        check(ctx.computeOnClient(mc -> io.github.brener_fregulia.qolunified.feature.foodhud.FoodHudRenderer
+                .foodOverlayFrames()) == off, "the HUD overlay is gone");
+        shot("23-food-hud-off-in-world");
+        open();
+        selectFeature("food_hud");
+        check(locate(UiKeys.SWITCH_OFF).isPresent(), "reopened: still OFF");
+        back();
+        // Left OFF on purpose: the "settingsrestart" scenario checks it after a real restart.
+    }
+
+    // ---- Persistence failure: nothing applied, Retry and Undo ----
+
+    private void saveFailure() {
+        Path blocker = configFile().resolveSibling("config.json.tmp");
+        open();
+        selectFeature("chat_heads");
+        block(blocker, true); // the atomic write's temporary file cannot be created
+        byte[] before = configBytes();
+        click(UiKeys.SWITCH_ON);
+        ctx.waitTicks(2);
+        check(ctx.computeOnClient(mc -> ((SettingsScreen) mc.gui.screen()).saveFailed()), "failure reported");
+        check(QolUnifiedClient.core().lifecycle().state("chat_heads").name().equals("ACTIVE"),
+                "nothing applied after a failed save");
+        check(java.util.Arrays.equals(before, configBytes()), "file untouched");
+        shot("09-save-failed");
+        click(UiKeys.RETRY_SAVE);
+        check(ctx.computeOnClient(mc -> ((SettingsScreen) mc.gui.screen()).saveFailed()), "retry fails while blocked");
+        block(blocker, false);
+        click(UiKeys.RETRY_SAVE);
+        check(!ctx.computeOnClient(mc -> ((SettingsScreen) mc.gui.screen()).saveFailed())
+                && QolUnifiedClient.core().lifecycle().state("chat_heads").name().equals("INACTIVE"),
+                "retry saves, then applies");
+        // Undo: a failed change is dropped and the controls show what is stored.
+        block(blocker, true);
+        click(UiKeys.SWITCH_OFF);
+        ctx.waitTicks(2);
+        check(ctx.computeOnClient(mc -> ((SettingsScreen) mc.gui.screen()).saveFailed()), "second failure");
+        click(UiKeys.UNDO_CHANGE);
+        check(locate(UiKeys.SWITCH_OFF).isPresent() && !QolUnifiedClient.core().choices().get("chat_heads").enabled(),
+                "undo shows the stored OFF");
+        block(blocker, false);
+        click(UiKeys.SWITCH_OFF);
+        check(QolUnifiedClient.core().lifecycle().state("chat_heads").name().equals("ACTIVE"), "back ON");
+        back();
+    }
+
+    private static void block(Path path, boolean blocked) {
+        try {
+            // A non-empty directory where the temporary file goes: it can be neither created nor deleted.
+            Path inside = path.resolve("keep");
+            if (blocked) {
+                Files.createDirectories(path);
+                Files.writeString(inside, "x");
+            } else {
+                Files.deleteIfExists(inside);
+                Files.deleteIfExists(path);
+            }
+        } catch (IOException e) {
+            throw new AssertionError(e);
+        }
     }
 
     // ---- Navigation: every feature, inline settings, no second screen ----
@@ -84,32 +182,38 @@ final class SettingsWorkspaceGameTest {
         // Collapsing keeps the selection; contextual entry points preselect.
         click(UiKeys.category(FeatureCategory.AUDIO));
         check(selected().equals("sound_control") && !expanded(FeatureCategory.AUDIO), "collapse keeps selection");
-        cancel();
+        back();
         ctx.setScreen(() -> new SettingsScreen(new TitleScreen(), QolUnifiedClient.core(), "shulker_preview"));
         ctx.waitForScreen(SettingsScreen.class);
         check(selected().equals("shulker_preview"), "contextual entry point preselects (Q-SU8)");
-        cancel();
+        back();
     }
 
-    // ---- Switch: draft only; Cancel discards ----
+    // ---- Switch: validated, saved and applied at once (settings-ux-v1.md §18) ----
 
-    private void switchAndCancel() {
+    private void switchAutoApply() {
         byte[] before = configBytes();
         open();
         selectFeature("target_info");
+        check(java.util.Arrays.equals(before, configBytes()), "navigation writes nothing");
         click(UiKeys.SWITCH_ON);
         check(locate(UiKeys.SWITCH_OFF).isPresent(), "switch shows OFF");
-        check(!ctx.computeOnClient(mc -> draft(mc).choice("target_info").enabled()), "draft OFF");
+        check(QolUnifiedClient.core().lifecycle().state("target_info").name().equals("INACTIVE"),
+                "applied at once");
+        check(!QolUnifiedClient.core().choices().get("target_info").enabled() && config().contains("target_info"),
+                "saved at once");
         check(ctx.computeOnClient(mc -> textOnScreen(mc, UiKeys.APPLIES_WHEN_ON)), "Applies when ON hint");
-        check(ctx.computeOnClient(mc -> QolUnifiedClient.core().lifecycle().state("target_info").name())
-                .equals("ACTIVE"), "nothing applied before Done");
         shot("03-target-info-off");
-        // Switching features keeps the draft.
+        byte[] saved = configBytes();
         selectFeature("food_hud");
         selectFeature("target_info");
-        check(locate(UiKeys.SWITCH_OFF).isPresent(), "draft kept across features");
-        cancel();
-        check(java.util.Arrays.equals(before, configBytes()), "navigation and Cancel write nothing");
+        check(java.util.Arrays.equals(saved, configBytes()), "no write for navigation");
+        click(UiKeys.SWITCH_OFF);
+        check(QolUnifiedClient.core().lifecycle().state("target_info").name().equals("ACTIVE"), "ON again at once");
+        shot("03b-target-info-on");
+        byte[] on = configBytes();
+        back();
+        check(java.util.Arrays.equals(on, configBytes()), "Back writes nothing more");
     }
 
     // ---- Keyboard: switch and sidebar key handlers ----
@@ -122,13 +226,15 @@ final class SettingsWorkspaceGameTest {
             toggle.keyPressed(new KeyEvent(InputConstants.KEY_RETURN, 0, 0));
             return !draft(mc).choice("chat_heads").enabled();
         });
-        check(toggled, "Enter toggles the switch");
+        check(toggled && QolUnifiedClient.core().lifecycle().state("chat_heads").name().equals("INACTIVE"),
+                "Enter toggles and applies");
         boolean space = ctx.computeOnClient(mc -> {
             FeatureSwitch toggle = find(mc.gui.screen(), FeatureSwitch.class).orElseThrow();
             toggle.keyPressed(new KeyEvent(InputConstants.KEY_SPACE, 0, 0));
             return draft(mc).choice("chat_heads").enabled();
         });
-        check(space, "Space toggles back");
+        check(space && QolUnifiedClient.core().lifecycle().state("chat_heads").name().equals("ACTIVE"),
+                "Space toggles back and applies");
         // Left collapses and Right expands a focused category row, without changing the selection.
         ctx.runOnClient(mc -> categoryKey(mc, FeatureCategory.CHAT_SOCIAL, InputConstants.KEY_LEFT));
         ctx.waitTicks(2);
@@ -142,7 +248,7 @@ final class SettingsWorkspaceGameTest {
         ctx.waitTicks(2);
         check(ctx.computeOnClient(mc -> mc.gui.screen().getFocused()) != before, "Tab moves focus");
         shot("04-keyboard-focus");
-        cancel();
+        back();
     }
 
     // ---- Search: setting results reveal the row ----
@@ -165,7 +271,7 @@ final class SettingsWorkspaceGameTest {
         shot("07-search-empty");
         type("");
         check(expanded(FeatureCategory.INVENTORY), "clearing keeps the chosen feature's category open");
-        cancel();
+        back();
     }
 
     // ---- Tools return to the same feature ----
@@ -180,7 +286,7 @@ final class SettingsWorkspaceGameTest {
         check(selected().equals("keyboard_map") && expanded(FeatureCategory.CONTROLS),
                 "Keyboard Map returns to the same feature");
         shot("08-back-from-keyboard-map");
-        cancel();
+        back();
     }
 
     // ---- Done persists once; reopening shows the saved value ----
@@ -189,16 +295,17 @@ final class SettingsWorkspaceGameTest {
         open();
         selectFeature("target_info");
         click("options.on"); // first boolean: show_blocks
-        click(UiKeys.DONE);
-        ctx.waitForScreen(TitleScreen.class);
-        check(!QolUnifiedClient.core().choices().get("target_info").settings().getBoolean("show_blocks"),
-                "Done saved and applied");
+        check(!QolUnifiedClient.core().choices().get("target_info").settings().getBoolean("show_blocks")
+                && !QolUnifiedClient.core().lifecycle().effectiveSettings("target_info").getBoolean("show_blocks"),
+                "boolean saved and applied at once");
         check(config().contains("\"show_blocks\": false"), "written to the file");
+        byte[] once = configBytes();
+        back();
+        check(java.util.Arrays.equals(once, configBytes()), "closing commits nothing more");
         open();
         selectFeature("target_info");
         click("options.off");
-        click(UiKeys.DONE);
-        ctx.waitForScreen(TitleScreen.class);
+        back();
         check(QolUnifiedClient.core().choices().get("target_info").settings().getBoolean("show_blocks"),
                 "restored");
     }
@@ -234,7 +341,7 @@ final class SettingsWorkspaceGameTest {
                     check(locate("qol_unified.feature.food_hud.name").isEmpty(), "drawer closes after choosing");
                     shot("12-" + window[0] + "x" + window[1] + "-gui" + s + "-after-drawer");
                 }
-                cancel();
+                back();
             }
         }
         ctx.getInput().resizeWindow(854, 480);
@@ -250,11 +357,14 @@ final class SettingsWorkspaceGameTest {
         check(ctx.computeOnClient(mc -> FeatureComparisons.itemsAvailable()), "items bound in a world");
         check(ctx.computeOnClient(mc -> FeatureComparisons.find("food_hud").isPresent()
                 && FeatureComparisons.find("shulker_preview").isPresent()
-                && FeatureComparisons.find("target_info").isEmpty()), "comparisons for Food HUD and Shulker only");
+                && FeatureComparisons.find("target_info").isPresent()
+                && FeatureComparisons.find("chat_heads").isEmpty()), "comparisons for Food HUD, Shulker, Target Info");
         open();
         shot("20-food-hud-comparison-world");
         selectFeature("shulker_preview");
         shot("21-shulker-comparison-world");
+        selectFeature("target_info");
+        shot("21b-target-info-comparison-world");
         ctx.getInput().resizeWindow(1920, 1080);
         ctx.runOnClient(mc -> {
             mc.options.guiScale().set(4);
@@ -267,7 +377,7 @@ final class SettingsWorkspaceGameTest {
             mc.options.guiScale().set(2);
             mc.resizeGui();
         });
-        cancel();
+        back();
     }
 
     // ---- Helpers ----
@@ -278,8 +388,8 @@ final class SettingsWorkspaceGameTest {
         ctx.waitTicks(2);
     }
 
-    private void cancel() {
-        click(UiKeys.CANCEL);
+    private void back() {
+        click(UiKeys.BACK);
         ctx.waitTicks(2);
     }
 
