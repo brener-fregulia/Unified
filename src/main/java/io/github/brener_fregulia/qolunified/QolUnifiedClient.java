@@ -53,6 +53,7 @@ public final class QolUnifiedClient implements ClientModInitializer {
         // off; their rendering classes load only when the settings panel draws them.
         io.github.brener_fregulia.qolunified.feature.foodhud.FoodHudComparison.register();
         io.github.brener_fregulia.qolunified.feature.shulkerpreview.ShulkerComparison.register();
+        io.github.brener_fregulia.qolunified.feature.targetinfo.TargetInfoComparison.register();
         KeyboardMapHooks.registerAction();
         io.github.brener_fregulia.qolunified.feature.soundcontrol.SoundControlHooks.registerAction();
         LOGGER.info("QoL: Unified initialized successfully ({} features).", registry.features().size());

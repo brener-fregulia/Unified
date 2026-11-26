@@ -93,10 +93,17 @@ public final class TargetInfoRenderer {
             }
         }
         int bossBars = ((BossHealthOverlayAccessor) mc.gui.hud.getBossOverlay()).qolUnified$events().size();
-        draw(graphics, mc.font, view, progress, OverlayRules.top(bossBars, graphics.guiHeight()));
+        draw(graphics, mc.font, view, progress, OverlayRules.top(bossBars, graphics.guiHeight()),
+                graphics.guiWidth() / 2, true);
     }
 
-    private static void draw(GuiGraphicsExtractor g, Font font, TargetView v, float progress, int top) {
+    /** Draws a fixed sample panel centered on {@code centerX} (the settings comparison); records nothing. */
+    static void drawSample(GuiGraphicsExtractor g, Font font, TargetView v, int centerX, int top) {
+        draw(g, font, v, -1.0f, top, centerX, false);
+    }
+
+    private static void draw(GuiGraphicsExtractor g, Font font, TargetView v, float progress, int top, int centerX,
+            boolean record) {
         boolean icon = !v.icon().isEmpty();
         int textX = PAD + (icon ? ICON + 4 : 0);
         int maxText = Math.max(60, g.guiWidth() * 2 / 5);
@@ -137,7 +144,7 @@ public final class TargetInfoRenderer {
         int width = textX + textWidth + (right > 0 ? 6 + right : 0) + PAD;
         int contentHeight = rows * LINE - 1 + heartRows * (HEART + 1);
         int height = PAD + Math.max(icon || right > 0 ? ICON : 0, contentHeight) + PAD;
-        int x = (g.guiWidth() - width) / 2;
+        int x = centerX - width / 2;
         int y = top;
 
         g.fill(x, y, x + width, y + height, BACKGROUND);
@@ -184,6 +191,9 @@ public final class TargetInfoRenderer {
         if (progress >= 0.0f) {
             int barWidth = Math.round((width - 4) * progress);
             g.fill(x + 2, y + height - 3, x + 2 + barWidth, y + height - 2, PROGRESS);
+        }
+        if (!record) {
+            return;
         }
         lastDrawn = v;
         lastBounds = new int[] {x, y, width, height};
