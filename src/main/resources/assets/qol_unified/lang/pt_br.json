@@ -242,5 +242,21 @@
   "qol_unified.feature.zoom.setting.reduce_sensitivity": "Reduzir a sensibilidade do mouse no zoom",
   "qol_unified.feature.zoom.error.initial_outside_bounds": "precisa ficar entre a mínima (%s×) e a máxima (%s×). Ajuste-as primeiro.",
   "qol_unified.feature.zoom.error.min_above_initial": "não pode passar da ampliação inicial (%s×). Aumente a ampliação inicial primeiro.",
-  "qol_unified.feature.zoom.error.max_below_initial": "não pode ficar abaixo da ampliação inicial (%s×). Diminua a ampliação inicial primeiro."
+  "qol_unified.feature.zoom.error.max_below_initial": "não pode ficar abaixo da ampliação inicial (%s×). Diminua a ampliação inicial primeiro.",
+  "qol_unified.feature.mouse_tweaks.name": "Ajustes do Mouse no Inventário",
+  "qol_unified.feature.mouse_tweaks.description": "Organize o inventário mais rápido com o mouse: arrastar com o botão direito põe um item por slot, arrastar com o esquerdo junta itens iguais, Shift + arrastar move pilhas e a rodinha move itens um a um.",
+  "qol_unified.feature.mouse_tweaks.note": "Não funciona no inventário do modo criativo.",
+  "qol_unified.feature.mouse_tweaks.conflict.mousetweaks": "O Mouse Tweaks adiciona os mesmos gestos no inventário.",
+  "qol_unified.feature.mouse_tweaks.conflict.mousewheelie": "O Mouse Wheelie também move itens com a rodinha e ao arrastar.",
+  "qol_unified.feature.mouse_tweaks.conflict.itemscroller": "O Item Scroller também move itens com a rodinha e ao arrastar.",
+  "qol_unified.feature.mouse_tweaks.setting.rmb_drag": "Arrastar com o direito: um item por slot",
+  "qol_unified.feature.mouse_tweaks.setting.lmb_collect": "Arrastar com o esquerdo: juntar itens iguais",
+  "qol_unified.feature.mouse_tweaks.setting.shift_drag": "Shift + arrastar: mover pilhas",
+  "qol_unified.feature.mouse_tweaks.setting.wheel_transfer": "Rodinha move itens",
+  "qol_unified.feature.mouse_tweaks.setting.wheel_direction": "Direção da rodinha",
+  "qol_unified.feature.mouse_tweaks.setting.wheel_direction.normal": "Para baixo envia, para cima traz",
+  "qol_unified.feature.mouse_tweaks.setting.wheel_direction.inverted": "Para cima envia, para baixo traz",
+  "qol_unified.feature.mouse_tweaks.setting.wheel_search_order": "Ordem de busca da rodinha",
+  "qol_unified.feature.mouse_tweaks.setting.wheel_search_order.last_to_first": "Do último ao primeiro",
+  "qol_unified.feature.mouse_tweaks.setting.wheel_search_order.first_to_last": "Do primeiro ao último"
 }

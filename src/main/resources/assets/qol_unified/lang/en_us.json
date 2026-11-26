@@ -242,5 +242,21 @@
   "qol_unified.feature.zoom.setting.reduce_sensitivity": "Lower mouse sensitivity while zoomed",
   "qol_unified.feature.zoom.error.initial_outside_bounds": "must be between the minimum (%s×) and the maximum (%s×). Change those first.",
   "qol_unified.feature.zoom.error.min_above_initial": "cannot be above the initial magnification (%s×). Raise the initial magnification first.",
-  "qol_unified.feature.zoom.error.max_below_initial": "cannot be below the initial magnification (%s×). Lower the initial magnification first."
+  "qol_unified.feature.zoom.error.max_below_initial": "cannot be below the initial magnification (%s×). Lower the initial magnification first.",
+  "qol_unified.feature.mouse_tweaks.name": "Inventory Mouse Tweaks",
+  "qol_unified.feature.mouse_tweaks.description": "Faster inventory handling with the mouse: right-drag places one item per slot, left-drag gathers matching items, Shift + drag moves stacks, and the wheel moves items one at a time.",
+  "qol_unified.feature.mouse_tweaks.note": "Not active in the creative inventory.",
+  "qol_unified.feature.mouse_tweaks.conflict.mousetweaks": "Mouse Tweaks adds the same inventory gestures.",
+  "qol_unified.feature.mouse_tweaks.conflict.mousewheelie": "Mouse Wheelie also moves items with the wheel and drags.",
+  "qol_unified.feature.mouse_tweaks.conflict.itemscroller": "Item Scroller also moves items with the wheel and drags.",
+  "qol_unified.feature.mouse_tweaks.setting.rmb_drag": "Right-drag: one item per slot",
+  "qol_unified.feature.mouse_tweaks.setting.lmb_collect": "Left-drag: gather matching items",
+  "qol_unified.feature.mouse_tweaks.setting.shift_drag": "Shift + drag: move stacks",
+  "qol_unified.feature.mouse_tweaks.setting.wheel_transfer": "Wheel moves items",
+  "qol_unified.feature.mouse_tweaks.setting.wheel_direction": "Wheel direction",
+  "qol_unified.feature.mouse_tweaks.setting.wheel_direction.normal": "Down sends, up brings",
+  "qol_unified.feature.mouse_tweaks.setting.wheel_direction.inverted": "Up sends, down brings",
+  "qol_unified.feature.mouse_tweaks.setting.wheel_search_order": "Wheel search order",
+  "qol_unified.feature.mouse_tweaks.setting.wheel_search_order.last_to_first": "Last to first",
+  "qol_unified.feature.mouse_tweaks.setting.wheel_search_order.first_to_last": "First to last"
 }

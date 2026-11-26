@@ -29,6 +29,11 @@ final class FeaturePanel {
         boolean off = !draft.choice(id).enabled();
         var rows = new ArrayList<PanelList.Row>();
         rows.add(PanelList.text(font, Component.translatable(descriptor.descriptionKey()), PanelList.MUTED, width));
+        // An optional one-line limitation under the description, e.g. "not in the creative inventory" (Q-MT9).
+        String noteKey = "qol_unified.feature." + id + ".note";
+        if (net.minecraft.locale.Language.getInstance().has(noteKey)) {
+            rows.add(PanelList.text(font, Component.translatable(noteKey), PanelList.DIMMED, width));
+        }
         if (off && !descriptor.settings().isEmpty()) {
             rows.add(PanelList.text(font, Component.translatable(UiKeys.APPLIES_WHEN_ON), PanelList.WARNING, width));
         }
