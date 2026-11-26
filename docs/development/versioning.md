@@ -18,6 +18,11 @@ The rules below apply to **each mod separately**:
   [Unified: Optimizations](../../mods/optimizations/CHANGELOG.md).
 - Release tags are namespaced by module: `qol/v26.3.0`,
   `optimizations/v26.3.0`, later `graphics/v26.3.0`.
+- **Unified Settings (Library)** (`libs/settings/gradle.properties`) uses
+  plain SemVer, starting at `1.0.0`, because its major version is the
+  provider contract's compatibility line: within a major version only
+  additions with defaults. Its tags are `settings/v1.0.0`. It is never
+  published on its own; each mod nests the version it was built with.
 - Starting versions: Unified: QoL keeps `26.3.0-alpha.1-SNAPSHOT`; Unified:
   Optimizations starts at `26.3.0-alpha.1-SNAPSHOT`; Unified: Graphics
   defines its own when created.

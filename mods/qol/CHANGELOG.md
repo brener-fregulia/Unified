@@ -25,6 +25,11 @@ released yet.
 
 ### Added
 
+- Unified Settings: one **Open Unified Settings** key (default `U`) and a
+  **Unified Settings…** button in Minecraft's Options screen list the
+  installed Unified mods and open this mod's settings. The mod carries
+  Unified Settings (Library) 1.0.0 inside its JAR. The old "Open Unified: QoL
+  Settings" key still works for now; M2.1.2 merges it.
 - Inventory Mouse Tweaks: right-drag places one item per slot, left-drag
   gathers matching items, Shift + drag moves stacks, and the wheel moves items
   between inventory sections, all through vanilla container clicks. Six

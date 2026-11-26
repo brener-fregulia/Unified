@@ -490,3 +490,145 @@ version 1.0.0) containing only the contract and the coordinator (key `U`,
 Options button, provider discovery and ordering). Nest it in both mods with
 `include` and the range rule above. Then generalize QoL's workspace into it
 in a later step.
+
+## 19. Foundation (M2.1.1, implemented 2026-11-26)
+
+### 19.1 Library
+
+`:libs:settings`, mod id `unified_settings`, "Unified Settings (Library)",
+version **1.0.0**, Kotlin, client-only.
+
+- **Depends on:** Loader, Minecraft 26.3, Java 25, Fabric Language Kotlin,
+  and Fabric API's key-mapping, screen and lifecycle modules.
+- **Never depends on:** a Unified mod.
+
+| Package | Content |
+| --- | --- |
+| `unified.settings.api` | `UnifiedSettingsProvider` (contract 1.0), `SettingsCategory`, `ModuleOrder` (QoL 10, Optimizations 20, Graphics 30), `Capabilities` (reserved names), `ContractVersion` |
+| `unified.settings.registry` | `ProviderRegistry` and `ModuleEntry`: discovery, ordering, failure isolation |
+| `unified.settings.ui` | `UnifiedSettingsScreen` (the temporary shell) and `ButtonPlacement` |
+| `unified.settings` | `UnifiedSettingsClient`: the key and the Options button |
+
+### 19.2 Contract 1.0
+
+```kotlin
+interface UnifiedSettingsProvider {          // Fabric entrypoint "unified-settings", one per mod
+    val moduleId: String                     // the mod's Fabric id
+    val nameKey: String                      // translation key of the module name (owned by the mod)
+    val order: Int                           // ModuleOrder
+    fun categories(): List<SettingsCategory> = emptyList()
+    fun openSettings(parent: Screen?): Screen?   // the mod's current screen; null = nothing to configure
+    fun capabilities(): Set<String> = emptySet()
+}
+```
+
+- **Java:** implementable directly (`getModuleId()` and so on). Members
+  with defaults are real default methods; QoL's provider is Java and a unit
+  test covers this.
+- **Deliberately absent:** feature descriptors, drafts and commits. Those
+  belong to M2.1.2's workspace contract and will be additions with
+  defaults, so contract 1.x stays compatible.
+- **Discovery:** `ProviderRegistry.modules()` reads
+  `getEntrypointContainers("unified-settings", …)` once, when the screen
+  first opens, and caches it.
+  - **Order:** `order`, then mod id.
+  - **Failures:** a provider that throws while being created or read is
+    logged with its mod id and listed as failed; the others work.
+
+### 19.3 Packaging (exact declarations)
+
+Both mods:
+
+- `implementation(project(":libs:settings"))`, to compile against it.
+- `include(project(":libs:settings"))`, which nests
+  `META-INF/jars/unified-settings-1.0.0.jar` with a `jars` entry. No
+  library class is copied into the mod's own JAR.
+- `"unified_settings": ">=1.0.0 <2.0.0"` in `depends`. The build computes
+  it from the library version compiled against: `>=<that> <<next
+  major>.0.0`.
+- `"unified-settings": [<provider class>]` in `entrypoints`.
+- In development, Loom registers the library as its own mod
+  (`sourceSet("main", ":libs:settings")`).
+
+Unified: Optimizations therefore now needs Fabric API at runtime (the
+library's key-mapping, screen and lifecycle modules). It also compiles with
+Fabric API for development runs.
+
+### 19.4 Entry points
+
+- **Key:** `key.unified_settings.open`, "Open Unified Settings", default
+  physical **`U`**, in the "Unified" category. Registered only by the
+  library, so it exists once. It opens the shell when no screen is open.
+- **Legacy key (temporary):** Unified: QoL still registers
+  `key.qol_unified.open_settings` (unbound by default), unchanged. With QoL
+  installed there are therefore **two settings keys** in this stage: the
+  shared one and QoL's legacy one. Duplicates are not eliminated yet; M2.1.2
+  migrates a custom binding once (Q-US3) and removes the legacy key.
+- **Options button:** "Unified Settings…" ("Configurações do Unified…"),
+  added in `ScreenEvents.AFTER_INIT` of `OptionsScreen`.
+  - `ButtonPlacement` takes the first spot that overlaps no widget: beside
+    the Done button in the footer (left, then right), otherwise the header
+    corners. If nothing fits, no button is added.
+  - After a resize the old button is found by its translation key and
+    replaced, so there is never a second one.
+  - It is a vanilla button, so keyboard focus and narration work. It opens
+    the shell with the Options screen as parent.
+
+### 19.5 Temporary shell
+
+`UnifiedSettingsScreen` is the integration shell, not the final workspace.
+
+- **What it shows:** the title, one button per installed module in order,
+  and Back. Escape and Back return to the parent.
+- **QoL:** its button opens the existing workspace with the shell as
+  parent. Its Back returns to the shell.
+- **Optimizations:** shows "Unified: Optimizations has no configurable
+  features yet."
+- **Deferred:** Q-US6 (hiding the module layer with a single mod) applies
+  to M2.1.2's workspace; the shell always lists the modules.
+- **Configuration:** untouched by the library. QoL keeps
+  `config/qol_unified/config.json`, its descriptors and auto-apply.
+  Optimizations keeps its own directory and still has no settings file.
+
+### 19.6 Validation
+
+- **Unit tests (library):** 9.
+  - Ordering by module order, never load order.
+  - Equal-order tie-break.
+  - Failure isolation for creation and identity reads.
+  - One entry per module.
+  - Defaults usable from Java.
+  - Button placement at four window/scale combinations, the narrow-footer
+    fallback, and "nothing rather than an overlap".
+- **Runtime:** `:tests:settings-runtime` loads the **real production
+  JARs** through `fabric.addMods`; the library is only on its compile
+  classpath. The three scenarios QolOnly, OptimizationsOnly and Both all
+  passed. Each checks:
+  - exactly one `unified_settings`, version 1.0.0, nested in an installed
+    mod;
+  - exactly one `key.unified_settings.open` with default `U` and no other
+    default-`U` binding;
+  - the legacy QoL key only with QoL;
+  - exactly one Options button, overlapping nothing, at GUI scales 1–2 at
+    854×480 and 1–4 at 1920×1080, rebuilt on every scale change (a resize);
+  - module order;
+  - QoL opens its workspace and Back returns to the shell and then to
+    Options;
+  - Optimizations shows its "no configurable features yet" message;
+  - `U` in a singleplayer world opens the shell and Escape returns to the
+    game.
+- **Logs:** no Mixin, class-loading or resolution errors.
+- **QoL regressions run:** its Settings and Keyboard Map game tests pass
+  with the library loaded in development.
+
+### 19.7 Remaining for M2.1.2
+
+- One merged workspace: module groups in the sidebar (hidden with a single
+  module, Q-US6), QoL's panels hosted through an extended contract (feature
+  descriptors, session, commit results as additions with defaults), and
+  search across modules.
+- Migrate a custom binding of `key.qol_unified.open_settings` to
+  `key.unified_settings.open` once, then remove the legacy key (Q-US3).
+- Sound Control's preview hook (R2) and Keyboard Map/Sound Control action
+  screens through the contract.
+- Optimizations' own minimal persistence once it has a setting (Q-US8).

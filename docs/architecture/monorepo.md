@@ -22,6 +22,11 @@ Unified/
 ├── mods/
 │   ├── qol/              Unified: QoL (src/main, src/test, src/devFixtures)
 │   └── optimizations/    Unified: Optimizations (src/main, src/test)
+├── libs/
+│   └── settings/         Unified Settings (Library), nested into each mod (src/main, src/test)
+├── tests/
+│   └── settings-runtime/ development-only runtime game tests with the real JARs
+├── spikes/               disposable experiments, separate Gradle builds
 ├── docs/
 │   ├── architecture/     project-wide architecture (this file)
 │   ├── development/      shared setup and versioning policy
@@ -36,11 +41,19 @@ Unified/
 
 ## Rules [Approved 2026-11-26]
 
-- **Independence.** No module depends on another at build time or runtime.
+- **Independence.** No mod depends on another mod at build time or runtime.
   Each has its own `fabric.mod.json`, entrypoint, Mixin configuration,
-  resources, configuration directory, tests and JAR. There is no shared
-  runtime library; a common need is duplicated until sharing demonstrably
-  pays off and is approved.
+  resources, configuration directory, tests and JAR. A common need is
+  duplicated until sharing demonstrably pays off and is approved.
+- **One shared library [Approved 2026-11-26, Q-US1].** The only exception is
+  `unified_settings` ("Unified Settings (Library)", `:libs:settings`). Every
+  mod nests it with Loom's `include` and depends on
+  `">=<library version compiled against> <<next major>.0.0"` (computed in
+  each mod's build). Fabric Loader 0.20.1 loads one copy: the highest
+  version that every range allows (runtime-verified,
+  [integration §18–§19](unified-settings-integration.md)). It coordinates
+  the settings entry points only; each mod keeps its own configuration. It
+  has its own version and tags (`settings/v…`).
 - **Versions.** Each module's `gradle.properties` sets its own `mod_version`
   and `archives_base_name`. The root has no mod version. Tags are namespaced
   (`qol/v…`, `optimizations/v…`); see [versioning](../development/versioning.md).
@@ -82,6 +95,8 @@ Unified/
 | QoL unit tests only | `./gradlew :mods:qol:test` |
 | A QoL game test | `./gradlew :mods:qol:runGameTestZoom` (any `runGameTest<Scenario>`) |
 | Development client | `./gradlew :mods:qol:runClient`, `./gradlew :mods:optimizations:runClient` |
+| Unified Settings library | `./gradlew :libs:settings:build` |
+| Installation-scenario runtime tests | `./gradlew :tests:settings-runtime:runGameTestQolOnly` (also `OptimizationsOnly`, `Both`) |
 
 JARs: `mods/<module>/build/libs/`.
 

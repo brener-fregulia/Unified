@@ -14,6 +14,9 @@ project's [versioning policy](../../docs/development/versioning.md). Tags use
 
 ### Added
 
+- Unified Settings: the shared **Open Unified Settings** key (default `U`)
+  and Options button list this mod, which has no settings yet. The mod
+  carries Unified Settings (Library) 1.0.0 and now also requires Fabric API.
 - Independent client-only Fabric mod `unified_optimizations` ("Unified:
   Optimizations"), version `26.3.0-alpha.1-SNAPSHOT`: entrypoint, logging,
   its own configuration directory and en_us/pt_br texts. No optimizations yet.

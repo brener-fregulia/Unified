@@ -10,6 +10,11 @@ requires another.
 | **Unified: Optimizations** | Client-side performance and network optimizations | Foundation only (no optimizations yet), `mods/optimizations` |
 | **Unified: Graphics** | Visual and rendering features | Planned; not created yet |
 
+Each mod carries a copy of **Unified Settings (Library)** inside its JAR;
+the game loads only one. It adds one **Unified Settings** entry (the `U`
+key and a button in Minecraft's Options screen) for whichever Unified mods
+are installed.
+
 Nothing has been released yet.
 
 ## Requirements
@@ -19,9 +24,10 @@ Nothing has been released yet.
   install.
 - Minecraft 26.3, Fabric Loader and versions are pinned in
   [`gradle.properties`](gradle.properties).
-- Players need **Fabric Language Kotlin** for every Unified mod, and Fabric
-  API for Unified: QoL. Both are separate mods, installed next to the
-  Unified JARs.
+- Players need **Fabric Language Kotlin** and **Fabric API** for every
+  Unified mod (Unified: Optimizations needs Fabric API since it carries the
+  settings library). Both are separate mods, installed next to the Unified
+  JARs.
 - New code is written in Kotlin where it fits; Mixins stay in Java
   ([language policy](docs/architecture/monorepo.md#rules-approved-2026-11-26)).
 
