@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "unified_optimizations",
+  "version": "${version}",
+  "name": "Unified: Optimizations",
+  "description": "Client-side performance and network optimizations. Part of Project Unified; works without the other Unified mods.",
+  "authors": ["Brener Fregulia"],
+  "contact": {
+    "sources": "https://github.com/brener-fregulia/Unified"
+  },
+  "environment": "client",
+  "entrypoints": {
+    "client": ["io.github.brener_fregulia.unified.optimizations.UnifiedOptimizationsClient"]
+  },
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "minecraft": "~${minecraft_version}",
+    "java": ">=25"
+  }
+}
