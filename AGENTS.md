@@ -48,6 +48,7 @@ commit message or the document.
 | Path | Content |
 | --- | --- |
 | `docs/architecture/monorepo.md` | Modules, independence rules, commands, CI |
+| `docs/architecture/unified-settings-integration.md` | Shared settings across Unified mods (discovery, [Proposed]) |
 | `docs/development/versioning.md` | Per-module versioning, tags and changelog policy |
 | `docs/development/linux-setup.md` | Linux / WSL development setup |
 | `docs/qol/product/vision.md` | Unified: QoL goals, principles, milestones |
