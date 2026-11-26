@@ -1,6 +1,6 @@
 # Shulker Preview V1
 
-Status labels follow [AGENTS.md](../../AGENTS.md#decision-status-labels).
+Status labels follow [AGENTS.md](../../../AGENTS.md#decision-status-labels).
 Approved by the Product Owner on 2026-11-25 (§1, §1.1). Items still marked
 [Proposed] in the text are covered by §1.1 unless stated otherwise.
 

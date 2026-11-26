@@ -1,6 +1,6 @@
 # Settings UX V1 — Unified Settings Workspace (M1.7)
 
-Status labels follow [AGENTS.md](../../AGENTS.md#decision-status-labels).
+Status labels follow [AGENTS.md](../../../AGENTS.md#decision-status-labels).
 Concept A was approved by the Product Owner on 2026-11-25 (§0); the rest of
 the document is the approved design, with the decisions below.
 

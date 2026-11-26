@@ -1,6 +1,6 @@
 # Sound Control V1 (M1.5)
 
-Status labels follow [AGENTS.md](../../AGENTS.md#decision-status-labels).
+Status labels follow [AGENTS.md](../../../AGENTS.md#decision-status-labels).
 Approved by the Product Owner on 2026-11-23 (§0). Implemented on
 2026-11-23; see §15 for how it was built and tested. Live audio preview
 (M1.5.1) is specified and recorded in §16. Verified facts about

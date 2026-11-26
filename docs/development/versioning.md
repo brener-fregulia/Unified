@@ -3,6 +3,25 @@
 Status labels follow [AGENTS.md](../../AGENTS.md#decision-status-labels).
 All rules in this document are **[Approved]** (M0.1.1) unless marked otherwise.
 
+## Independent module versions [Approved 2026-11-26]
+
+Project Unified holds several independent mods ([monorepo](../architecture/monorepo.md)).
+The rules below apply to **each mod separately**:
+
+- Each module declares its own `mod_version` and `archives_base_name` in its
+  own `gradle.properties` (`mods/qol/gradle.properties`,
+  `mods/optimizations/gradle.properties`). The root project is an aggregator
+  with no publishable version, and no module inherits a version from it.
+- Changing one module's version never changes another module's metadata,
+  JAR name or release artifacts.
+- Each module keeps its own changelog: [Unified: QoL](../../mods/qol/CHANGELOG.md),
+  [Unified: Optimizations](../../mods/optimizations/CHANGELOG.md).
+- Release tags are namespaced by module: `qol/v26.3.0`,
+  `optimizations/v26.3.0`, later `graphics/v26.3.0`.
+- Starting versions: Unified: QoL keeps `26.3.0-alpha.1-SNAPSHOT`; Unified:
+  Optimizations starts at `26.3.0-alpha.1-SNAPSHOT`; Unified: Graphics
+  defines its own when created.
+
 ## Version structure [Approved]
 
 ```text
@@ -56,7 +75,9 @@ a local build version when one becomes necessary. It is never published.
 
 ## Git tags [Approved]
 
-- Release tags use the `v` prefix: `v26.3.0-alpha.1`, `v26.3.0`.
+- Release tags use the module prefix and `v`: `qol/v26.3.0-alpha.1`,
+  `optimizations/v26.3.0` (see Independent module versions). No tag was ever
+  created with the earlier unprefixed form.
 - Commits never create releases or tags automatically.
 - Tags and GitHub Releases are created only as part of a prepared release.
 
@@ -69,7 +90,8 @@ a local build version when one becomes necessary. It is never published.
 
 ## Changelog maintenance [Approved]
 
-[CHANGELOG.md](../../CHANGELOG.md) follows
+Each module's changelog ([QoL](../../mods/qol/CHANGELOG.md),
+[Optimizations](../../mods/optimizations/CHANGELOG.md)) follows
 [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/).
 
 - Record meaningful changes under `[Unreleased]`, not every commit.
@@ -90,8 +112,9 @@ a local build version when one becomes necessary. It is never published.
 3. Set the build version and declared Minecraft compatibility.
 4. Move relevant `[Unreleased]` entries to `## [X.Y.Z[-pre]] - YYYY-MM-DD`
    and update comparison links.
-5. Commit (`chore: release X.Y.Z[-pre]`), build and test the artifact.
-6. Create the annotated tag `vX.Y.Z[-pre]` and push it.
+5. Commit (`chore: release <module> X.Y.Z[-pre]`), build and test that
+   module's artifact (`./gradlew :mods:<module>:build`).
+6. Create the annotated tag `<module>/vX.Y.Z[-pre]` and push it.
 7. Publish the release with notes from the changelog section.
 
 The commit message format in step 5 is **[Proposed]**.

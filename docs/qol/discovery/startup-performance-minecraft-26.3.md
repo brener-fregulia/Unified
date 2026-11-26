@@ -1,6 +1,6 @@
 # Discovery: Startup Performance on Minecraft 26.3
 
-Status labels follow [AGENTS.md](../../AGENTS.md#decision-status-labels).
+Status labels follow [AGENTS.md](../../../AGENTS.md#decision-status-labels).
 This is a discovery report (M0.3). It was closed on 2026-11-21 with the
 technical lead's [decisions](#decisions-2026-11-21). Recommendations not
 covered by those decisions remain **[Proposed]**, and no startup
@@ -279,7 +279,7 @@ For a future milestone, if approved; nothing is scheduled:
 | Id | Decision | Status |
 | --- | --- | --- |
 | Q-SP1 | The intended "FasLoad" reference remains unconfirmed; no further investigation now. | [Approved 2026-11-21] |
-| Q-SP2 | Qualitative startup-performance policy (see [AGENTS.md](../../AGENTS.md#engineering-rules)). A numerical budget is deferred until production-install measurements exist. | [Approved 2026-11-21] |
+| Q-SP2 | Qualitative startup-performance policy (see [AGENTS.md](../../../AGENTS.md#engineering-rules)). A numerical budget is deferred until production-install measurements exist. | [Approved 2026-11-21] |
 | Q-SP3 | Production-install benchmarking is required before any startup optimization work. | [Approved 2026-11-21] |
 | Q-SP4 | A development-only benchmark harness may be committed; implementation is deferred. | [Approved 2026-11-21] |
 | Q-SP5 | Plain feature ids matching the descriptor pattern are kept. `fast_startup` is reserved for a possible future feature. | [Approved 2026-11-21] |

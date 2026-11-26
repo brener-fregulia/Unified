@@ -1,6 +1,6 @@
 # Keyboard Map UX refinement (M1.3.1)
 
-Status labels follow [AGENTS.md](../../AGENTS.md#decision-status-labels).
+Status labels follow [AGENTS.md](../../../AGENTS.md#decision-status-labels).
 **Approved 2026-11-23 (§0)**: Concept A with the §9 improvements,
 KMUX-AC-1 to KMUX-AC-13 with the corrections below. Implementation notes are
 in §13. Before approval this document was design only. It changes nothing in the approved

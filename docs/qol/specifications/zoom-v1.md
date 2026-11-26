@@ -1,6 +1,6 @@
 # Zoom V1 (M1.8)
 
-Status labels follow [AGENTS.md](../../AGENTS.md#decision-status-labels).
+Status labels follow [AGENTS.md](../../../AGENTS.md#decision-status-labels).
 Approved by the Product Owner on 2026-11-26 (§0). The sections below keep
 their original labels; §0 records the resolution of each.
 

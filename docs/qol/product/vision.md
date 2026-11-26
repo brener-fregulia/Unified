@@ -1,6 +1,6 @@
 # Product Vision
 
-Status labels follow [AGENTS.md](../../AGENTS.md#decision-status-labels).
+Status labels follow [AGENTS.md](../../../AGENTS.md#decision-status-labels).
 
 ## Summary
 

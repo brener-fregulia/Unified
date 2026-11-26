@@ -1,6 +1,6 @@
 # M0 — Platform Foundations
 
-Status labels follow [AGENTS.md](../../AGENTS.md#decision-status-labels).
+Status labels follow [AGENTS.md](../../../AGENTS.md#decision-status-labels).
 
 **Specification status: Approved (2026-11-21).** The technical lead approved
 all M0 contracts (§3–§7) and acceptance criteria (§9), with the corrections

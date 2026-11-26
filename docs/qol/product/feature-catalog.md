@@ -1,6 +1,6 @@
-# Feature Catalog
+# Feature Catalog: Unified: QoL
 
-Status labels follow [AGENTS.md](../../AGENTS.md#decision-status-labels).
+Status labels follow [AGENTS.md](../../../AGENTS.md#decision-status-labels).
 
 The feature list and categories below are **[Approved]**. Feature identifiers,
 milestone assignments and the restart notes are **[Proposed]** unless marked
@@ -30,6 +30,13 @@ assets may be copied.
 
 ## Features
 
+Performance & Network features moved to
+[Unified: Optimizations](../../optimizations/README.md) on 2026-11-26 with the
+monorepo migration: `server_ping`, `fast_ip_ping` and `fast_world_exit`
+(FastQuit). Their history and decisions are kept there. The
+`performance_network` category stays in Unified: QoL's code for compatibility
+and currently has no QoL feature.
+
 | Feature | Category | Proposed id | Milestone | Inspiration / notes |
 | --- | --- | --- | --- | --- |
 | Food information | HUD & Information | `food_hud` | M1 [Approved: first feature after Core] | AppleSkin; spec: [Food HUD V1](../specifications/food-hud-v1.md) [Approved 2026-11-22]; implemented |
@@ -45,9 +52,6 @@ assets may be copied.
 | Visual keyboard and key-binding search | Controls | `keyboard_map` | M1.3 [Approved 2026-11-23] | Controlling, Keyboard Wizard CE, Keymap; spec: [Keymap V1](../specifications/keymap-v1.md) [Approved 2026-11-23]; implemented. Would cover `keybind_search` and `keybind_conflicts` (Q-KM10) |
 | Camera zoom | Controls | `zoom` [Approved 2026-11-26] | M1.8 [Approved 2026-11-26] | Zoomify, Ok Zoomer; spec: [Zoom V1](../specifications/zoom-v1.md) [Approved 2026-11-26] |
 | Player heads in chat | Chat & Social | `chat_heads` | M1.2 [Approved 2026-11-22] | Chat Heads; spec: [Chat Heads V1](../specifications/chat-heads-v1.md) [Approved 2026-11-22]; implemented. Uses vanilla's skin cache only; see Q-F3 |
-| Server ping optimization | Performance & Network | `server_ping` | M3 [Approved] | Likely restart-required |
-| Fast IP Ping (no reverse DNS for literal-IP server pings) | Performance & Network | `fast_ip_ping` [Approved 2026-11-26: direction] | M1.10 [Approved 2026-11-26] | Fast IP Ping; spec: [Fast IP Ping V1](../specifications/fast-ip-ping-v1.md) [Proposed]. Relationship to `server_ping` is Q-FIP6 [Open] |
-| Fast world exit | Performance & Network | `fast_world_exit` | M3 [Approved] | Must not compromise world data safety |
 | Minimap | Maps & Navigation | `minimap` | M4 [Approved] | |
 | World map | Maps & Navigation | `world_map` | M4 [Approved] | |
 | Waypoints | Maps & Navigation | `waypoints` | M4 [Approved] | |

@@ -1,6 +1,6 @@
 # Food HUD V1 (M1.1)
 
-Status labels follow [AGENTS.md](../../AGENTS.md#decision-status-labels).
+Status labels follow [AGENTS.md](../../../AGENTS.md#decision-status-labels).
 
 **[Approved 2026-11-22]** The technical lead approved this specification,
 including the configuration and acceptance criteria FH-AC-1 to FH-AC-18,

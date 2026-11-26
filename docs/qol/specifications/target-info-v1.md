@@ -1,6 +1,6 @@
 # Target Info V1 (M1.4)
 
-Status labels follow [AGENTS.md](../../AGENTS.md#decision-status-labels).
+Status labels follow [AGENTS.md](../../../AGENTS.md#decision-status-labels).
 Approved by the Product Owner on 2026-11-23 (§0). Proposals not listed in §0
 keep their label.
 

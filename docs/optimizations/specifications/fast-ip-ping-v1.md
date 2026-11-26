@@ -1,9 +1,15 @@
 # Fast IP Ping V1 (M1.10)
 
-Status labels follow [AGENTS.md](../../AGENTS.md#decision-status-labels).
+Status labels follow [AGENTS.md](../../../AGENTS.md#decision-status-labels).
 The Product Owner approved the direction (feature, milestone, category,
 client-only). Every implementation decision below is **[Proposed]** or
 **[Open]** until approved; §13 lists the questions.
+
+**Ownership (2026-11-26):** with the monorepo migration this specification
+moved from Unified: QoL to [Unified: Optimizations](../README.md). Its content
+and open decisions are unchanged. References below to "Core policy", the
+settings workspace and auto-apply were written for Unified: QoL's Core, which
+Optimizations does not have. Q-FIP7 records that gap.
 
 Avoid the reverse DNS lookup that Minecraft performs when the multiplayer
 server list pings a server entered as a literal IP address. Inspired by the
@@ -283,6 +289,12 @@ properties and no security settings are changed.
 - **Q-FIP6 [Open]:** relationship to the catalog's existing `server_ping` (M3)
   entry. `fast_ip_ping` could become its first part, or a separate feature
   with `server_ping` kept for broader ping work.
+
+- **Q-FIP7 [Open]:** Unified: Optimizations has no Core, settings UI or
+  conflict policy yet. Decide how its switch, persistence and soft conflicts
+  are provided: a minimal module-local equivalent, or deferring the switch.
+  The mods must stay independent, with no shared runtime library (see the
+  [monorepo architecture](../../architecture/monorepo.md)).
 
 ## 14. Deferred or excluded
 

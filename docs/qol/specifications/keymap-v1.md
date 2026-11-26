@@ -1,6 +1,6 @@
 # Keymap V1 (M1.3)
 
-Status labels follow [AGENTS.md](../../AGENTS.md#decision-status-labels).
+Status labels follow [AGENTS.md](../../../AGENTS.md#decision-status-labels).
 
 The technical lead approved Keymap V1 on 2026-11-23 with the corrections in
 §0. Where §0 and a later section differ, §0 wins; superseded proposals are

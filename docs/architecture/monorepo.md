@@ -1,0 +1,81 @@
+# Project Unified: Monorepo Architecture
+
+Status labels follow [AGENTS.md](../../AGENTS.md#decision-status-labels).
+Structure approved by the Product Owner on 2026-11-26 (monorepo foundation
+brief).
+
+## Mods [Approved 2026-11-26]
+
+| Public name | Mod id | Gradle module | State |
+| --- | --- | --- | --- |
+| Unified: QoL | `qol_unified` | `:mods:qol` | Eight features implemented |
+| Unified: Optimizations | `unified_optimizations` | `:mods:optimizations` | Foundation only |
+| Unified: Graphics | not chosen | not created | Future; created when its discovery begins |
+
+Unified: QoL keeps the mod id, packages, configuration file, keybindings and
+feature ids it had as "QoL: Unified", so existing configurations keep working.
+
+## Layout
+
+```text
+Unified/
+├── mods/
+│   ├── qol/              Unified: QoL (src/main, src/test, src/devFixtures)
+│   └── optimizations/    Unified: Optimizations (src/main, src/test)
+├── docs/
+│   ├── architecture/     project-wide architecture (this file)
+│   ├── development/      shared setup and versioning policy
+│   ├── qol/              Unified: QoL product, architecture, design, specs
+│   └── optimizations/    Unified: Optimizations catalog and specs
+├── .github/workflows/    one workflow per module
+├── settings.gradle.kts   includes the modules
+├── build.gradle.kts      aggregator only: declares Loom once
+├── gradle.properties     shared Minecraft, Loader, Loom, Fabric API, JUnit versions
+└── gradlew, gradle/      the single Gradle wrapper
+```
+
+## Rules [Approved 2026-11-26]
+
+- **Independence.** No module depends on another at build time or runtime.
+  Each has its own `fabric.mod.json`, entrypoint, Mixin configuration,
+  resources, configuration directory, tests and JAR. There is no shared
+  runtime library; a common need is duplicated until sharing demonstrably
+  pays off and is approved.
+- **Versions.** Each module's `gradle.properties` sets its own `mod_version`
+  and `archives_base_name`. The root has no mod version. Tags are namespaced
+  (`qol/v…`, `optimizations/v…`); see [versioning](../development/versioning.md).
+- **Build conventions.** The small amount of shared build setup (Java 25,
+  UTF-8, resource expansion) is repeated in each module's
+  `build.gradle.kts`. A `build-logic` convention plugin is not justified for
+  two modules. Toolchain versions are shared through the root
+  `gradle.properties`, which is the one place to update them.
+- **Configuration directories.** `config/qol_unified/` and
+  `config/unified_optimizations/`. A mod never reads another mod's files.
+
+## Commands
+
+| Goal | Command |
+| --- | --- |
+| Build and unit-test everything | `./gradlew build` |
+| One module | `./gradlew :mods:qol:build`, `./gradlew :mods:optimizations:build` |
+| QoL unit tests only | `./gradlew :mods:qol:test` |
+| A QoL game test | `./gradlew :mods:qol:runGameTestZoom` (any `runGameTest<Scenario>`) |
+| Development client | `./gradlew :mods:qol:runClient`, `./gradlew :mods:optimizations:runClient` |
+
+JARs: `mods/<module>/build/libs/`.
+
+## CI
+
+One workflow per module, triggered by changes under that module or the shared
+build files (`settings.gradle.kts`, `build.gradle.kts`, `gradle.properties`,
+`gradle/`, `gradlew*`, the workflow itself). Each runs only its module's
+`build` (compile and unit tests), uploads that module's JAR and test reports,
+and never publishes. Game tests need a desktop session and run locally, as
+before.
+
+## History
+
+Until 2026-11-26 the repository was `brener-fregulia/qol-unified` with a single
+Gradle project. It was renamed to `brener-fregulia/Unified` (GitHub keeps
+redirects), and the sources moved into `mods/qol` with their history (`git log
+--follow`).

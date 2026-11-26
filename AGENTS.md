@@ -1,6 +1,8 @@
 # Agent Guide
 
-Instructions for coding agents (and humans) contributing to QoL: Unified.
+Instructions for coding agents (and humans) contributing to Project Unified:
+Unified: QoL, Unified: Optimizations and, later, Unified: Graphics. Each is
+an independent mod in this monorepo ([architecture](docs/architecture/monorepo.md)).
 Read this file before making any change.
 
 ## Roles
@@ -18,7 +20,8 @@ an open question and ask; do not fill the gap silently.
 SDD is a working practice here, not a tool. Do not install an SDD framework,
 generator or template engine unless the PO explicitly approves it.
 
-1. **Specify.** Behavior is written in `docs/specifications/` before code.
+1. **Specify.** Behavior is written in the owning mod's
+   `docs/<mod>/specifications/` before code.
 2. **Approve.** The PO or technical lead approves the spec (or parts of it).
 3. **Implement.** Only approved requirements are implemented.
 4. **Validate.** Every acceptance criterion is checked and reported.
@@ -44,15 +47,17 @@ commit message or the document.
 
 | Path | Content |
 | --- | --- |
-| `docs/product/vision.md` | Goals, principles, targets, milestones |
-| `docs/product/feature-catalog.md` | Planned features and identifiers |
-| `docs/architecture/overview.md` | Components and boundaries |
-| `docs/architecture/configuration.md` | Configuration and data policy |
-| `docs/architecture/diagnostics.md` | Diagnostics direction |
-| `docs/discovery/` | Closed technical investigations |
-| `docs/specifications/` | One spec per milestone or feature |
-| `docs/development/versioning.md` | Versioning, release and changelog policy |
-| `CHANGELOG.md` | User-relevant changes |
+| `docs/architecture/monorepo.md` | Modules, independence rules, commands, CI |
+| `docs/development/versioning.md` | Per-module versioning, tags and changelog policy |
+| `docs/development/linux-setup.md` | Linux / WSL development setup |
+| `docs/qol/product/vision.md` | Unified: QoL goals, principles, milestones |
+| `docs/qol/product/feature-catalog.md` | Unified: QoL features and identifiers |
+| `docs/qol/architecture/` | Unified: QoL overview, configuration, diagnostics |
+| `docs/qol/design/`, `docs/qol/discovery/` | UX designs and closed investigations |
+| `docs/qol/specifications/` | One Unified: QoL spec per milestone or feature |
+| `docs/optimizations/README.md` | Unified: Optimizations principles and catalog |
+| `docs/optimizations/specifications/` | Unified: Optimizations specs |
+| `mods/<mod>/CHANGELOG.md` | Each mod's user-relevant changes |
 
 ## Engineering rules
 
@@ -81,7 +86,7 @@ commit message or the document.
   without production-install benchmarks.
 - **Diagnostics.** Log feature failures with the feature id. No remote
   telemetry, embedded write tokens or automatic public issue creation (see
-  [diagnostics](docs/architecture/diagnostics.md)).
+  [diagnostics](docs/qol/architecture/diagnostics.md)).
 
 ## Git workflow
 
@@ -90,16 +95,24 @@ commit message or the document.
 - Small, focused commits. Run `git diff --check` before committing.
 - Do not create GitHub Issues, milestones or releases unless the task asks.
 - Push only when the task says so and validation passed.
+- One `main` branch holds every module; no permanent per-mod branches.
+- Validate with targeted checks while working (the affected module's
+  compilation, unit tests and focused game test, `git diff --check`), and run
+  the complete game-test suite only for milestone closure or large
+  integration changes.
 
 ## Versioning and changelog [Approved]
 
 Full policy: [docs/development/versioning.md](docs/development/versioning.md).
 
-- Versions are `MC_MAJOR.MC_MINOR.MOD_REVISION[-PRERELEASE]`; published
-  versions are immutable and never reused.
+- Versions are `MC_MAJOR.MC_MINOR.MOD_REVISION[-PRERELEASE]`, set per module
+  in `mods/<mod>/gradle.properties`; changing one never touches another.
+  Published versions are immutable and never reused. Tags are namespaced:
+  `qol/v…`, `optimizations/v…`.
 - Never create tags or releases unless the task explicitly asks.
-- Record meaningful changes under `[Unreleased]` in
-  [CHANGELOG.md](CHANGELOG.md), including breaking changes, configuration
+- Record meaningful changes under `[Unreleased]` in the affected mod's
+  changelog ([QoL](mods/qol/CHANGELOG.md),
+  [Optimizations](mods/optimizations/CHANGELOG.md)), including breaking changes, configuration
   migrations and removals. Never invent versions or dates.
 
 ## Task completion

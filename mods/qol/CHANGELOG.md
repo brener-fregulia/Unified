@@ -1,16 +1,22 @@
-# Changelog
+# Changelog: Unified: QoL
 
 All notable changes to QoL: Unified are documented in this file.
 
 The format is based on [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/).
 Versions follow the Minecraft-aligned, SemVer-compatible scheme described in
-the [versioning policy](docs/development/versioning.md). No version has been
+the [versioning policy](../../docs/development/versioning.md). No version has been
 released yet.
 
 ## [Unreleased]
 
 ### Changed
 
+- Project Unified: the mod is now published as "Unified: QoL" from the
+  `Unified` monorepo (module `mods/qol`), and its JAR is
+  `unified-qol-<version>.jar`. The mod id `qol_unified`, configuration file,
+  key bindings and feature ids are unchanged; no migration is needed.
+- Fast IP Ping, server ping optimization and fast world exit moved to
+  Unified: Optimizations' catalog.
 - Settings workspace visual polish: search box aligned with the workspace, compact
   footer, refined sidebar hierarchy and selection, controls sized to their text
   and consistent comparison boxes.

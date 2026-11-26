@@ -1,6 +1,6 @@
 # Chat Heads V1 (M1.2)
 
-Status labels follow [AGENTS.md](../../AGENTS.md#decision-status-labels).
+Status labels follow [AGENTS.md](../../../AGENTS.md#decision-status-labels).
 
 The PO approved this specification on 2026-11-22, with the clarifications
 in §1.1. Implementation notes are in §13.

@@ -1,6 +1,6 @@
 # Architecture Overview
 
-Status labels follow [AGENTS.md](../../AGENTS.md#decision-status-labels).
+Status labels follow [AGENTS.md](../../../AGENTS.md#decision-status-labels).
 
 ## Style [Approved]
 
@@ -77,7 +77,7 @@ on 2026-11-21 (see the
 ## Startup performance [Approved 2026-11-21]
 
 No startup optimization is scheduled. The qualitative startup policy in
-[AGENTS.md](../../AGENTS.md#engineering-rules) applies. Early configuration
+[AGENTS.md](../../../AGENTS.md#engineering-rules) applies. Early configuration
 loading is deferred. See the
 [startup performance discovery](../discovery/startup-performance-minecraft-26.3.md#decisions-2026-11-21).
 

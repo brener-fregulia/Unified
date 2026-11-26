@@ -1,6 +1,6 @@
 # Diagnostics Direction
 
-Status labels follow [AGENTS.md](../../AGENTS.md#decision-status-labels).
+Status labels follow [AGENTS.md](../../../AGENTS.md#decision-status-labels).
 
 This document records an approved **future direction** (2026-11-21). It is
 not an M0 telemetry implementation. M0 only includes the local logging

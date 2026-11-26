@@ -1,6 +1,6 @@
 # Linux Development Setup
 
-How to build, run and test QoL: Unified on Linux. The same Gradle build is used
+How to build, run and test Project Unified (Unified: QoL and Unified: Optimizations) on Linux. The same Gradle build is used
 on Windows and Linux; there is no separate Linux build. Commands below use
 `./gradlew` (on Windows, `.\gradlew.bat` with the same task names).
 
@@ -53,8 +53,8 @@ Keep the checkout on a Linux filesystem (under `$HOME`). On WSL2, do not build
 inside `/mnt/c` or `/mnt/d`: it is much slower and file permissions differ.
 
 ```sh
-git clone https://github.com/brener-fregulia/qol-unified.git
-cd qol-unified
+git clone https://github.com/brener-fregulia/Unified.git
+cd Unified
 ./gradlew clean build
 ```
 
@@ -62,21 +62,23 @@ cd qol-unified
 ([`.gitattributes`](../../.gitattributes)). If a copy lost the bit, run
 `chmod +x gradlew`.
 
-The build runs the unit tests and writes the mod to
-`build/libs/qol-unified-<version>.jar`. That JAR is client-only and never
-contains the development fixtures.
+The build runs every module's unit tests and writes each mod to its own
+folder: `mods/qol/build/libs/unified-qol-<version>.jar` and
+`mods/optimizations/build/libs/unified-optimizations-<version>.jar`. Both are
+client-only; neither contains development fixtures. Build one module with
+`./gradlew :mods:qol:build` or `./gradlew :mods:optimizations:build`.
 
 ## 3. Development client and game tests
 
 ```sh
-./gradlew runClient                # Minecraft with the mod, files in run/
-./gradlew runGameTestTargetinfo    # one automated client game test
+./gradlew :mods:qol:runClient                # Minecraft with Unified: QoL, files in mods/qol/run/
+./gradlew :mods:qol:runGameTestTargetinfo    # one automated client game test
 ```
 
 Game tests open a real window, so they need a desktop session. They use only
-disposable folders under `build/run-gametest*` and save screenshots there.
+disposable folders under `mods/qol/build/run-gametest*` and save screenshots there.
 The task list and optional comparison runs are described in the
-[README](../../README.md#development-fixtures).
+[README](../../mods/qol/README.md#development-fixtures).
 
 ## 4. Testing a build in Prism Launcher
 
@@ -86,7 +88,8 @@ The task list and optional comparison runs are described in the
    (Prism lists detected ones; **Auto-detect** or **Browse** if needed).
 3. **Edit instance → Mods → Download mods:** add Fabric API, matching
    `fabric_api_version` or newer for the same Minecraft version.
-4. **Mods → Add file:** choose `build/libs/qol-unified-<version>.jar`.
+4. **Mods → Add file:** choose `mods/qol/build/libs/unified-qol-<version>.jar`
+   (and, if wanted, `mods/optimizations/build/libs/unified-optimizations-<version>.jar`).
    Alternatively use **Folder** on the instance to open its `mods`
    folder; Prism opens the right path, so it never needs to be typed or
    hardcoded.
