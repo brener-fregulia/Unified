@@ -18,7 +18,7 @@ released yet.
 ### Added
 
 - Zoom: hold (or toggle) Z to zoom the camera smoothly, scroll to zoom
-  further (2–16×), with lower mouse sensitivity while zoomed. Nine settings in
+  further (2–14×), with lower mouse sensitivity while zoomed. Nine settings in
   the Controls category; suppressed by default when Zoomify, Ok Zoomer or
   Logical Zoom is installed.
 - Settings can declare a rule across several values; a rejected combination

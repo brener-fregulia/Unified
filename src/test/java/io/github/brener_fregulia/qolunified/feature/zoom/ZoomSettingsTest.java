@@ -66,7 +66,7 @@ class ZoomSettingsTest {
         assertEquals(List.of("zoom_mode", "initial_magnification", "min_magnification", "max_magnification",
                 "scroll_zoom", "zoom_in_ms", "zoom_out_ms", "transition", "reduce_sensitivity"),
                 List.copyOf(defaults.keySet()));
-        assertEquals(List.of("hold", 4, 2, 16, true, 250, 150, "smooth", true), List.copyOf(defaults.values()));
+        assertEquals(List.of("hold", 4, 2, 14, true, 1000, 0, "smooth", true), List.copyOf(defaults.values()));
         assertEquals(List.of("zoomify", "ok_zoomer", "logical_zoom"),
                 d.conflicts().stream().map(ConflictDescriptor::modId).toList());
     }
@@ -80,7 +80,7 @@ class ZoomSettingsTest {
         assertEquals(List.of(4), draft.ruleViolation("zoom", "min_magnification", 10).orElseThrow().args());
         assertEquals(ZoomSettings.ERROR_MAX, draft.ruleViolation("zoom", "max_magnification", 3)
                 .orElseThrow().messageKey());
-        assertTrue(draft.ruleViolation("zoom", "initial_magnification", 10).isEmpty(), "inside 2–16");
+        assertTrue(draft.ruleViolation("zoom", "initial_magnification", 10).isEmpty(), "inside 2–14");
         // Through the draft itself: the contradiction is never part of what is saved.
         assertTrue(draft.setValue("zoom", "max_magnification", 2).isPresent());
         assertFalse(draft.valid());
@@ -102,8 +102,8 @@ class ZoomSettingsTest {
         var core = start(Set.of());
         var settings = core.lifecycle().effectiveSettings("zoom");
         assertEquals(2, settings.getInt("min_magnification"));
-        assertEquals(16, settings.getInt("max_magnification"));
-        assertEquals(250, settings.getInt("zoom_in_ms"), "the whole feature's settings, not a mix");
+        assertEquals(14, settings.getInt("max_magnification"));
+        assertEquals(1000, settings.getInt("zoom_in_ms"), "the whole feature's settings, not a mix");
     }
 
     @Test

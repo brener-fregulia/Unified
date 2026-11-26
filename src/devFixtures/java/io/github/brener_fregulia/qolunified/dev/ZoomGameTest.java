@@ -55,6 +55,10 @@ final class ZoomGameTest {
             ctx.runOnClient(mc -> mc.options.save());
             byte[] optionsBefore = read(options);
             ctx.waitTicks(5);
+            // The checks use fixed timings and the old 16× bound, independent of the shipped defaults (M1.8.1).
+            setSetting("zoom_in_ms", 250);
+            setSetting("zoom_out_ms", 150);
+            setSetting("max_magnification", 16);
             vanillaFov = fov();
             log("vanilla FOV", vanillaFov);
             holdAndRelease();

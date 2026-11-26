@@ -18,9 +18,11 @@ configuration files or translations are used.
 - **Q-Z1:** category `controls`.
 - **Q-Z2:** default physical key Z, rebindable in vanilla Controls and
   Keyboard Map.
-- **Q-Z3:** 250 ms zoom-in, 150 ms zoom-out, Smooth curve.
+- **Q-Z3:** 250 ms zoom-in, 150 ms zoom-out, Smooth curve. Defaults changed
+  on 2026-11-26 after manual testing (M1.8.1): 1000 ms zoom-in, 0 ms
+  (instant) zoom-out.
 - **Q-Z4:** initial 4×, default scroll range 2–16×, multiplicative factor 1.25
-  per notch.
+  per notch. Default maximum changed to 14× on 2026-11-26 (M1.8.1).
 - **Q-Z5:** minimum effective FOV 1.0°.
 - **Q-Z6:** the scrolled level resets to the initial magnification between
   activations.
@@ -285,10 +287,10 @@ descriptors validate one value at a time.
 | `zoom_mode` | Enum | `hold`, `toggle` | `hold` | |
 | `initial_magnification` | Integer (×) | 2–10 | 4 | Q-Z4 |
 | `min_magnification` | Integer (×) | 1–10 | 2 | Lower bound for scrolling |
-| `max_magnification` | Integer (×) | 2–50 | 16 | Upper bound for scrolling |
+| `max_magnification` | Integer (×) | 2–50 | 14 | Upper bound for scrolling |
 | `scroll_zoom` | Boolean | — | ON | |
-| `zoom_in_ms` | Integer (ms) | 0–2000 | 250 | Q-Z3 |
-| `zoom_out_ms` | Integer (ms) | 0–2000 | 150 | |
+| `zoom_in_ms` | Integer (ms) | 0–2000 | 1000 | Q-Z3 |
+| `zoom_out_ms` | Integer (ms) | 0–2000 | 0 | Instant |
 | `transition` | Enum | `smooth`, `linear`, `instant` | `smooth` | |
 | `reduce_sensitivity` | Boolean | — | ON | |
 
@@ -444,7 +446,7 @@ Run on Windows 11 and CachyOS (Prism, production JAR):
 2. Toggle mode: press, release, look around, press again.
 3. Scroll while zoomed: magnification changes, hotbar does not; after release
    the hotbar scrolls normally.
-4. Aim at a distant mob at 16×: mouse movement feels proportional; turn
+4. Aim at a distant mob at 14×: mouse movement feels proportional; turn
    `reduce_sensitivity` OFF and feel the difference.
 5. Sprint and drink a Speed potion while zoomed; use a spyglass and press
    Z while scoping.
@@ -520,7 +522,7 @@ Run on Windows 11 and CachyOS (Prism, production JAR):
 | Not zoomed | 70.0° |
 | One tick (50 ms) after pressing | 32–36° (mid-transition) |
 | Held | 17.5° (exactly 4×) |
-| 16× after scrolling | 4.38° |
+| 16× after scrolling (test sets the maximum to 16×) | 4.38° |
 | Yaw for a 100 px cursor move, plain / zoomed | 15.0° / 3.75° (ratio 0.250) |
 | Spyglass alone / spyglass + zoom | 7.07° / 1.75° |
 

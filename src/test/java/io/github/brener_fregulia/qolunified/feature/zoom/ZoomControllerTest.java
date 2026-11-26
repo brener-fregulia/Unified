@@ -17,8 +17,18 @@ class ZoomControllerTest {
     private long now = 1_000 * MS;
     private final ZoomController zoom = new ZoomController();
 
+    /** The behavior tests use fixed timings and bounds, independent of the shipped defaults (M1.8.1). */
+    private static final Map<String, Object> BASE = Map.of(ZoomSettings.MAX, 16, ZoomSettings.IN_MS, 250,
+            ZoomSettings.OUT_MS, 150);
+
+    {
+        zoom.configure(config(Map.of()));
+    }
+
     private static ZoomConfig config(Map<String, Object> overrides) {
-        return ZoomConfig.from(SettingsSnapshot.of(ZoomSettings.DESCRIPTOR, overrides));
+        var values = new java.util.HashMap<String, Object>(BASE);
+        values.putAll(overrides);
+        return ZoomConfig.from(SettingsSnapshot.of(ZoomSettings.DESCRIPTOR, values));
     }
 
     /** Runs {@code totalMs} at {@code fps}, ending exactly at the total. */
