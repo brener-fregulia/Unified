@@ -6,5 +6,17 @@
   "unified_settings.options_button": "Unified Settings…",
   "unified_settings.no_settings": "%s has no configurable features yet.",
   "unified_settings.provider_failed": "%s could not be loaded. See the log for details.",
-  "unified_settings.no_modules": "No Unified mod provides settings."
+  "unified_settings.no_modules": "No Unified mod provides settings.",
+  "unified_settings.search": "Search features and settings...",
+  "unified_settings.no_matches": "No features match your search.",
+  "unified_settings.nav.drawer": "Modules, categories and features",
+  "unified_settings.nav.expanded": "expanded, %s features",
+  "unified_settings.nav.collapsed": "collapsed, %s features",
+  "unified_settings.nav.selected": "selected",
+  "unified_settings.nav.no_features": "No configurable features yet",
+  "unified_settings.nav.failed": "Could not be loaded (see the log)",
+  "unified_settings.back": "Back",
+  "unified_settings.retry_save": "Retry",
+  "unified_settings.undo_change": "Undo change",
+  "unified_settings.panel_failed": "%s could not show this feature. See the log for details."
 }

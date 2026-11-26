@@ -5,11 +5,13 @@ import net.fabricmc.api.ClientModInitializer
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents
+import net.fabricmc.fabric.api.client.screen.v1.ScreenKeyboardEvents
 import net.fabricmc.fabric.api.client.screen.v1.Screens
 import net.minecraft.client.KeyMapping
 import net.minecraft.client.gui.components.AbstractWidget
 import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.screens.Screen
+import net.minecraft.client.gui.screens.TitleScreen
 import net.minecraft.client.gui.screens.options.OptionsScreen
 import net.minecraft.network.chat.CommonComponents
 import net.minecraft.network.chat.Component
@@ -40,6 +42,14 @@ class UnifiedSettingsClient : ClientModInitializer {
         ScreenEvents.AFTER_INIT.register { _, screen, width, height ->
             if (screen is OptionsScreen) {
                 addOptionsButton(screen, width, height)
+            }
+            // The title screen also opens the workspace with the key, as Unified: QoL's former key did.
+            if (screen is TitleScreen) {
+                ScreenKeyboardEvents.afterKeyPress(screen).register { s, event ->
+                    if (!key.isUnbound && key.matches(event)) {
+                        Screens.getMinecraft(s).gui.setScreen(UnifiedSettingsScreen(s))
+                    }
+                }
             }
         }
     }

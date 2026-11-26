@@ -14,3 +14,8 @@ Nothing has been released yet.
   failure isolation, the **Open Unified Settings** key (default `U`, category
   "Unified"), one **Unified Settings…** button in the Options screen, and a
   temporary entry screen listing the installed modules.
+- 1.1.0: contract 1.1 adds `UnifiedSettingsProvider.workspace()` and
+  `SettingsWorkspace` (defaults keep 1.0 providers working). The shared
+  workspace (search, module/category/feature sidebar, drawer, footer with
+  Retry/Undo) replaces the temporary entry screen; `U` also works on the
+  title screen.

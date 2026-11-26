@@ -6,5 +6,17 @@
   "unified_settings.options_button": "Configurações do Unified…",
   "unified_settings.no_settings": "%s ainda não tem recursos configuráveis.",
   "unified_settings.provider_failed": "Não foi possível carregar %s. Veja o log para detalhes.",
-  "unified_settings.no_modules": "Nenhum mod Unified oferece configurações."
+  "unified_settings.no_modules": "Nenhum mod Unified oferece configurações.",
+  "unified_settings.search": "Pesquisar recursos e ajustes...",
+  "unified_settings.no_matches": "Nenhum recurso corresponde à pesquisa.",
+  "unified_settings.nav.drawer": "Módulos, categorias e recursos",
+  "unified_settings.nav.expanded": "aberta, %s recursos",
+  "unified_settings.nav.collapsed": "fechada, %s recursos",
+  "unified_settings.nav.selected": "selecionado",
+  "unified_settings.nav.no_features": "Ainda sem recursos configuráveis",
+  "unified_settings.nav.failed": "Não foi possível carregar (veja o log)",
+  "unified_settings.back": "Voltar",
+  "unified_settings.retry_save": "Tentar de novo",
+  "unified_settings.undo_change": "Desfazer",
+  "unified_settings.panel_failed": "%s não conseguiu mostrar este recurso. Veja o log para detalhes."
 }
