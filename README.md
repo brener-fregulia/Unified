@@ -43,7 +43,20 @@ Nothing has been released yet.
 | Development client | `./gradlew :mods:qol:runClient` |
 
 On Windows use `.\gradlew.bat`. Each mod's JAR is written to
-`mods/<module>/build/libs/` with that mod's own name and version. Game tests
+`mods/<module>/build/libs/` with that mod's own name and version.
+
+After a root `./gradlew build`, all production JARs are also collected in
+**`dist/`** (ignored by Git; `./gradlew collectJars` refreshes it on its
+own):
+
+| File | What it is |
+| --- | --- |
+| `unified-qol-<version>.jar` | **Install:** Unified: QoL |
+| `unified-optimizations-<version>.jar` | **Install:** Unified: Optimizations |
+| `unified-settings-<version>.jar` | **Do not install:** Unified Settings (Library), for inspection only; each mod already carries it inside |
+
+`dist/` is synchronized with the current versions, so older JARs disappear.
+Building a single module (`./gradlew :mods:qol:build`) does not touch it. Game tests
 open a real window and use disposable folders under
 `mods/qol/build/run-gametest*`.
 

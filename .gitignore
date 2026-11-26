@@ -31,3 +31,6 @@ hs_err_*.log
 replay_*.log
 *.hprof
 *.jfr
+
+# Collected production JARs (./gradlew build)
+dist/
