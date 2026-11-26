@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "qol_unified_dev",
   "version": "0.0.0-dev",
-  "name": "QoL: Unified Development Fixtures",
+  "name": "Unified: QoL Development Fixtures",
   "description": "Development-only sample features and client game tests. Not distributed.",
   "environment": "client",
   "entrypoints": {

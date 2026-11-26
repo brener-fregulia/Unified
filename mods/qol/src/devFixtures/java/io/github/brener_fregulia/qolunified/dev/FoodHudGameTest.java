@@ -313,7 +313,7 @@ final class FoodHudGameTest {
     }
 
     private void dedicatedServer() {
-        // FH-AC-13: a dedicated server without QoL: Unified (client-only mods are not loaded there).
+        // FH-AC-13: a dedicated server without Unified: QoL (client-only mods are not loaded there).
         setFood(12, 4.0f, 10.0f);
         hold(new ItemStack(Items.COOKED_BEEF), ItemStack.EMPTY);
         long frames = foodFrames();

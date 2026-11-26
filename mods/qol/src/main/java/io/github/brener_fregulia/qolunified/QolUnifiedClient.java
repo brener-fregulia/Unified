@@ -22,7 +22,7 @@ public final class QolUnifiedClient implements ClientModInitializer {
     /** The running Core; available after client initialization. */
     public static CoreRuntime core() {
         if (core == null) {
-            throw new IllegalStateException("QoL: Unified is not initialized");
+            throw new IllegalStateException("Unified: QoL is not initialized");
         }
         return core;
     }
@@ -58,6 +58,6 @@ public final class QolUnifiedClient implements ClientModInitializer {
         io.github.brener_fregulia.qolunified.feature.targetinfo.TargetInfoComparison.register();
         KeyboardMapHooks.registerAction();
         io.github.brener_fregulia.qolunified.feature.soundcontrol.SoundControlHooks.registerAction();
-        LOGGER.info("QoL: Unified initialized successfully ({} features).", registry.features().size());
+        LOGGER.info("Unified: QoL initialized successfully ({} features).", registry.features().size());
     }
 }

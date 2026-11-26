@@ -1,9 +1,9 @@
 {
-  "modmenu.nameTranslation.qol_unified": "QoL: Unified",
+  "modmenu.nameTranslation.qol_unified": "Unified: QoL",
   "modmenu.descriptionTranslation.qol_unified": "Um mod de qualidade de vida completo, modular e exclusivo do cliente.",
-  "key.qol_unified.open_settings": "Abrir configurações do QoL: Unified",
-  "key.category.qol_unified.main": "QoL: Unified",
-  "qol_unified.settings.title": "Configurações do QoL: Unified",
+  "key.qol_unified.open_settings": "Abrir configurações do Unified: QoL",
+  "key.category.qol_unified.main": "Unified: QoL",
+  "qol_unified.settings.title": "Configurações do Unified: QoL",
   "qol_unified.settings.search": "Pesquisar recursos e ajustes...",
   "qol_unified.settings.empty": "Ainda não há recursos disponíveis. Eles aparecerão aqui à medida que forem adicionados em versões futuras.",
   "qol_unified.settings.no_matches": "Nenhum recurso corresponde à pesquisa.",

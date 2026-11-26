@@ -2,11 +2,11 @@
   "schemaVersion": 1,
   "id": "qol_unified",
   "version": "${version}",
-  "name": "QoL: Unified",
+  "name": "Unified: QoL",
   "description": "An all-in-one, modular, client-side quality-of-life mod.",
   "authors": ["Brener Fregulia"],
   "contact": {
-    "sources": "https://github.com/brener-fregulia/qol-unified"
+    "sources": "https://github.com/brener-fregulia/Unified"
   },
   "environment": "client",
   "entrypoints": {

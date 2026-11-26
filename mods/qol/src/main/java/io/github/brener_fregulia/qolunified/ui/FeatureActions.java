@@ -7,7 +7,7 @@ import java.util.function.BiFunction;
 import net.minecraft.client.gui.screens.Screen;
 
 /**
- * Screens that a feature offers from its row in the QoL: Unified settings (for example "Open Keymap"). Internal to the
+ * Screens that a feature offers from its row in the Unified: QoL settings (for example "Open Keymap"). Internal to the
  * mod, not a public API. The settings screen shows an action only while its feature is active.
  */
 public final class FeatureActions {

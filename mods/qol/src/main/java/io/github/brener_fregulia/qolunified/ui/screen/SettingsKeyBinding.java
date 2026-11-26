@@ -14,7 +14,7 @@ import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.resources.Identifier;
 
 /**
- * Registers the unbound "Open QoL: Unified settings" key binding. It works in game when no screen is
+ * Registers the unbound "Open Unified: QoL settings" key binding. It works in game when no screen is
  * open, and on the title screen. Other screens (including chat) are left alone.
  */
 public final class SettingsKeyBinding {
@@ -23,7 +23,7 @@ public final class SettingsKeyBinding {
 
     private static KeyMapping.Category category;
 
-    /** The "QoL: Unified" key-mapping category, shared by every QoL: Unified key mapping. */
+    /** The "Unified: QoL" key-mapping category, shared by every Unified: QoL key mapping. */
     public static KeyMapping.Category category() {
         if (category == null) {
             category = KeyMapping.Category.register(Identifier.fromNamespaceAndPath(QolUnifiedClient.MOD_ID, "main"));
