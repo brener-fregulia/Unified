@@ -30,8 +30,10 @@ class FoundationTest {
         JsonObject depends = mod.getAsJsonObject("depends");
         assertFalse(depends.has("qol_unified"), "never requires Unified: QoL");
         assertFalse(mod.has("recommends") && mod.getAsJsonObject("recommends").has("qol_unified"));
-        assertEquals(List.of("fabricloader", "minecraft", "java", "fabric-language-kotlin"),
+        assertEquals(List.of("fabricloader", "minecraft", "java", "fabric-language-kotlin", "unified_settings"),
                 List.copyOf(depends.keySet()));
+        assertEquals(">=1.0.0 <2.0.0", depends.get("unified_settings").getAsString(),
+                "the library contract compiled against, up to its next major");
         assertFalse(depends.get("fabric-language-kotlin").getAsString().contains("$"));
     }
 
