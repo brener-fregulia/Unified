@@ -162,6 +162,14 @@ public final class SettingsDraft {
         };
     }
 
+    /**
+     * Drops uncommitted edits and invalid inputs, returning to the saved choices. Used after a failed save, so the
+     * controls show what is actually stored and active (settings-ux-v1.md §18).
+     */
+    public void revert() {
+        rebase();
+    }
+
     /** Explicit player retry for an UNKNOWN feature (LC-5). Does not touch the draft or the file. */
     public TransitionOutcome retryDisable(String featureId) {
         return core.retryDisable(featureId);
