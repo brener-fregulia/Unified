@@ -52,5 +52,14 @@ loom {
 }
 
 scenarios.forEach { (name, jars) ->
-    tasks.matching { it.name == "runGameTest$name" }.configureEach { dependsOn(jars) }
+    tasks.matching { it.name == "runGameTest$name" }.configureEach {
+        dependsOn(jars)
+        // Seed a fresh options.txt in which the former QoL settings key is bound to K, to test its migration. The data
+        // version is Minecraft 26.3's, so the options load without being treated as a pre-1.13 file.
+        val runDir = layout.projectDirectory.dir("build/run-gametest-$name").asFile
+        doFirst {
+            runDir.mkdirs()
+            runDir.resolve("options.txt").writeText("version:5023\nkey_key.qol_unified.open_settings:key.keyboard.k\n")
+        }
+    }
 }
