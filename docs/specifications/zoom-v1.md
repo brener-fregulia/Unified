@@ -1,14 +1,39 @@
 # Zoom V1 (M1.8)
 
 Status labels follow [AGENTS.md](../../AGENTS.md#decision-status-labels).
-Nothing in this document is approved yet. Every product decision is
-**[Proposed]** or **[Open]** until the Product Owner approves it; §15 lists
-the questions.
+Approved by the Product Owner on 2026-11-26 (§0). The sections below keep
+their original labels; §0 records the resolution of each.
 
 A client-side camera zoom: hold (or toggle) a key to narrow the field of view
 smoothly, scroll to zoom further, release to return. Inspired by the behavior
 of Zoomify (isXander) and Ok Zoomer. No third-party code, assets,
 configuration files or translations are used.
+
+## 0. Approval [Approved 2026-11-26]
+
+- Identity: `zoom`, M1.8, enabled by default, LIVE, fully client-side; no
+  packets or server-side component.
+- V1 scope (§3, §5–§12) and acceptance criteria Z-AC-1 to Z-AC-17 (§17), with
+  the corrections below.
+- **Q-Z1:** category `controls`.
+- **Q-Z2:** default physical key Z, rebindable in vanilla Controls and
+  Keyboard Map.
+- **Q-Z3:** 250 ms zoom-in, 150 ms zoom-out, Smooth curve.
+- **Q-Z4:** initial 4×, default scroll range 2–16×, multiplicative factor 1.25
+  per notch.
+- **Q-Z5:** minimum effective FOV 1.0°.
+- **Q-Z6:** the scrolled level resets to the initial magnification between
+  activations.
+- **Q-Z7:** no settings comparison.
+- **Q-Z8:** soft conflicts with `zoomify`, `ok_zoomer`, `logical_zoom`; Sodium
+  and Iris are not conflicts.
+- **Q-Z9:** the three narrow Mixins.
+- **Q-Z10:** toggle mode also resets when a menu opens, the game pauses or the
+  window loses focus.
+- **Correction (scroll):** do not turn every non-zero wheel event into a full
+  notch; preserve the magnitude of fractional and high-resolution deltas.
+- **Correction (bounds):** minimum ≤ initial ≤ maximum must hold; contradictory
+  values are rejected with field-level feedback and never saved or applied.
 
 ## 1. Identity, goals and non-goals [Proposed]
 
