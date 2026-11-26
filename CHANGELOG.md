@@ -17,6 +17,12 @@ released yet.
 
 ### Added
 
+- Zoom: hold (or toggle) Z to zoom the camera smoothly, scroll to zoom
+  further (2–16×), with lower mouse sensitivity while zoomed. Nine settings in
+  the Controls category; suppressed by default when Zoomify, Ok Zoomer or
+  Logical Zoom is installed.
+- Settings can declare a rule across several values; a rejected combination
+  is explained at the field and never saved.
 - Spec-Driven Development documentation: product vision, feature catalog,
   architecture overview, configuration policy and the M0 Platform
   Foundations specification.

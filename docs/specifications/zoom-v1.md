@@ -459,3 +459,74 @@ Run on Windows 11 and CachyOS (Prism, production JAR):
 11. Join the Paper test server (no server changes) and zoom.
 12. Português: all Zoom texts translated.
 13. Vanilla FOV and sensitivity in Options are unchanged afterwards.
+
+## 19. Implementation notes [Implemented 2026-11-26]
+
+### 19.1 Code
+
+- `feature/zoom/ZoomSettings`: descriptor, nine LIVE settings, the three
+  conflicts and the bounds rule.
+- `feature/zoom/ZoomConfig`: the settings as plain fields plus the three
+  curves; rebuilt only when the settings snapshot changes (one reference
+  check per frame).
+- `feature/zoom/ZoomController`: the state machine and all arithmetic; pure
+  Java, primitive fields, no allocation per frame.
+- `feature/zoom/ZoomHooks`: the `Zoom` key mapping (default `KEY_Z`, in the
+  QoL: Unified category), the client-tick reset checks, the disconnect reset
+  and the Mixin entry points.
+- `ZoomFeature`: enable/disable only set the active context; disable resets
+  the controller.
+
+### 19.2 Mixins (Q-Z9)
+
+| Mixin | Target (verified with `javap`) | Injection |
+| --- | --- | --- |
+| `ZoomCameraFovMixin` | `Camera.calculateFov(F)F` | MixinExtras `@ModifyReturnValue`; skipped in panoramic mode. Also the per-frame clock. |
+| `ZoomMouseMixin` (scroll) | `MouseHandler.onScroll(JDD)V` at the `ScrollWheelHandler.onMouseScroll` call | Cancellable `@Inject`, reached only with no screen open |
+| `ZoomMouseMixin` (turn) | `MouseHandler.turnPlayer(D)V` at `LocalPlayer.turn(DD)V` | Two `@ModifyArg` (yaw, pitch); no per-call allocation |
+
+### 19.3 Technical corrections
+
+- **Scroll magnitude (PO correction).** 26.3's `onScroll` multiplies the raw
+  wheel delta by Scroll Sensitivity (or replaces it with its sign when
+  Discrete Scrolling is on). For the hotbar, `ScrollWheelHandler` then adds it
+  to an accumulator, truncates to whole steps and clears the accumulator when
+  the direction reverses. Zoom reads the raw vertical delta, or its sign with
+  Discrete Scrolling. It applies it as a continuous exponent, so the level is
+  multiplied by `1.25^delta`. One notch is ×1.25; four quarter-notches equal
+  one notch; a reversal undoes exactly what was scrolled; nothing is
+  truncated or lost. Scroll Sensitivity does not change zoom speed.
+- **Cross-setting validation.** The descriptor architecture validated one
+  value at a time. A narrow `SettingsRule` was added to `FeatureDescriptor`; it
+  defaults to none, and the old constructor keeps that default. The rule is
+  checked in three places:
+  - `SettingsDraft.setValue`: a contradiction becomes a field error and never
+    enters the draft.
+  - The integer field (`SettingsDraft.ruleViolation`): it shows the reason
+    next to the field before anything is written.
+  - Configuration load: a hand-edited contradiction falls back to the
+    feature's defaults, with a warning.
+
+  Zoom's rule is minimum ≤ initial ≤ maximum. Each message names the value to
+  change first, so every coherent combination is reachable one field at a
+  time.
+- **Respawn and dimension change** are detected in the client tick as a new
+  `LocalPlayer` or `ClientLevel` instance.
+
+### 19.4 Measured in the Zoom game test (854×480, FOV option 70)
+
+| Case | Value |
+| --- | --- |
+| Not zoomed | 70.0° |
+| One tick (50 ms) after pressing | 32–36° (mid-transition) |
+| Held | 17.5° (exactly 4×) |
+| 16× after scrolling | 4.38° |
+| Yaw for a 100 px cursor move, plain / zoomed | 15.0° / 3.75° (ratio 0.250) |
+| Spyglass alone / spyglass + zoom | 7.07° / 1.75° |
+
+### 19.5 Known limitations
+
+- Magnifications are whole numbers (Q-Z4).
+- The scroll factor ignores vanilla Scroll Sensitivity by design.
+- Sodium, Iris and the other zoom mods were not installed in automated tests;
+  conflict handling is covered by unit tests with their mod ids.
