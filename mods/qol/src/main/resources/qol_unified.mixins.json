@@ -1,7 +1,7 @@
 {
   "required": true,
   "minVersion": "0.8",
-  "package": "io.github.brener_fregulia.qolunified.mixin",
+  "package": "unified.qol.mixin",
   "compatibilityLevel": "JAVA_25",
   "client": [
     "BossHealthOverlayAccessor",

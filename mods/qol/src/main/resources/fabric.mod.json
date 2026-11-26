@@ -10,7 +10,7 @@
   },
   "environment": "client",
   "entrypoints": {
-    "client": ["io.github.brener_fregulia.qolunified.QolUnifiedClient"]
+    "client": ["unified.qol.QolUnifiedClient"]
   },
   "mixins": ["qol_unified.mixins.json"],
   "depends": {

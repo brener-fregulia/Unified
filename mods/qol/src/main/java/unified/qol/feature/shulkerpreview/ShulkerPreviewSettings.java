@@ -1,0 +1,55 @@
+package unified.qol.feature.shulkerpreview;
+
+import unified.qol.core.ApplyMode;
+import unified.qol.core.ConflictDescriptor;
+import unified.qol.core.FeatureCategory;
+import unified.qol.core.FeatureDescriptor;
+import unified.qol.core.SettingDescriptor.BooleanSetting;
+import unified.qol.core.SettingDescriptor.EnumSetting;
+import java.util.List;
+
+/** Shulker Preview descriptor and setting keys (shulker-preview-v1.md §1.1, §7). Free of Minecraft types. */
+public final class ShulkerPreviewSettings {
+    public static final String ID = "shulker_preview";
+    /** Fabric mod ids read from the published 26.3 JARs (Shulker Box Tooltip 5.4.3, Simple Shulker Preview 2.6.0). */
+    public static final String SHULKER_BOX_TOOLTIP = "shulkerboxtooltip";
+    public static final String SIMPLE_SHULKER_PREVIEW = "simpleshulkerpreview";
+
+    public static final String SLOT_ICON = "slot_icon";
+    public static final String COMPACT_PREVIEW = "compact_preview";
+    public static final String FULL_PREVIEW_ON_SHIFT = "full_preview_on_shift";
+    /** Which item the slot icon shows (shulker-preview-v1.md §15): the first occupied slot, or the predominant kind. */
+    public static final String SLOT_ICON_SOURCE = "slot_icon_source";
+    public static final String FIRST_OCCUPIED = "first_occupied";
+    public static final String PREDOMINANT = "predominant";
+
+    public static final FeatureDescriptor DESCRIPTOR = new FeatureDescriptor(ID, FeatureCategory.INVENTORY,
+            true, ApplyMode.LIVE,
+            List.of(
+                    new BooleanSetting(SLOT_ICON, true, ApplyMode.LIVE),
+                    new BooleanSetting(COMPACT_PREVIEW, true, ApplyMode.LIVE),
+                    new BooleanSetting(FULL_PREVIEW_ON_SHIFT, true, ApplyMode.LIVE),
+                    new EnumSetting(SLOT_ICON_SOURCE, FIRST_OCCUPIED, List.of(FIRST_OCCUPIED, PREDOMINANT),
+                            ApplyMode.LIVE)),
+            List.of(new ConflictDescriptor(SHULKER_BOX_TOOLTIP,
+                            "qol_unified.feature.shulker_preview.conflict.shulkerboxtooltip"),
+                    new ConflictDescriptor(SIMPLE_SHULKER_PREVIEW,
+                            "qol_unified.feature.shulker_preview.conflict.simpleshulkerpreview")));
+
+    /** Which tooltip to show for a box with known contents (shulker-preview-v1.md §6, §7). */
+    public enum Mode {
+        VANILLA,
+        COMPACT,
+        FULL
+    }
+
+    private ShulkerPreviewSettings() {
+    }
+
+    public static Mode mode(boolean compact, boolean fullOnShift, boolean shiftDown) {
+        if (fullOnShift && shiftDown) {
+            return Mode.FULL;
+        }
+        return compact ? Mode.COMPACT : Mode.VANILLA;
+    }
+}

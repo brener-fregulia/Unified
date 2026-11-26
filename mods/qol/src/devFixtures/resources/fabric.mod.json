@@ -7,13 +7,13 @@
   "environment": "client",
   "entrypoints": {
     "qol_unified:dev_features": [
-      "io.github.brener_fregulia.qolunified.dev.DevFixtures"
+      "unified.qol.dev.DevFixtures"
     ],
     "fabric-client-gametest": [
-      "io.github.brener_fregulia.qolunified.dev.CoreGameTest"
+      "unified.qol.dev.CoreGameTest"
     ],
     "client": [
-      "io.github.brener_fregulia.qolunified.dev.DevKeyMappings"
+      "unified.qol.dev.DevKeyMappings"
     ]
   },
   "depends": {
