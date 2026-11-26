@@ -215,5 +215,9 @@
   "qol_unified.settings.nav.collapsed": "fechada, %s recursos",
   "qol_unified.settings.nav.selected": "selecionado",
   "qol_unified.keyboard_map.open_tool": "Abrir Mapa do teclado",
-  "qol_unified.settings.comparison.in_world": "Exemplo disponível dentro de um mundo."
+  "qol_unified.settings.comparison.in_world": "Exemplo disponível dentro de um mundo.",
+  "qol_unified.settings.back": "Voltar",
+  "qol_unified.settings.retry_save": "Tentar de novo",
+  "qol_unified.settings.undo_change": "Desfazer",
+  "qol_unified.message.save_failed_retry": "A mudança não pôde ser salva e não foi aplicada. Tente de novo ou desfaça."
 }

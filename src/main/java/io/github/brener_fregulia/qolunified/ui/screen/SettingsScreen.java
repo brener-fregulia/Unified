@@ -29,16 +29,18 @@ import net.minecraft.network.chat.Component;
 /**
  * The unified settings workspace (settings-ux-v1.md, M0 UI-1–UI-10, TX-1–TX-9): an expandable sidebar of categories
  * and features, and the selected feature's panel with its ON/OFF switch, description, comparison, tools and inline
- * settings. One {@link SettingsDraft} for the whole session; navigation and search never touch it; Done commits,
- * Cancel and Escape discard. The screen keeps its navigation state in fields, so it survives opening a tool screen
- * and coming back.
+ * settings. Every valid change is committed at once through the session's {@link SettingsDraft}: validated, saved,
+ * then applied (settings-ux-v1.md §18). Back and Escape only close. Navigation and search never touch the draft. The
+ * screen keeps its navigation state in fields, so it survives opening a tool screen and coming back.
  */
-public final class SettingsScreen extends Screen implements DraftScreen {
+public final class SettingsScreen extends Screen implements DraftScreen, SettingRows.Host {
     private static final int GAP = 6;
     private static final int TOP = 46;
     private static final int FOOTER = 44;
     private static final int HEADER = 34;
     private static final int PANEL_MAX = 520;
+    /** Setting rows stop growing here, so labels stay near their controls on wide screens. */
+    private static final int ROW_MAX = 380;
 
     private final Screen parent;
     private final SettingsDraft draft;
@@ -50,7 +52,12 @@ public final class SettingsScreen extends Screen implements DraftScreen {
     private String pendingReveal;
     private final Map<String, Double> panelScroll = new HashMap<>();
     private double navScroll;
-    private final Map<String, Component> fieldErrors = new HashMap<>();
+    /** Integer text that is not a valid value yet, per feature.key, kept out of the draft (§18). */
+    private final Map<String, String> pendingTexts = new HashMap<>();
+    private final Map<String, Component> pendingErrors = new HashMap<>();
+    /** The last commit could not be saved; the draft still holds the change until Retry or Undo. */
+    private boolean saveFailed;
+    private boolean rebuildRequested;
 
     private StringWidget messageWidget;
     private PanelList panel;
@@ -118,6 +125,9 @@ public final class SettingsScreen extends Screen implements DraftScreen {
         if (navigation == null) {
             navigation = new SettingsNavigation(entries(core), preselect);
         }
+        if (!saveFailed && draft.editable() && draft.changed()) {
+            commitNow(); // a tool screen (e.g. the Keyboard Map layout) changed the draft
+        }
         int titleWidth = Math.min(font.width(title), width - 2 * GAP);
         addRenderableWidget(new StringWidget((width - titleWidth) / 2, 6, titleWidth, font.lineHeight, title, font));
         int searchWidth = Math.min(300, width - 2 * GAP - (compact() ? 26 : 0));
@@ -175,14 +185,26 @@ public final class SettingsScreen extends Screen implements DraftScreen {
         messageWidget.setMaxWidth(width - 2 * GAP);
         addRenderableWidget(messageWidget);
         setMessage(message, messageIsError);
-        int buttonWidth = Math.min(150, (width - 3 * GAP) / 2);
         int footerY = height - 26;
-        Button done = Button.builder(Component.translatable(UiKeys.DONE), b -> done())
-                .bounds(width / 2 - buttonWidth - GAP / 2, footerY, buttonWidth, 20).build();
-        done.active = !core.configurationReadOnly();
-        addRenderableWidget(done);
-        addRenderableWidget(Button.builder(Component.translatable(UiKeys.CANCEL), b -> onClose())
-                .bounds(width / 2 + GAP / 2, footerY, buttonWidth, 20).build());
+        if (saveFailed) {
+            // A failed save: try the same change again, or drop it and show what is stored.
+            int w = Math.min(110, (width - 4 * GAP) / 3);
+            int x = (width - 3 * w - 2 * GAP) / 2;
+            addRenderableWidget(Button.builder(Component.translatable(UiKeys.RETRY_SAVE), b -> changed())
+                    .bounds(x, footerY, w, 20).build());
+            addRenderableWidget(Button.builder(Component.translatable(UiKeys.UNDO_CHANGE), b -> {
+                draft.revert();
+                saveFailed = false;
+                setMessage(Component.empty(), false);
+                rebuildWidgets();
+            }).bounds(x + w + GAP, footerY, w, 20).build());
+            addRenderableWidget(Button.builder(Component.translatable(UiKeys.BACK), b -> onClose())
+                    .bounds(x + 2 * (w + GAP), footerY, w, 20).build());
+        } else {
+            int w = Math.min(200, width - 2 * GAP);
+            addRenderableWidget(Button.builder(Component.translatable(UiKeys.BACK), b -> onClose())
+                    .bounds((width - w) / 2, footerY, w, 20).build());
+        }
     }
 
     /** The selected feature's header (sticky) and scrolling panel. */
@@ -212,7 +234,7 @@ public final class SettingsScreen extends Screen implements DraftScreen {
             FeatureSwitch toggle = new FeatureSwitch(Component.translatable(descriptor.nameKey()),
                     draft.choice(id).enabled(), on -> {
                         draft.setEnabled(id, on);
-                        rebuildWidgets(); // the hint and dimming follow the draft
+                        changed(); // saved and applied now; the hint and dimming follow
                     });
             toggle.setX(px + panelWidth - FeatureSwitch.WIDTH - 2);
             toggle.setY(TOP);
@@ -237,10 +259,11 @@ public final class SettingsScreen extends Screen implements DraftScreen {
         statusWidget.setMaxWidth(panelWidth - controlWidth - 8);
         addRenderableWidget(statusWidget);
 
-        panel = new PanelList(minecraft, panelWidth, bodyHeight - HEADER, TOP + HEADER, contentWidth);
+        int rowWidth = Math.min(contentWidth, ROW_MAX);
+        List<PanelList.Row> rows = FeaturePanel.rows(font, this, draft, descriptor, rowWidth, this);
+        int listHeight = Math.min(bodyHeight - HEADER, PanelList.contentHeight(rows));
+        panel = new PanelList(minecraft, panelWidth, listHeight, TOP + HEADER, rowWidth);
         panel.setX(px);
-        List<PanelList.Row> rows = FeaturePanel.rows(font, this, draft, descriptor, contentWidth,
-                error -> showFieldError(id, error));
         panel.setRows(rows);
         if (id.equals(panelFeature)) {
             panel.setScrollAmount(panelScroll.getOrDefault(id, 0.0));
@@ -258,22 +281,77 @@ public final class SettingsScreen extends Screen implements DraftScreen {
         }
     }
 
-    private void showFieldError(String featureId, Component error) {
-        if (error.getString().isEmpty()) {
-            fieldErrors.remove(featureId);
-        } else {
-            fieldErrors.put(featureId, error);
-        }
-        Component shown = fieldErrors.values().stream().findFirst().orElse(null);
-        if (shown != null) {
-            setMessage(shown, true);
-        } else if (messageIsError && fieldErrorShown) {
-            setMessage(Component.empty(), false);
-        }
-        fieldErrorShown = shown != null;
+    // ---- Auto-apply (§18) ----
+
+    /** A control changed the draft: validate, save, then apply, at once. */
+    @Override
+    public void changed() {
+        commitNow();
+        rebuildRequested = true; // rebuilt on the next tick, outside the widget event being handled
     }
 
-    private boolean fieldErrorShown;
+    private void commitNow() {
+        if (!draft.changed()) {
+            return;
+        }
+        CoreRuntime core = draft.core();
+        Set<String> pendingBefore = pendingRestart(core);
+        SettingsDraft.CommitOutcome outcome = draft.commit();
+        saveFailed = false;
+        switch (outcome.kind()) {
+            case NO_CHANGE, APPLIED -> setMessage(!pendingBefore.containsAll(pendingRestart(core))
+                    ? Component.translatable(UiKeys.MESSAGE_RESTART) : Component.empty(), false);
+            case INVALID -> setMessage(Component.translatable(UiKeys.MESSAGE_INVALID), true);
+            case READ_ONLY -> {
+                draft.revert();
+                setMessage(Component.translatable(UiKeys.MESSAGE_READ_ONLY), true);
+            }
+            case SAVE_FAILED -> {
+                // Nothing was applied; the change waits in the draft for Retry, or Undo restores the saved state.
+                saveFailed = true;
+                setMessage(Component.translatable(UiKeys.MESSAGE_SAVE_FAILED_RETRY), true);
+            }
+            case APPLIED_WITH_FAILURES -> setMessage(Component.translatable(UiKeys.MESSAGE_APPLY_FAILED,
+                    Texts.featureNames(core, outcome.failures())), true);
+        }
+    }
+
+    /** True while the last change could not be saved; for development game tests. */
+    public boolean saveFailed() {
+        return saveFailed;
+    }
+
+    @Override
+    public java.util.Optional<String> pendingText(String featureId, String key) {
+        return java.util.Optional.ofNullable(pendingTexts.get(featureId + "." + key));
+    }
+
+    @Override
+    public void pendingText(String featureId, String key, String text, Component error) {
+        String field = featureId + "." + key;
+        if (text == null) {
+            pendingTexts.remove(field);
+            pendingErrors.remove(field);
+            if (!saveFailed && messageIsError && pendingErrors.isEmpty()) {
+                setMessage(Component.empty(), false);
+            }
+        } else {
+            pendingTexts.put(field, text);
+            pendingErrors.put(field, error);
+            setMessage(error, true);
+        }
+        rebuildRequested = true;
+    }
+
+    @Override
+    public void tick() {
+        super.tick();
+        if (rebuildRequested) {
+            rebuildRequested = false;
+            rebuildWidgets();
+        }
+    }
+
 
     // ---- Navigation ----
 
@@ -310,8 +388,7 @@ public final class SettingsScreen extends Screen implements DraftScreen {
     }
 
     private boolean flagged(String featureId) {
-        FeatureDescriptor d = draft.core().registry().require(featureId).descriptor();
-        return d.settings().stream().anyMatch(s -> draft.hasInvalidInput(featureId, s.key()));
+        return pendingTexts.keySet().stream().anyMatch(field -> field.startsWith(featureId + "."));
     }
 
     private FeatureDescriptor selectedDescriptor() {
@@ -364,31 +441,6 @@ public final class SettingsScreen extends Screen implements DraftScreen {
         rebuildWidgets();
     }
 
-    private void done() {
-        CoreRuntime core = draft.core();
-        Set<String> pendingBefore = pendingRestart(core);
-        SettingsDraft.CommitOutcome outcome = draft.commit();
-        switch (outcome.kind()) {
-            case NO_CHANGE, APPLIED -> {
-                // Stay open once to announce restart-required changes made by this commit (UI-6).
-                if (!pendingBefore.containsAll(pendingRestart(core))) {
-                    setMessage(Component.translatable(UiKeys.MESSAGE_RESTART), false);
-                    rebuildWidgets();
-                    return;
-                }
-                onClose();
-            }
-            case INVALID -> setMessage(Component.translatable(UiKeys.MESSAGE_INVALID), true);
-            case READ_ONLY -> setMessage(Component.translatable(UiKeys.MESSAGE_READ_ONLY), true);
-            case SAVE_FAILED -> setMessage(Component.translatable(UiKeys.MESSAGE_SAVE_FAILED), true);
-            case APPLIED_WITH_FAILURES -> {
-                setMessage(Component.translatable(UiKeys.MESSAGE_APPLY_FAILED,
-                        Texts.featureNames(core, outcome.failures())), true);
-                rebuildWidgets();
-            }
-        }
-    }
-
     private static Set<String> pendingRestart(CoreRuntime core) {
         var pending = new HashSet<String>();
         core.registry().features().forEach(f -> {
@@ -407,9 +459,16 @@ public final class SettingsScreen extends Screen implements DraftScreen {
         }
     }
 
-    /** Cancel and Escape discard the draft (TX-2). */
+    /**
+     * Back and Escape close the workspace. Valid changes are already saved and applied; integer text that is not a
+     * valid value was never part of the draft. A change whose save failed is dropped, so the draft never outlives
+     * the screen with unsaved edits.
+     */
     @Override
     public void onClose() {
+        if (saveFailed) {
+            draft.revert();
+        }
         minecraft.gui.setScreen(parent);
     }
 }

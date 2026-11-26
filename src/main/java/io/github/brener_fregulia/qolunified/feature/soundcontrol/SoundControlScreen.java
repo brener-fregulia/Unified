@@ -39,9 +39,9 @@ import net.minecraft.sounds.SoundSource;
 /**
  * The sound list (sound-control-v1.md §6): Recent, Rules and All sounds tabs, search, filters, and per-sound volume,
  * mute and reset. Edits change a working copy and are audible at once through the live preview (§16), which writes
- * nothing. Done writes the copy to the settings draft. Opened from the QoL settings, the draft is saved by that screen's
- * Done; opened from vanilla's Music &amp; Sound options ({@code standalone}), this screen's Done saves and applies it
- * (Q-SC4). Cancel and Escape drop the copy and restore the previous audible state.
+ * nothing. Done writes the copy to the draft and saves and applies it, whether opened from vanilla's Music &amp; Sound
+ * options ({@code standalone}, Q-SC4) or from the auto-applying QoL settings workspace (settings-ux-v1.md §18).
+ * Cancel and Escape drop the copy and restore the previous audible state.
  */
 final class SoundControlScreen extends Screen implements DraftScreen {
     enum Tab {
@@ -385,12 +385,8 @@ final class SoundControlScreen extends Screen implements DraftScreen {
             return;
         }
         draft.setValue(SoundControlSettings.ID, SoundControlSettings.RULES, SoundRules.write(working));
-        if (!standalone) {
-            // The draft now holds these rules; the preview continues until the parent settings are confirmed or
-            // canceled.
-            minecraft.gui.setScreen(parent);
-            return;
-        }
+        // Done saves and applies directly, also when opened from the settings workspace, which no longer has a
+        // shared confirmation (settings-ux-v1.md §18): returning to it needs no second Done.
         SettingsDraft.CommitOutcome outcome = draft.commit();
         switch (outcome.kind()) {
             case NO_CHANGE, APPLIED -> {

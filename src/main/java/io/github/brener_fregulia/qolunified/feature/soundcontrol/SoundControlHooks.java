@@ -59,6 +59,8 @@ public final class SoundControlHooks {
     private static Map<String, SoundRule> previewTarget;
     /** The draft whose edits are previewed; the preview ends when no screen of this draft is shown. */
     private static SettingsDraft previewDraft;
+    /** The draft screen last seen by {@link #followDraftScreen}, so an unchanged screen is not re-examined. */
+    private static SettingsDraft followed;
 
     private SoundControlHooks() {
     }
@@ -210,13 +212,21 @@ public final class SoundControlHooks {
             return;
         }
         SettingsDraft shown = minecraft.gui.screen() instanceof DraftScreen screen ? screen.draft() : null;
-        if (shown == previewDraft) {
+        if (shown == previewDraft || shown == followed) {
             return;
         }
+        followed = shown;
         if (shown == null) {
             endPreview();
+            return;
+        }
+        Map<String, SoundRule> rules = SoundRules.read(
+                shown.choice(SoundControlSettings.ID).settings().get(SoundControlSettings.RULES));
+        if (rules.equals(committedRules)) {
+            // The auto-applying settings workspace holds only committed rules: nothing to preview.
+            endPreview();
         } else {
-            previewDraft(shown);
+            preview(shown, rules);
         }
     }
 

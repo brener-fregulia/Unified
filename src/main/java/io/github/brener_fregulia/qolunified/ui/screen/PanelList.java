@@ -41,6 +41,17 @@ final class PanelList extends ContainerObjectSelectionList<PanelList.Row> {
         setScrollAmount(0);
     }
 
+    /** Total height of the rows, so a short panel does not leave a large empty area. */
+    static int contentHeight(List<Row> rows) {
+        return rows.stream().mapToInt(r -> r.height).sum() + 8;
+    }
+
+    /** Rows start at the panel's left edge (with a small inset) instead of being centered. */
+    @Override
+    public int getRowLeft() {
+        return getX() + 6;
+    }
+
     /** Scrolls so {@code row} is visible (search results reveal their setting). */
     void reveal(Row row) {
         scrollToEntry(row);
@@ -53,7 +64,18 @@ final class PanelList extends ContainerObjectSelectionList<PanelList.Row> {
 
     @Override
     protected int scrollBarX() {
-        return getRowRight() + 4;
+        return getRight() - 6;
+    }
+
+    /** A subtle one-pixel separator between description, comparison, tools and settings. */
+    static Row divider() {
+        return new Row(7) {
+            @Override
+            public void extractContent(GuiGraphicsExtractor g, int mouseX, int mouseY, boolean hovered, float delta) {
+                int y = getContentY() + 3;
+                g.fill(getContentX(), y, getContentRight(), y + 1, 0x30FFFFFF);
+            }
+        };
     }
 
     // ---- Rows ----

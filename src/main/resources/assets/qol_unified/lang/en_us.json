@@ -215,5 +215,9 @@
   "qol_unified.settings.nav.collapsed": "collapsed, %s features",
   "qol_unified.settings.nav.selected": "selected",
   "qol_unified.keyboard_map.open_tool": "Open Keyboard Map",
-  "qol_unified.settings.comparison.in_world": "Example available while in a world."
+  "qol_unified.settings.comparison.in_world": "Example available while in a world.",
+  "qol_unified.settings.back": "Back",
+  "qol_unified.settings.retry_save": "Retry",
+  "qol_unified.settings.undo_change": "Undo change",
+  "qol_unified.message.save_failed_retry": "The change could not be saved and was not applied. Retry, or undo it."
 }

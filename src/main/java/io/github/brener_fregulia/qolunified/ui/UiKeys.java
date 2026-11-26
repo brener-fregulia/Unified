@@ -27,6 +27,10 @@ public final class UiKeys {
     public static final String NAV_EXPANDED = "qol_unified.settings.nav.expanded";
     public static final String NAV_COLLAPSED = "qol_unified.settings.nav.collapsed";
     public static final String NAV_SELECTED = "qol_unified.settings.nav.selected";
+    public static final String BACK = "qol_unified.settings.back";
+    public static final String RETRY_SAVE = "qol_unified.settings.retry_save";
+    public static final String UNDO_CHANGE = "qol_unified.settings.undo_change";
+    public static final String MESSAGE_SAVE_FAILED_RETRY = "qol_unified.message.save_failed_retry";
     public static final String RETRY_DISABLE = "qol_unified.settings.retry_disable";
     public static final String RESTART_REQUIRED_SUFFIX = "qol_unified.settings.restart_required_suffix";
     public static final String MAP_ENTRIES = "qol_unified.settings.map_entries";

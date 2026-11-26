@@ -9,7 +9,6 @@ import io.github.brener_fregulia.qolunified.ui.SettingsDraft;
 import io.github.brener_fregulia.qolunified.ui.UiKeys;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Consumer;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
@@ -25,7 +24,7 @@ final class FeaturePanel {
     }
 
     static List<PanelList.Row> rows(Font font, Screen parent, SettingsDraft draft, FeatureDescriptor descriptor,
-            int width, Consumer<Component> errorLine) {
+            int width, SettingRows.Host host) {
         String id = descriptor.id();
         boolean off = !draft.choice(id).enabled();
         var rows = new ArrayList<PanelList.Row>();
@@ -33,8 +32,12 @@ final class FeaturePanel {
         if (off && !descriptor.settings().isEmpty()) {
             rows.add(PanelList.text(font, Component.translatable(UiKeys.APPLIES_WHEN_ON), PanelList.WARNING, width));
         }
-        FeatureComparisons.find(id).ifPresent(c -> rows.add(PanelList.comparison(font, c, width)));
+        FeatureComparisons.find(id).ifPresent(c -> {
+            rows.add(PanelList.divider());
+            rows.add(PanelList.comparison(font, c, width));
+        });
         FeatureActions.find(id).ifPresent(action -> {
+            rows.add(PanelList.divider());
             Component label = Component.translatable(action.labelKey());
             boolean active = draft.core().lifecycle().state(id) == FeatureState.ACTIVE;
             Button button = Button.builder(label, b -> net.minecraft.client.Minecraft.getInstance()
@@ -46,12 +49,15 @@ final class FeaturePanel {
                 // Q-SU6: the tool works on the running feature; activation must be confirmed with Done first.
                 button.setTooltip(Tooltip.create(Component.translatable(UiKeys.ACTION_NEEDS_ACTIVE)));
             }
-            rows.add(new PanelList.SettingRow(font, Component.empty(), active ? null
-                    : Component.translatable(UiKeys.ACTION_NEEDS_ACTIVE), PanelList.WARNING, List.of(button),
-                    false, null, width));
+            rows.add(new PanelList.SettingRow(font, active ? Component.empty()
+                    : Component.translatable(UiKeys.ACTION_NEEDS_ACTIVE).withStyle(net.minecraft.ChatFormatting.GOLD),
+                    null, PanelList.WARNING, List.of(button), false, null, width));
         });
+        if (!descriptor.settings().isEmpty()) {
+            rows.add(PanelList.divider());
+        }
         for (SettingDescriptor setting : descriptor.settings()) {
-            rows.add(SettingRows.row(font, draft, descriptor, setting, off, width, errorLine));
+            rows.add(SettingRows.row(font, draft, descriptor, setting, off, width, host));
         }
         if (descriptor.settings().isEmpty() && FeatureActions.find(id).isEmpty()) {
             rows.add(PanelList.text(font, Component.translatable(UiKeys.NO_SETTINGS), PanelList.MUTED, width));
