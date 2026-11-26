@@ -1,4 +1,4 @@
-package io.github.brener_fregulia.unified.optimizations;
+package unified.optimizations;
 
 import java.nio.file.Path;
 

@@ -10,7 +10,7 @@
   },
   "environment": "client",
   "entrypoints": {
-    "client": ["io.github.brener_fregulia.unified.optimizations.UnifiedOptimizationsClient"]
+    "client": ["unified.optimizations.UnifiedOptimizationsClient"]
   },
   "depends": {
     "fabricloader": ">=${loader_version}",

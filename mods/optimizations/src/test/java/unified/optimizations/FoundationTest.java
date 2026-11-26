@@ -1,4 +1,4 @@
-package io.github.brener_fregulia.unified.optimizations;
+package unified.optimizations;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
