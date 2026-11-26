@@ -54,7 +54,8 @@ final class SettingRows {
         AbstractWidget control = switch (setting) {
             case SettingDescriptor.BooleanSetting ignored -> CycleButton.onOffBuilder((Boolean) value)
                     .displayOnlyValue()
-                    .create(0, 0, 90, 20, label, (b, v) -> {
+                    .create(0, 0, fit(font, List.of(I18n.get("options.on"), I18n.get("options.off")), 44, width),
+                            20, label, (b, v) -> {
                         draft.setValue(id, key, v);
                         host.changed();
                     });
@@ -62,7 +63,9 @@ final class SettingRows {
                             v -> Component.translatable(UiKeys.enumValue(id, key, v)), (String) value)
                     .withValues(e.values())
                     .displayOnlyValue()
-                    .create(0, 0, 120, 20, label, (b, v) -> {
+                    .create(0, 0, fit(font, e.values().stream()
+                            .map(v -> I18n.get(UiKeys.enumValue(id, key, v))).toList(), 60, width / 2), 20, label,
+                            (b, v) -> {
                         draft.setValue(id, key, v);
                         host.changed();
                     });
@@ -77,7 +80,10 @@ final class SettingRows {
 
     private static EditBox integerField(Font font, SettingsDraft draft, String id, String key,
             SettingDescriptor.IntegerSetting setting, Object value, Component label, Host host) {
-        EditBox box = new EditBox(font, 0, 0, 90, 20, label) {
+        // Wide enough for the longest number in range, plus the box's own padding.
+        int digits = Math.max(String.valueOf(setting.min()).length(), String.valueOf(setting.max()).length());
+        int boxWidth = Math.max(44, font.width("0".repeat(digits)) + 14);
+        EditBox box = new EditBox(font, 0, 0, boxWidth, 20, label) {
             @Override
             public boolean keyPressed(KeyEvent event) {
                 if (event.key() == InputConstants.KEY_RETURN || event.key() == InputConstants.KEY_NUMPADENTER) {
@@ -108,6 +114,15 @@ final class SettingRows {
         box.setEditable(draft.editable());
         show.run();
         return box;
+    }
+
+    /**
+     * Control width from the real font metrics: the widest value plus vanilla button padding, at least {@code min}, at
+     * most {@code max} (a longer value scrolls inside the button, as vanilla does).
+     */
+    static int fit(Font font, List<String> values, int min, int max) {
+        int widest = values.stream().mapToInt(font::width).max().orElse(0);
+        return Math.max(min, Math.min(max, widest + 20));
     }
 
     /** Enter or focus loss: a valid, changed number goes to the draft and is committed; invalid text stays local. */

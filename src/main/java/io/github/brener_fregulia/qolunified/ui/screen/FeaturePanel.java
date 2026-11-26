@@ -42,7 +42,7 @@ final class FeaturePanel {
             boolean active = draft.core().lifecycle().state(id) == FeatureState.ACTIVE;
             Button button = Button.builder(label, b -> net.minecraft.client.Minecraft.getInstance()
                             .gui.setScreen(action.open().apply(parent, draft)))
-                    .size(Math.min(200, width), 20)
+                    .size(SettingRows.fit(font, List.of(label.getString()), 100, Math.min(200, width)), 20)
                     .build();
             button.active = active;
             if (!active) {

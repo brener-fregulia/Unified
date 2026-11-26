@@ -26,6 +26,7 @@ final class PanelList extends ContainerObjectSelectionList<PanelList.Row> {
     static final int ERROR = 0xFFFF7070;
     private static final int HIGHLIGHT = 0x40FFD866;
     private static final int GAP = 6;
+    private static final int SAMPLE_MIN = 24;
     private int rowWidth;
 
     PanelList(Minecraft minecraft, int width, int height, int y, int rowWidth) {
@@ -150,7 +151,7 @@ final class PanelList extends ContainerObjectSelectionList<PanelList.Row> {
                 int width) {
             int lines = font.split(label, labelWidth(widgets, width)).size()
                     + (detail == null ? 0 : font.split(detail, labelWidth(widgets, width)).size());
-            return Math.max(24, lines * (font.lineHeight + 1) + 6);
+            return Math.max(22, lines * (font.lineHeight + 1) + 6);
         }
 
         void highlight() {
@@ -197,17 +198,21 @@ final class PanelList extends ContainerObjectSelectionList<PanelList.Row> {
 
     /** "Vanilla" and "QoL ON" boxes side by side, or stacked when the panel is narrow (settings-ux-v1.md §8). */
     static Row comparison(Font font, FeatureComparisons.Comparison comparison, int width) {
-        int box = comparison.width();
-        boolean sideBySide = 2 * box + 3 * GAP <= width;
+        int box = comparison.width() + 8;
+        boolean sideBySide = 2 * box + GAP <= width;
         int labelHeight = font.lineHeight + 3;
-        int one = labelHeight + comparison.height() + 2 * 4;
+        // Samples get the same minimum stage, so short (Food HUD) and tall (Target Info) examples look alike.
+        int stage = Math.max(SAMPLE_MIN, comparison.height());
+        int one = labelHeight + stage + 2 * 4;
         int height = comparison.available() ? (sideBySide ? one : 2 * one + GAP) + 4 : font.lineHeight + 8;
         return new Row(height) {
             @Override
             public void extractContent(GuiGraphicsExtractor g, int mouseX, int mouseY, boolean hovered, float delta) {
                 int x = getContentX();
                 int y = getContentY();
-                int boxWidth = sideBySide ? (getContentWidth() - GAP) / 2 : getContentWidth();
+                // Both boxes share one width, capped so they do not stretch across a wide panel.
+                int boxWidth = sideBySide ? Math.min((getContentWidth() - GAP) / 2, box + 40)
+                        : Math.min(getContentWidth(), box + 40);
                 side(g, x, y, boxWidth, false);
                 if (sideBySide) {
                     side(g, x + boxWidth + GAP, y, boxWidth, true);
@@ -229,7 +234,7 @@ final class PanelList extends ContainerObjectSelectionList<PanelList.Row> {
                 Component title = Component.translatable(qol ? UiKeys.COMPARISON_QOL : UiKeys.COMPARISON_VANILLA);
                 g.text(font, title, x + 4, y + 3, qol ? 0xFF8FE08F : MUTED, true);
                 int cx = x + (w - comparison.width()) / 2;
-                comparison.draw(g, font, cx, y + labelHeight + 4, qol);
+                comparison.draw(g, font, cx, y + labelHeight + 4 + (stage - comparison.height()) / 2, qol);
             }
         };
     }
