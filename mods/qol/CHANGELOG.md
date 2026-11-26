@@ -11,6 +11,8 @@ released yet.
 
 ### Changed
 
+- Requires Fabric Language Kotlin (`>=1.14.2+kotlin.2.4.21`) in addition to
+  Fabric API: new code is written in Kotlin. Install it next to the mod.
 - Project Unified: the mod is now published as "Unified: QoL" from the
   `Unified` monorepo (module `mods/qol`), and its JAR is
   `unified-qol-<version>.jar`. The mod id `qol_unified`, configuration file,

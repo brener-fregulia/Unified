@@ -18,8 +18,12 @@ Nothing has been released yet.
 - The Gradle Wrapper (`gradlew`) downloads the right Gradle; no separate
   install.
 - Minecraft 26.3, Fabric Loader and versions are pinned in
-  [`gradle.properties`](gradle.properties). Unified: QoL also needs Fabric
-  API at runtime.
+  [`gradle.properties`](gradle.properties).
+- Players need **Fabric Language Kotlin** for every Unified mod, and Fabric
+  API for Unified: QoL. Both are separate mods, installed next to the
+  Unified JARs.
+- New code is written in Kotlin where it fits; Mixins stay in Java
+  ([language policy](docs/architecture/monorepo.md#rules-approved-2026-11-26)).
 
 ## Building and testing
 

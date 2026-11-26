@@ -7,6 +7,11 @@ project's [versioning policy](../../docs/development/versioning.md). Tags use
 
 ## [Unreleased]
 
+### Changed
+
+- Requires Fabric Language Kotlin (`>=1.14.2+kotlin.2.4.21`); the startup
+  report is written in Kotlin. Install it next to the mod.
+
 ### Added
 
 - Independent client-only Fabric mod `unified_optimizations` ("Unified:

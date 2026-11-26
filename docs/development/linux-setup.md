@@ -87,7 +87,9 @@ The task list and optional comparison runs are described in the
 2. **Edit instance → Settings → Java:** pick a Java 25 installation
    (Prism lists detected ones; **Auto-detect** or **Browse** if needed).
 3. **Edit instance → Mods → Download mods:** add Fabric API, matching
-   `fabric_api_version` or newer for the same Minecraft version.
+   `fabric_api_version` or newer for the same Minecraft version, and
+   **Fabric Language Kotlin**, matching `fabric_kotlin_version` or newer
+   (every Unified mod requires it).
 4. **Mods → Add file:** choose `mods/qol/build/libs/unified-qol-<version>.jar`
    (and, if wanted, `mods/optimizations/build/libs/unified-optimizations-<version>.jar`).
    Alternatively use **Folder** on the instance to open its `mods`

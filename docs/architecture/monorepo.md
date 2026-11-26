@@ -55,6 +55,21 @@ Unified/
   entrypoints and Mixin packages. A package is internal to its mod; mod ids,
   configuration keys and translation keys never derive from it, so packages
   can change without a configuration migration.
+- **Languages [Approved 2026-11-26, M2.0.2].** Kotlin is preferred for new
+  feature logic, configuration models and UI code. Java stays for Mixins
+  (Mixin classes must be Java) and for low-level integrations where it is
+  simpler. Existing Java code is not converted automatically. Both languages
+  share one Java 25 toolchain and call each other freely. Sources:
+  `src/<set>/java/` and `src/<set>/kotlin/` in the same packages.
+- **Kotlin runtime.** Kotlin `2.4.21` compiles both modules. Its standard
+  library at runtime comes from **Fabric Language Kotlin**
+  (`fabric-language-kotlin`, `1.14.2+kotlin.2.4.21`, which bundles exactly
+  Kotlin 2.4.21). It is a separate mod: every Unified mod declares
+  `"fabric-language-kotlin": ">=1.14.2+kotlin.2.4.21"` in `depends`, and
+  players install it next to the Unified mods (Prism Launcher: **Mods →
+  Download mods → Fabric Language Kotlin**). It is never bundled into a
+  Unified JAR. Versions are pinned in the root `gradle.properties`
+  (`kotlin_version`, `fabric_kotlin_version`) and move together.
 - **Configuration directories.** `config/qol_unified/` and
   `config/unified_optimizations/`. A mod never reads another mod's files.
 
