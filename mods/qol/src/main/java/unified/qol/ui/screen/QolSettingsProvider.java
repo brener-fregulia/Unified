@@ -12,11 +12,13 @@ import unified.qol.core.FeatureCategory;
 import unified.qol.ui.UiKeys;
 import unified.settings.api.ModuleOrder;
 import unified.settings.api.SettingsCategory;
+import unified.settings.api.SettingsWorkspace;
 import unified.settings.api.UnifiedSettingsProvider;
 
 /**
- * Unified: QoL's entry in Unified Settings (contract 1.0, docs/architecture/unified-settings-integration.md §19).
- * Opens the existing settings workspace unchanged; QoL keeps its own configuration and auto-apply.
+ * Unified: QoL's entry in Unified Settings (contract 1.1, docs/architecture/unified-settings-integration.md §20).
+ * Contributes its features and panels to the shared workspace through {@link QolWorkspace}; QoL keeps its own
+ * configuration, validation, persistence and auto-apply.
  */
 public final class QolSettingsProvider implements UnifiedSettingsProvider {
     @Override
@@ -49,6 +51,11 @@ public final class QolSettingsProvider implements UnifiedSettingsProvider {
 
     @Override
     public Screen openSettings(Screen parent) {
-        return new SettingsScreen(parent, QolUnifiedClient.core());
+        return QolWorkspace.open(parent, null);
+    }
+
+    @Override
+    public SettingsWorkspace workspace() {
+        return new QolWorkspace(QolUnifiedClient.core());
     }
 }

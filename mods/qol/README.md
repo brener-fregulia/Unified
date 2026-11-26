@@ -74,10 +74,13 @@ Neither affects the distributable JAR.
 
 ## Settings
 
-Open **Options → Controls → Key Binds**, find **Unified: QoL → Open Unified:
-QoL Settings**, and assign a key; there is no default. Press it in game
-or on the title screen to open the settings. Every valid change is saved and
-applied at once; Back or Escape closes the settings. Settings are stored in
+Press **`U`** (**Open Unified Settings**, category "Unified" in Key Binds) in
+game or on the title screen, or use **Options → Unified Settings…**, to open
+the shared Unified Settings workspace. With other Unified mods installed,
+QoL's categories appear under a **Unified: QoL** group; alone, they are shown
+directly. A custom binding of the former "Open Unified: QoL Settings" key is
+moved to the shared key once. Every valid change is saved and applied at
+once; Back or Escape closes the settings. Settings are stored in
 `config/qol_unified/config.json` (unchanged by the monorepo migration).
 
 The first feature is **Food HUD** (HUD & Information). It shows your

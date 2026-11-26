@@ -11,6 +11,13 @@ released yet.
 
 ### Changed
 
+- Settings open in the shared **Unified Settings** workspace (key `U` or
+  Options → Unified Settings…) with the same layout, controls and auto-apply;
+  no intermediate module screen. Configuration file and schema are unchanged.
+- The "Open Unified: QoL Settings" key binding is removed. A custom binding of
+  it is moved once to **Open Unified Settings** unless that key was already
+  customized.
+
 - Requires Fabric Language Kotlin (`>=1.14.2+kotlin.2.4.21`) in addition to
   Fabric API: new code is written in Kotlin. Install it next to the mod.
 - Project Unified: the mod is now published as "Unified: QoL" from the

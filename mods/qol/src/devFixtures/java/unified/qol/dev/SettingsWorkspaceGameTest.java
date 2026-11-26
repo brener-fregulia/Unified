@@ -8,7 +8,9 @@ import unified.qol.feature.keyboardmap.KeyboardMapTexts;
 import unified.qol.ui.FeatureComparisons;
 import unified.qol.ui.UiKeys;
 import unified.qol.ui.screen.FeatureSwitch;
-import unified.qol.ui.screen.SettingsScreen;
+import unified.qol.ui.screen.QolWorkspace;
+import unified.settings.ui.UnifiedSettingsScreen;
+import unified.settings.ui.WorkspaceKeys;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -119,24 +121,24 @@ final class SettingsWorkspaceGameTest {
         byte[] before = configBytes();
         click(UiKeys.SWITCH_ON);
         ctx.waitTicks(2);
-        check(ctx.computeOnClient(mc -> ((SettingsScreen) mc.gui.screen()).saveFailed()), "failure reported");
+        check(ctx.computeOnClient(mc -> QolWorkspace.of(mc.gui.screen()).orElseThrow().saveFailedNow()), "failure reported");
         check(QolUnifiedClient.core().lifecycle().state("chat_heads").name().equals("ACTIVE"),
                 "nothing applied after a failed save");
         check(java.util.Arrays.equals(before, configBytes()), "file untouched");
         shot("09-save-failed");
-        click(UiKeys.RETRY_SAVE);
-        check(ctx.computeOnClient(mc -> ((SettingsScreen) mc.gui.screen()).saveFailed()), "retry fails while blocked");
+        click(WorkspaceKeys.RETRY_SAVE);
+        check(ctx.computeOnClient(mc -> QolWorkspace.of(mc.gui.screen()).orElseThrow().saveFailedNow()), "retry fails while blocked");
         block(blocker, false);
-        click(UiKeys.RETRY_SAVE);
-        check(!ctx.computeOnClient(mc -> ((SettingsScreen) mc.gui.screen()).saveFailed())
+        click(WorkspaceKeys.RETRY_SAVE);
+        check(!ctx.computeOnClient(mc -> QolWorkspace.of(mc.gui.screen()).orElseThrow().saveFailedNow())
                 && QolUnifiedClient.core().lifecycle().state("chat_heads").name().equals("INACTIVE"),
                 "retry saves, then applies");
         // Undo: a failed change is dropped and the controls show what is stored.
         block(blocker, true);
         click(UiKeys.SWITCH_OFF);
         ctx.waitTicks(2);
-        check(ctx.computeOnClient(mc -> ((SettingsScreen) mc.gui.screen()).saveFailed()), "second failure");
-        click(UiKeys.UNDO_CHANGE);
+        check(ctx.computeOnClient(mc -> QolWorkspace.of(mc.gui.screen()).orElseThrow().saveFailedNow()), "second failure");
+        click(WorkspaceKeys.UNDO_CHANGE);
         check(locate(UiKeys.SWITCH_OFF).isPresent() && !QolUnifiedClient.core().choices().get("chat_heads").enabled(),
                 "undo shows the stored OFF");
         block(blocker, false);
@@ -170,7 +172,7 @@ final class SettingsWorkspaceGameTest {
         for (String id : FEATURES) {
             selectFeature(id);
             check(selected().equals(id), "selected " + id);
-            check(ctx.computeOnClient(mc -> mc.gui.screen() instanceof SettingsScreen), "still one screen: " + id);
+            check(ctx.computeOnClient(mc -> mc.gui.screen() instanceof UnifiedSettingsScreen), "still one screen: " + id);
             shot("02-" + id);
         }
         // Descriptor types on real features: booleans and an enum (Food HUD), a map summary (Sound Control).
@@ -183,8 +185,8 @@ final class SettingsWorkspaceGameTest {
         click(UiKeys.category(FeatureCategory.AUDIO));
         check(selected().equals("sound_control") && !expanded(FeatureCategory.AUDIO), "collapse keeps selection");
         back();
-        ctx.setScreen(() -> new SettingsScreen(new TitleScreen(), QolUnifiedClient.core(), "shulker_preview"));
-        ctx.waitForScreen(SettingsScreen.class);
+        ctx.setScreen(() -> QolWorkspace.open(new TitleScreen(), "shulker_preview"));
+        ctx.waitForScreen(UnifiedSettingsScreen.class);
         check(selected().equals("shulker_preview"), "contextual entry point preselects (Q-SU8)");
         back();
     }
@@ -267,7 +269,7 @@ final class SettingsWorkspaceGameTest {
         type("predominant");
         check(selected().equals("shulker_preview"), "enum option search");
         type("zzzz");
-        check(ctx.computeOnClient(mc -> textOnScreen(mc, UiKeys.NO_MATCHES)), "empty results message");
+        check(ctx.computeOnClient(mc -> textOnScreen(mc, WorkspaceKeys.NO_MATCHES)), "empty results message");
         shot("07-search-empty");
         type("");
         check(expanded(FeatureCategory.INVENTORY), "clearing keeps the chosen feature's category open");
@@ -282,7 +284,7 @@ final class SettingsWorkspaceGameTest {
         click(KeyboardMapTexts.OPEN_TOOL);
         ctx.waitForScreen(KeyboardMapScreen.class);
         ctx.runOnClient(mc -> mc.gui.screen().onClose());
-        ctx.waitForScreen(SettingsScreen.class);
+        ctx.waitForScreen(UnifiedSettingsScreen.class);
         check(selected().equals("keyboard_map") && expanded(FeatureCategory.CONTROLS),
                 "Keyboard Map returns to the same feature");
         shot("08-back-from-keyboard-map");
@@ -330,7 +332,7 @@ final class SettingsWorkspaceGameTest {
                 open();
                 selectFeatureSafely("food_hud");
                 int width = ctx.computeOnClient(mc -> mc.gui.screen().width);
-                boolean compact = ctx.computeOnClient(mc -> ((SettingsScreen) mc.gui.screen()).compact());
+                boolean compact = ctx.computeOnClient(mc -> ((UnifiedSettingsScreen) mc.gui.screen()).compact());
                 check(compact == (width < 400), "tier at " + width);
                 shot("10-" + window[0] + "x" + window[1] + "-gui" + s);
                 if (compact) {
@@ -383,26 +385,26 @@ final class SettingsWorkspaceGameTest {
     // ---- Helpers ----
 
     private void open() {
-        ctx.setScreen(() -> new SettingsScreen(Minecraft.getInstance().gui.screen(), QolUnifiedClient.core()));
-        ctx.waitForScreen(SettingsScreen.class);
+        ctx.setScreen(() -> QolWorkspace.open(Minecraft.getInstance().gui.screen(), null));
+        ctx.waitForScreen(UnifiedSettingsScreen.class);
         ctx.waitTicks(2);
     }
 
     private void back() {
-        click(UiKeys.BACK);
+        click(WorkspaceKeys.BACK);
         ctx.waitTicks(2);
     }
 
     private String selected() {
-        return ctx.computeOnClient(mc -> ((SettingsScreen) mc.gui.screen()).navigation().selected());
+        return ctx.computeOnClient(mc -> ((UnifiedSettingsScreen) mc.gui.screen()).navigation().selected());
     }
 
     private boolean expanded(FeatureCategory category) {
-        return ctx.computeOnClient(mc -> ((SettingsScreen) mc.gui.screen()).navigation().isExpanded(category));
+        return ctx.computeOnClient(mc -> ((UnifiedSettingsScreen) mc.gui.screen()).navigation().isExpanded(category.name().toLowerCase(java.util.Locale.ROOT)));
     }
 
     private static unified.qol.ui.SettingsDraft draft(Minecraft mc) {
-        return ((SettingsScreen) mc.gui.screen()).draft();
+        return QolWorkspace.of(mc.gui.screen()).orElseThrow().draft();
     }
 
     /** Clicks the feature's row, expanding its category first when needed. */
@@ -431,7 +433,7 @@ final class SettingsWorkspaceGameTest {
     }
 
     private void selectFeatureSafely(String id) {
-        if (!ctx.computeOnClient(mc -> ((SettingsScreen) mc.gui.screen()).compact())) {
+        if (!ctx.computeOnClient(mc -> ((UnifiedSettingsScreen) mc.gui.screen()).compact())) {
             selectFeature(id);
         }
     }
@@ -465,7 +467,7 @@ final class SettingsWorkspaceGameTest {
                 found[0] = true;
             }
         });
-        return found[0] || mc.gui.screen() instanceof SettingsScreen s && s.panelShows(key);
+        return found[0] || QolWorkspace.of(mc.gui.screen()).map(w -> w.panelShows(key)).orElse(false);
     }
 
     private Optional<double[]> locate(String key) {

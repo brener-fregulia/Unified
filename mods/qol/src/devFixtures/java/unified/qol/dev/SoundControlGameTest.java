@@ -13,6 +13,7 @@ import unified.qol.feature.soundcontrol.SoundRules;
 import unified.qol.mixin.SoundManagerAccessor;
 import unified.qol.ui.SettingsDraft;
 import unified.qol.ui.UiKeys;
+import unified.settings.ui.WorkspaceKeys;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
@@ -354,13 +355,12 @@ final class SoundControlGameTest {
         check(!previewing() && committed(PORTAL) == 0.7f && effective(PORTAL) == 0.7f, "nested Done saves and applies");
         expectGain.accept(0.7);
         check(read(config).contains("\"volume\": 70"), "nested Done wrote the rule");
-        check(ctx.computeOnClient(mc -> mc.gui.screen() instanceof unified.qol.ui.screen
-                .SettingsScreen s && "sound_control".equals(s.navigation().selected())),
+        check(ctx.computeOnClient(mc -> mc.gui.screen() instanceof unified.settings.ui.UnifiedSettingsScreen s && "sound_control".equals(s.navigation().selected())),
                 "back on the workspace with Sound Control still selected");
         click(UiKeys.category(unified.qol.core.FeatureCategory.HUD_INFORMATION));
         ctx.waitTicks(2);
         check(effective(PORTAL) == 0.7f, "switching features changes nothing audible");
-        click(UiKeys.BACK);
+        click(WorkspaceKeys.BACK);
         ctx.waitTicks(2);
         check(effective(PORTAL) == 0.7f && read(config).contains("\"volume\": 70"), "Back keeps the saved rule");
         expectGain.accept(0.7);
@@ -392,7 +392,7 @@ final class SoundControlGameTest {
         ctx.waitTicks(2);
         check(effective(PORTAL) == 0.6f, "switch ON restores the rules immediately");
         expectGain.accept(0.6);
-        click(UiKeys.BACK);
+        click(WorkspaceKeys.BACK);
         pass("nested: Cancel restores; Done persists; the workspace switch applies at once");
 
         // No stale preview: replacing the screen, or disabling the feature, ends it.
@@ -451,8 +451,7 @@ final class SoundControlGameTest {
 
     /** QoL settings -> Audio -> Sound Control settings -> "Open sound list". */
     private void openNested() {
-        ctx.setScreen(() -> new unified.qol.ui.screen.SettingsScreen(new TitleScreen(),
-                QolUnifiedClient.core()));
+        ctx.setScreen(() -> unified.qol.ui.screen.QolWorkspace.open(new TitleScreen(), null));
         ctx.waitTicks(3);
         click(UiKeys.category(unified.qol.core.FeatureCategory.AUDIO));
         click(SoundControlTexts.OPEN);

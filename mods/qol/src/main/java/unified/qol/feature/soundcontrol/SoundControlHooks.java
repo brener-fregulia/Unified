@@ -3,7 +3,6 @@ package unified.qol.feature.soundcontrol;
 import unified.qol.QolUnifiedClient;
 import unified.qol.mixin.SoundEngineAccessor;
 import unified.qol.mixin.SoundManagerAccessor;
-import unified.qol.ui.DraftScreen;
 import unified.qol.ui.FeatureActions;
 import unified.qol.ui.SettingsDraft;
 import java.util.Collections;
@@ -211,7 +210,8 @@ public final class SoundControlHooks {
         if (!started) {
             return;
         }
-        SettingsDraft shown = minecraft.gui.screen() instanceof DraftScreen screen ? screen.draft() : null;
+        SettingsDraft shown = minecraft.gui.screen() == null ? null
+                : unified.qol.ui.screen.QolWorkspace.draftShown(minecraft.gui.screen());
         if (shown == previewDraft || shown == followed) {
             return;
         }

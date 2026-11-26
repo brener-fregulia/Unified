@@ -1,21 +1,13 @@
 package unified.qol.ui.screen;
 
-import com.mojang.blaze3d.platform.InputConstants;
-import unified.qol.QolUnifiedClient;
-import unified.qol.ui.UiKeys;
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
-import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
-import net.fabricmc.fabric.api.client.screen.v1.ScreenKeyboardEvents;
 import net.minecraft.client.KeyMapping;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.resources.Identifier;
+import unified.qol.QolUnifiedClient;
 
 /**
- * Registers the unbound "Open Unified: QoL settings" key binding. It works in game when no screen is
- * open, and on the title screen. Other screens (including chat) are left alone.
+ * The "Unified: QoL" key-mapping category of the feature keys (Zoom, Keyboard Map). The settings workspace opens with
+ * the shared "Open Unified Settings" key of Unified Settings; QoL's former settings key is migrated by
+ * {@link LegacyKeyMigration}.
  */
 public final class SettingsKeyBinding {
     private SettingsKeyBinding() {
@@ -29,32 +21,5 @@ public final class SettingsKeyBinding {
             category = KeyMapping.Category.register(Identifier.fromNamespaceAndPath(QolUnifiedClient.MOD_ID, "main"));
         }
         return category;
-    }
-
-    public static void register() {
-        KeyMapping.Category category = category();
-        KeyMapping key = KeyMappingHelper.registerKeyMapping(new KeyMapping(UiKeys.KEY_OPEN_SETTINGS,
-                InputConstants.Type.KEYBOARD, InputConstants.UNKNOWN.getValue(), category));
-
-        ClientTickEvents.END_CLIENT_TICK.register(minecraft -> {
-            while (key.consumeClick()) {
-                if (minecraft.gui.screen() == null) {
-                    open(minecraft, null);
-                }
-            }
-        });
-        ScreenEvents.AFTER_INIT.register((minecraft, screen, width, height) -> {
-            if (screen instanceof TitleScreen) {
-                ScreenKeyboardEvents.afterKeyPress(screen).register((s, event) -> {
-                    if (!key.isUnbound() && key.matches(event)) {
-                        open(minecraft, s);
-                    }
-                });
-            }
-        });
-    }
-
-    private static void open(Minecraft minecraft, Screen parent) {
-        minecraft.gui.setScreen(new SettingsScreen(parent, QolUnifiedClient.core()));
     }
 }

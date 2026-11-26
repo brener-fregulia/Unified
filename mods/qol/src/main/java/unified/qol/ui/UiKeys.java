@@ -5,13 +5,8 @@ import java.util.Locale;
 
 /** Translation keys used by the settings UI. Every constant must exist in en_us and pt_br. */
 public final class UiKeys {
-    public static final String KEY_OPEN_SETTINGS = "key.qol_unified.open_settings";
     public static final String KEY_CATEGORY = "key.category.qol_unified.main";
 
-    public static final String TITLE = "qol_unified.settings.title";
-    public static final String SEARCH_HINT = "qol_unified.settings.search";
-    public static final String EMPTY_REGISTRY = "qol_unified.settings.empty";
-    public static final String NO_MATCHES = "qol_unified.settings.no_matches";
     public static final String DONE = "qol_unified.settings.done";
     public static final String CANCEL = "qol_unified.settings.cancel";
     public static final String NO_SETTINGS = "qol_unified.settings.no_settings";
@@ -23,13 +18,6 @@ public final class UiKeys {
     public static final String COMPARISON_VANILLA = "qol_unified.settings.comparison.vanilla";
     public static final String COMPARISON_QOL = "qol_unified.settings.comparison.qol";
     public static final String COMPARISON_IN_WORLD = "qol_unified.settings.comparison.in_world";
-    public static final String NAV_DRAWER = "qol_unified.settings.nav.drawer";
-    public static final String NAV_EXPANDED = "qol_unified.settings.nav.expanded";
-    public static final String NAV_COLLAPSED = "qol_unified.settings.nav.collapsed";
-    public static final String NAV_SELECTED = "qol_unified.settings.nav.selected";
-    public static final String BACK = "qol_unified.settings.back";
-    public static final String RETRY_SAVE = "qol_unified.settings.retry_save";
-    public static final String UNDO_CHANGE = "qol_unified.settings.undo_change";
     public static final String MESSAGE_SAVE_FAILED_RETRY = "qol_unified.message.save_failed_retry";
     public static final String RETRY_DISABLE = "qol_unified.settings.retry_disable";
     public static final String RESTART_REQUIRED_SUFFIX = "qol_unified.settings.restart_required_suffix";

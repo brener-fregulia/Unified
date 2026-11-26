@@ -8,7 +8,9 @@ import unified.qol.core.FeatureState;
 import unified.qol.core.config.ConfigurationService;
 import unified.qol.core.config.LoadStatus;
 import unified.qol.ui.UiKeys;
-import unified.qol.ui.screen.SettingsScreen;
+import unified.qol.ui.screen.QolWorkspace;
+import unified.settings.ui.UnifiedSettingsScreen;
+import unified.settings.ui.WorkspaceKeys;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -74,7 +76,7 @@ public final class CoreGameTest implements FabricClientGameTest {
         open();
         // Leaving a world leaves the cursor grabbed for a moment; let it settle before clicking.
         ctx.waitTicks(10);
-        check(ctx.computeOnClient(mc -> ((SettingsScreen) mc.gui.screen()).navigation().selected())
+        check(ctx.computeOnClient(mc -> ((UnifiedSettingsScreen) mc.gui.screen()).navigation().selected())
                 .equals("food_hud"), "Food HUD selected first");
         shot("food-hud-settings");
         closeIfOpen();
@@ -119,7 +121,7 @@ public final class CoreGameTest implements FabricClientGameTest {
         on(core -> check(core.lifecycle().state("dev_live_toggle") == FeatureState.INACTIVE, "live toggle applied"));
         check(config().contains("\"enabled\": false"), "live toggle saved");
         byte[] afterToggle = configBytes();
-        click(UiKeys.BACK);
+        click(WorkspaceKeys.BACK);
         ctx.waitForScreen(TitleScreen.class);
         check(java.util.Arrays.equals(afterToggle, configBytes()), "Back writes nothing more");
         on(core -> check(core.lifecycle().state("dev_live_toggle") == FeatureState.INACTIVE, "Back keeps it"));
@@ -157,7 +159,7 @@ public final class CoreGameTest implements FabricClientGameTest {
         shot("08-disable-failed-result");
         on(core -> check(core.lifecycle().state("dev_disable_fails") == FeatureState.UNKNOWN, "UNKNOWN after failure"));
         int calls = DevFixtures.feature("dev_disable_fails").calls().size();
-        click(UiKeys.BACK);
+        click(WorkspaceKeys.BACK);
         ctx.waitForScreen(TitleScreen.class);
         check(DevFixtures.feature("dev_disable_fails").calls().size() == calls, "no automatic retry");
         open();
@@ -183,16 +185,16 @@ public final class CoreGameTest implements FabricClientGameTest {
                 "saved value intact"));
         // The error stays findable after navigating away: the feature is flagged in the sidebar.
         search("");
-        check(ctx.computeOnClient(mc -> ((SettingsScreen) mc.gui.screen()).navigation()
-                .rows(id -> id.equals("dev_all_settings")).stream().anyMatch(
-                        unified.qol.ui.SettingsNavigation.Row::flagged)), "flag model");
+        check(ctx.computeOnClient(mc -> ((UnifiedSettingsScreen) mc.gui.screen()).navigation()
+                .rows((module, id) -> id.equals("dev_all_settings")).stream().anyMatch(
+                        unified.settings.ui.WorkspaceNavigation.Row::isFlagged)), "flag model");
         search("dev_all_settings");
         setIntegerField("48");
         click(UiKeys.enumValue("dev_all_settings", "layout", "compact"));
         click("options.off");
         shot("15-feature-settings-edited");
         shot("16-settings-saved-restart");
-        click(UiKeys.BACK);
+        click(WorkspaceKeys.BACK);
         ctx.waitForScreen(TitleScreen.class);
         on(core -> {
             var effective = core.lifecycle().effectiveSettings("dev_all_settings");
@@ -232,7 +234,7 @@ public final class CoreGameTest implements FabricClientGameTest {
         check(text.contains("futureField") && text.contains("removed_feature"), "unknown data still preserved");
         open();
         shot("01-after-restart");
-        click(UiKeys.BACK);
+        click(WorkspaceKeys.BACK);
     }
 
     private void newer() {
@@ -246,7 +248,7 @@ public final class CoreGameTest implements FabricClientGameTest {
         shot("01-read-only");
         check(locate(UiKeys.SWITCH_ON).isEmpty() && locate(UiKeys.SWITCH_OFF).isEmpty(),
                 "switches locked while read-only");
-        click(UiKeys.BACK);
+        click(WorkspaceKeys.BACK);
         check(java.util.Arrays.equals(before, configBytes()), "newer file never modified");
     }
 
@@ -315,13 +317,13 @@ public final class CoreGameTest implements FabricClientGameTest {
     }
 
     private void open() {
-        ctx.setScreen(() -> new SettingsScreen(Minecraft.getInstance().gui.screen(), QolUnifiedClient.core()));
-        ctx.waitForScreen(SettingsScreen.class);
+        ctx.setScreen(() -> QolWorkspace.open(Minecraft.getInstance().gui.screen(), null));
+        ctx.waitForScreen(UnifiedSettingsScreen.class);
     }
 
     private void closeIfOpen() {
-        if (currentScreen() instanceof SettingsScreen) {
-            click(UiKeys.BACK);
+        if (currentScreen() instanceof UnifiedSettingsScreen) {
+            click(WorkspaceKeys.BACK);
         }
         ctx.waitForScreen(TitleScreen.class);
     }

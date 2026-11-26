@@ -4,7 +4,6 @@ import unified.qol.core.CoreRuntime;
 import unified.qol.feature.keyboardmap.KeyboardMapHooks;
 import unified.qol.core.FeatureRegistry;
 import unified.qol.core.config.ConfigurationService;
-import unified.qol.ui.screen.SettingsKeyBinding;
 import unified.qol.core.Feature;
 import java.nio.file.Path;
 import java.util.List;
@@ -45,7 +44,8 @@ public final class QolUnifiedClient implements ClientModInitializer {
         // Fabric calls client initializers on the client (render) thread; it becomes the Core's owner thread.
         core = CoreRuntime.start(registry, new ConfigurationService(configFile, registry), loader::isModLoaded,
                 Thread.currentThread());
-        SettingsKeyBinding.register();
+        // The shared Unified Settings key opens the workspace; a custom binding of the former QoL key moves to it.
+        unified.qol.ui.screen.LegacyKeyMigration.register();
         // Fabric only accepts key mappings during client start, so this one exists even while the feature is off;
         // it opens nothing then.
         KeyboardMapHooks.registerKeyMapping();
