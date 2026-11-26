@@ -38,6 +38,7 @@ assets may be copied.
 | Item transfer | Inventory | `item_transfer` | M2 [Proposed] | Must use vanilla click actions only |
 | Protected slots | Inventory | `protected_slots` | M2 [Proposed] | Must not lose items on failure |
 | Shulker preview | Inventory | `shulker_preview` [Approved 2026-11-25] | M1.6 [Approved 2026-11-25] | Combined behavior of Shulker Box Tooltip and Simple Shulker Preview; spec: [Shulker Preview V1](../specifications/shulker-preview-v1.md) [Approved 2026-11-25]; implemented |
+| Inventory mouse drag and wheel transfers | Inventory | `mouse_tweaks` [Proposed] | M1.9 [Proposed] | Mouse Tweaks; spec: [Inventory Mouse Tweaks V1](../specifications/mouse-tweaks-v1.md) [Proposed]. Vanilla clicks only; overlaps the planned `item_transfer` |
 | Distinct potion identification | Visuals | `potion_identification` | [Open] | |
 | Keybinding search | Controls | `keybind_search` | [Open] | |
 | Keybinding conflict detection | Controls | `keybind_conflicts` | [Open] | |
