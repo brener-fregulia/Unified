@@ -12,9 +12,17 @@ public record FeatureDescriptor(
         boolean defaultEnabled,
         ApplyMode toggleMode,
         List<SettingDescriptor> settings,
-        List<ConflictDescriptor> conflicts) {
+        List<ConflictDescriptor> conflicts,
+        SettingsRule rule) {
+
+    /** A descriptor whose settings have no cross-setting rule. */
+    public FeatureDescriptor(String id, FeatureCategory category, boolean defaultEnabled, ApplyMode toggleMode,
+            List<SettingDescriptor> settings, List<ConflictDescriptor> conflicts) {
+        this(id, category, defaultEnabled, toggleMode, settings, conflicts, SettingsRule.NONE);
+    }
 
     public FeatureDescriptor {
+        Objects.requireNonNull(rule, "rule");
         Identifiers.requireFeatureId(id);
         Objects.requireNonNull(category, "category");
         Objects.requireNonNull(toggleMode, "toggleMode");

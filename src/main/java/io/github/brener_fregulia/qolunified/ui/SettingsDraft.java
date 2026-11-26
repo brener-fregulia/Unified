@@ -4,6 +4,8 @@ import io.github.brener_fregulia.qolunified.core.CoreRuntime;
 import io.github.brener_fregulia.qolunified.core.FeatureDescriptor;
 import io.github.brener_fregulia.qolunified.core.FeatureState;
 import io.github.brener_fregulia.qolunified.core.SettingDescriptor;
+import io.github.brener_fregulia.qolunified.core.SettingsRule;
+import io.github.brener_fregulia.qolunified.core.SettingsSnapshot;
 import io.github.brener_fregulia.qolunified.core.TransitionOutcome;
 import io.github.brener_fregulia.qolunified.core.config.FeatureChoice;
 import java.util.LinkedHashMap;
@@ -87,10 +89,25 @@ public final class SettingsDraft {
             invalidInputs.put(fieldId(featureId, key), String.valueOf(value));
             return Optional.of(UiKeys.ERROR_INVALID_VALUE);
         }
-        invalidInputs.remove(fieldId(featureId, key));
         FeatureChoice choice = choice(featureId);
-        draft.put(featureId, choice.withSettings(choice.settings().with(key, value)));
+        SettingsSnapshot candidate = choice.settings().with(key, value);
+        Optional<SettingsRule.Violation> violation = choice.settings().descriptor().rule().check(candidate, key);
+        if (violation.isPresent()) {
+            invalidInputs.put(fieldId(featureId, key), String.valueOf(value));
+            return Optional.of(violation.get().messageKey());
+        }
+        invalidInputs.remove(fieldId(featureId, key));
+        draft.put(featureId, choice.withSettings(candidate));
         return Optional.empty();
+    }
+
+    /**
+     * Checks a single-value-valid {@code value} against the feature's cross-setting rule without changing the draft,
+     * so a field can explain a rejected combination before anything is written (zoom-v1.md §0).
+     */
+    public Optional<SettingsRule.Violation> ruleViolation(String featureId, String key, Object value) {
+        FeatureChoice choice = choice(featureId);
+        return choice.settings().descriptor().rule().check(choice.settings().with(key, value), key);
     }
 
     /** Parses integer input. Invalid text is kept as a field error and blocks Done. */

@@ -361,7 +361,15 @@ public final class ConfigurationService {
                             d.id(), setting.key());
                 }
             }
-            result.put(d.id(), new FeatureChoice(enabled, explicit, SettingsSnapshot.of(d, values)));
+            SettingsSnapshot snapshot = SettingsSnapshot.of(d, values);
+            if (d.rule().check(snapshot, null).isPresent()) {
+                // A hand-edited file can combine individually valid values into a contradiction (e.g. a minimum
+                // above a maximum); the feature's settings fall back to their defaults rather than applying it.
+                LOGGER.warn("Configuration: settings of feature {} contradict each other; defaults are in use",
+                        d.id());
+                snapshot = SettingsSnapshot.defaults(d);
+            }
+            result.put(d.id(), new FeatureChoice(enabled, explicit, snapshot));
         }
         return result;
     }

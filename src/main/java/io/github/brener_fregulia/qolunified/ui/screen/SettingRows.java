@@ -113,6 +113,9 @@ final class SettingRows {
         box.active = draft.editable();
         box.setEditable(draft.editable());
         show.run();
+        if (host.pendingText(id, key).isPresent()) {
+            box.setTextColor(PanelList.ERROR); // rejected text, including a contradicted combination
+        }
         return box;
     }
 
@@ -137,8 +140,17 @@ final class SettingRows {
             host.pendingText(id, key, text, error.get().copy().withStyle(ChatFormatting.RED));
             return;
         }
-        host.pendingText(id, key, null, null);
         int number = Integer.parseInt(text.strip());
+        // A valid number can still contradict another setting (a minimum above the maximum): explain it at the
+        // field and keep it out of the draft, like other invalid text.
+        var violation = draft.ruleViolation(id, key, number);
+        if (violation.isPresent()) {
+            Component message = Component.literal(I18n.get(setting.nameKey(id)) + ": "
+                    + I18n.get(violation.get().messageKey(), violation.get().args().toArray()));
+            host.pendingText(id, key, text, message.copy().withStyle(ChatFormatting.RED));
+            return;
+        }
+        host.pendingText(id, key, null, null);
         if (!Integer.valueOf(number).equals(draft.choice(id).settings().get(key))) {
             draft.setIntegerText(id, key, text);
             host.changed();
