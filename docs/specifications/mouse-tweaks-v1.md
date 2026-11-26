@@ -401,3 +401,93 @@ Strings in en_us and pt_br.
 Position-aware wheel direction, match by type or tags, hotbar/extra-slot
 scopes, creative inventory support, quick crafting and quick trading, a drop
 key, recipe-book or creative-tab scrolling, configurable click pacing.
+
+## 14. Implementation notes [Implemented 2026-11-26]
+
+### 14.1 Code
+
+- `feature/mousetweaks/MouseTweaksSettings`: descriptor, six LIVE settings,
+  three conflicts.
+- `MouseTweaksConfig`: the settings as plain fields, rebuilt only when the
+  snapshot changes. A gesture reads it once, at the press.
+- `WheelAccumulator` (fractional steps, reversal, 8-item cap) and
+  `ClickBudget` (24 clicks per tick per screen, whole sequences only): pure
+  Java, unit-tested.
+- `InventoryGestures`: the four gestures of one screen; `MouseTweaksHooks`
+  attaches it in `ScreenEvents.AFTER_INIT` to every `AbstractContainerScreen`
+  except `CreativeModeInventoryScreen`.
+- `mixin/ContainerScreenSlotsAccessor`: read-only invoker for
+  `getHoveredSlot(double, double)` and accessor for `itemSlotMouseActions`. No
+  injection.
+- `FeaturePanel`: an optional `qol_unified.feature.<id>.note` line under the
+  description (Q-MT9: "Not active in the creative inventory").
+
+### 14.2 Input ownership
+
+| Gesture | Press | Drag | Release |
+| --- | --- | --- | --- |
+| Right-drag (cursor has items, pressed slot accepts one) | Ours: one item, vanilla never sees it | Ours | Ours |
+| Left press on a matching stack | Ours (pending) | Ours: collection | Ours: a plain left click if the pointer never left the slot |
+| Shift + left with a matching cursor | Ours: quick move | Ours | Ours |
+| Shift + left with an empty cursor | Vanilla (its own quick move) | Ours, vanilla also receives it | Vanilla |
+| Anything else | Vanilla | Vanilla | Vanilla |
+
+- A new press always resets the previous gesture, so a release missed
+  through focus loss cannot leak into the next gesture.
+- Focus loss, removing the screen, re-initializing it (Fabric recreates
+  screen events on every init) and a menu change cancel the gesture.
+
+### 14.3 Click safety
+
+- Every click goes through `MultiPlayerGameMode.handleContainerInput`.
+- After each click the predicted menu is compared with the expected counts.
+  The first difference stops the gesture, which then swallows the rest of
+  the drag without sending anything.
+- Wheel transfers reserve their two or three clicks before the first one.
+- Collection runs only when the cursor plus the slot fits in one stack, so
+  its second click always empties the slot.
+- Excluded:
+  - result, fake and inactive slots, and slots whose `allowModification` is
+    false;
+  - armor, offhand and crafting slots for the wheel;
+  - `THROW`, `CLONE`, `SWAP` and clicks outside the window.
+- Network transfers are not atomic: the server can still reject a click, and
+  vanilla's state-id resynchronization then corrects the client.
+
+### 14.4 Technical findings during implementation
+
+- **SDL mouse buttons.** In 26.3 `MouseButtonEvent.button()` is an SDL button:
+  `MOUSE_BUTTON_LEFT = 1`, `MOUSE_BUTTON_RIGHT = 3`. Vanilla maps them to
+  container-click buttons 0 and 1 in `getContainerClickButton`. Gestures
+  compare event buttons with the SDL constants and send 0/1 as click buttons.
+- **Fabric game-test input** sends mouse presses without modifiers, so the
+  Shift scenarios send the button through the same `MouseHandler.onButton`
+  path with `MOD_SHIFT`.
+- **Collection overflow.** When cursor plus slot exceeds one stack, two plain
+  clicks cannot take only part of the slot. Such slots are skipped instead of
+  partially merged.
+
+### 14.5 Validation
+
+- **Unit tests:** `MouseTweaksLogicTest`, `MouseTweaksSettingsTest`.
+- **Game test** `mousetweaks`, in a disposable world. Real cursor positions
+  and buttons drive the player inventory, chest, crafting table and furnace.
+  After every scenario, item totals are checked and the client's menu is
+  compared slot by slot with the integrated server's. Covered:
+  - right-drag with revisits, the crafting result and an incompatible slot;
+  - collection, including an overflow skip, and vanilla's even split;
+  - Shift + drag in a chest;
+  - the crafting result never crafted;
+  - wheel push and pull, quarter notches, the 8-item cap, the same-tick budget
+    (8 then 0), nonstackables, a bundle, inverted direction, both search
+    orders;
+  - furnace input/fuel routing;
+  - cancellation by closing mid-drag, feature OFF (vanilla right-drag),
+    creative wheel unchanged.
+
+### 14.6 Known limitations
+
+- Collection skips a stack that would overflow the cursor.
+- Latency and Paper rate limits are manual QA (not reproducible with the
+  integrated server).
+- Modded screens with custom click handling are untested.

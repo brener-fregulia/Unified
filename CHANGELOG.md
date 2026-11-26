@@ -17,6 +17,11 @@ released yet.
 
 ### Added
 
+- Inventory Mouse Tweaks: right-drag places one item per slot, left-drag
+  gathers matching items, Shift + drag moves stacks, and the wheel moves items
+  between inventory sections, all through vanilla container clicks. Six
+  settings; suppressed by default with Mouse Tweaks, Mouse Wheelie or Item
+  Scroller; not active in the creative inventory.
 - Zoom: hold (or toggle) Z to zoom the camera smoothly, scroll to zoom
   further (2–14×), with lower mouse sensitivity while zoomed. Nine settings in
   the Controls category; suppressed by default when Zoomify, Ok Zoomer or
