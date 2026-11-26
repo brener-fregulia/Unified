@@ -15,7 +15,9 @@
     "ShulkerSlotDecorationsMixin",
     "SoundEngineAccessor",
     "SoundEngineVolumeMixin",
-    "SoundManagerAccessor"
+    "SoundManagerAccessor",
+    "ZoomCameraFovMixin",
+    "ZoomMouseMixin"
   ],
   "injectors": {
     "defaultRequire": 1
