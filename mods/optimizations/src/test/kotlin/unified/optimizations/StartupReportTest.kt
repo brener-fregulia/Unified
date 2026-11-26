@@ -9,10 +9,10 @@ class StartupReportTest {
     @Test
     fun reportsTheModuleConfigurationDirectory() {
         assertEquals(
-            "Unified: Optimizations initialized (no optimizations enabled yet). Configuration directory: " +
+            "Unified: Optimizations initialized (no optimizations active). Configuration directory: " +
                 Path.of("config", "unified_optimizations"),
             StartupReport.message(Path.of("config")),
         )
-        assertEquals(true, StartupReport.message(Path.of("config"), 2).contains("(2 optimizations)"))
+        assertEquals(true, StartupReport.message(Path.of("config"), 2).contains("(2 optimizations active)"))
     }
 }

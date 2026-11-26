@@ -10,7 +10,7 @@ object StartupReport {
     @JvmStatic
     @JvmOverloads // Java sees message(Path) as well as message(Path, int)
     fun message(gameConfigDirectory: Path, optimizations: Int = 0): String {
-        val state = if (optimizations == 0) "no optimizations enabled yet" else "$optimizations optimizations"
+        val state = if (optimizations == 0) "no optimizations active" else "$optimizations optimizations active"
         return "Unified: Optimizations initialized ($state). Configuration directory: " +
             OptimizationsPaths.configDirectory(gameConfigDirectory)
     }

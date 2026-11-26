@@ -5,7 +5,7 @@ import java.nio.file.Path;
 /**
  * Where this mod's files belong (docs/optimizations/README.md, configuration). Each Unified mod owns its own directory
  * under the game's config directory, so neither ever reads or writes another's files. Nothing is written until a
- * feature with settings is approved.
+ * feature setting is changed by the player.
  */
 public final class OptimizationsPaths {
     private OptimizationsPaths() {
@@ -16,7 +16,7 @@ public final class OptimizationsPaths {
         return gameConfigDirectory.resolve(UnifiedOptimizationsClient.MOD_ID);
     }
 
-    /** The future configuration file. */
+    /** The configuration file (core/OptimizationsConfig). */
     public static Path configFile(Path gameConfigDirectory) {
         return configDirectory(gameConfigDirectory).resolve("config.json");
     }

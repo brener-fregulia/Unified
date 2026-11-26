@@ -1,4 +1,17 @@
 {
   "modmenu.nameTranslation.unified_optimizations": "Unified: Optimizations",
-  "modmenu.descriptionTranslation.unified_optimizations": "Otimizações de desempenho e rede no cliente. Funciona sem os outros mods do Unified."
+  "modmenu.descriptionTranslation.unified_optimizations": "Otimizações de desempenho e rede no cliente. Funciona sem os outros mods do Unified.",
+  "unified_optimizations.category.network": "Rede",
+  "unified_optimizations.category.performance": "Desempenho",
+  "unified_optimizations.feature.fast_ip_ping.name": "Fast IP Ping",
+  "unified_optimizations.feature.fast_ip_ping.description": "Consulta servidores listados por IP privado, de LAN, do Tailscale ou de loopback sem a lenta consulta de DNS reverso. IPs públicos, nomes de domínio e a entrada em servidores não mudam; a lista de bloqueio da Mojang continua verificando o IP e o endereço digitado.",
+  "unified_optimizations.feature.fast_quit.name": "FastQuit",
+  "unified_optimizations.feature.fast_quit.description": "Volta ao menu enquanto o mundo do modo um jogador termina de salvar em segundo plano. Abrir, editar ou excluir um mundo e fechar o jogo esperam o salvamento terminar.",
+  "unified_optimizations.status.active": "Ativo",
+  "unified_optimizations.status.inactive": "Desligado",
+  "unified_optimizations.status.conflict": "Inativo: %s está instalado",
+  "unified_optimizations.message.save_failed": "%s: não foi possível salvar o ajuste, e ele não foi aplicado. Veja o log.",
+  "unified_optimizations.fast_quit.saving": "Salvando o mundo em segundo plano",
+  "unified_optimizations.fast_quit.saved": "Mundo salvo",
+  "unified_optimizations.fast_quit.waiting": "Terminando de salvar o mundo anterior..."
 }

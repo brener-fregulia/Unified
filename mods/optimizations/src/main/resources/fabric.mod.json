@@ -13,11 +13,13 @@
     "client": ["unified.optimizations.UnifiedOptimizationsClient"],
     "unified-settings": ["unified.optimizations.OptimizationsSettingsProvider"]
   },
+  "mixins": ["unified_optimizations.mixins.json"],
   "depends": {
     "fabricloader": ">=${loader_version}",
     "minecraft": "~${minecraft_version}",
     "java": ">=25",
     "fabric-language-kotlin": ">=${fabric_kotlin_version}",
+    "fabric-lifecycle-events-v1": "*",
     "unified_settings": "${settings_range}"
   }
 }

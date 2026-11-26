@@ -4,11 +4,12 @@ import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.loader.api.FabricLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import unified.optimizations.core.Optimizations;
 
 /**
- * Unified: Optimizations entrypoint (docs/optimizations/README.md). The foundation only starts and logs: no feature is
- * approved for implementation yet, so there is no feature registry, Mixin or configuration file. It never depends on
- * Unified: QoL.
+ * Unified: Optimizations entrypoint (docs/optimizations/README.md): loads the configuration. Features act through
+ * their Mixins, which check {@link Optimizations#isActive} each time. It
+ * never depends on Unified: QoL.
  */
 public final class UnifiedOptimizationsClient implements ClientModInitializer {
     public static final String MOD_ID = "unified_optimizations";
@@ -16,6 +17,8 @@ public final class UnifiedOptimizationsClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
-        LOGGER.info(StartupReport.message(FabricLoader.getInstance().getConfigDir()));
+        FabricLoader loader = FabricLoader.getInstance();
+        Optimizations.start(OptimizationsPaths.configFile(loader.getConfigDir()), loader::isModLoaded);
+        LOGGER.info(StartupReport.message(loader.getConfigDir(), Optimizations.activeCount()));
     }
 }

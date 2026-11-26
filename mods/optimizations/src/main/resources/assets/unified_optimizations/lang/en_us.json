@@ -1,4 +1,17 @@
 {
   "modmenu.nameTranslation.unified_optimizations": "Unified: Optimizations",
-  "modmenu.descriptionTranslation.unified_optimizations": "Client-side performance and network optimizations. Works without the other Unified mods."
+  "modmenu.descriptionTranslation.unified_optimizations": "Client-side performance and network optimizations. Works without the other Unified mods.",
+  "unified_optimizations.category.network": "Network",
+  "unified_optimizations.category.performance": "Performance",
+  "unified_optimizations.feature.fast_ip_ping.name": "Fast IP Ping",
+  "unified_optimizations.feature.fast_ip_ping.description": "Pings servers listed by a private, LAN, Tailscale or loopback IP address without a slow reverse DNS lookup. Public IPs, hostnames and joining a server are unchanged; Mojang's blocklist still checks the IP and the typed address.",
+  "unified_optimizations.feature.fast_quit.name": "FastQuit",
+  "unified_optimizations.feature.fast_quit.description": "Returns to the menu while a singleplayer world finishes saving in the background. Opening, editing or deleting a world, and closing the game, wait until the save has finished.",
+  "unified_optimizations.status.active": "Active",
+  "unified_optimizations.status.inactive": "Off",
+  "unified_optimizations.status.conflict": "Inactive: %s is installed",
+  "unified_optimizations.message.save_failed": "%s: the setting could not be saved and was not applied. See the log.",
+  "unified_optimizations.fast_quit.saving": "Saving world in the background",
+  "unified_optimizations.fast_quit.saved": "World saved",
+  "unified_optimizations.fast_quit.waiting": "Finishing saving the previous world..."
 }
