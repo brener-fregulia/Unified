@@ -18,5 +18,8 @@
   "unified_settings.back": "Voltar",
   "unified_settings.retry_save": "Tentar de novo",
   "unified_settings.undo_change": "Desfazer",
-  "unified_settings.panel_failed": "%s não conseguiu mostrar este recurso. Veja o log para detalhes."
+  "unified_settings.panel_failed": "%s não conseguiu mostrar este recurso. Veja o log para detalhes.",
+  "unified_settings.switch.on": "ON",
+  "unified_settings.switch.off": "OFF",
+  "unified_settings.switch.narration": "%s: %s"
 }

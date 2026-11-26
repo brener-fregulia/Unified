@@ -18,5 +18,8 @@
   "unified_settings.back": "Back",
   "unified_settings.retry_save": "Retry",
   "unified_settings.undo_change": "Undo change",
-  "unified_settings.panel_failed": "%s could not show this feature. See the log for details."
+  "unified_settings.panel_failed": "%s could not show this feature. See the log for details.",
+  "unified_settings.switch.on": "ON",
+  "unified_settings.switch.off": "OFF",
+  "unified_settings.switch.narration": "%s: %s"
 }

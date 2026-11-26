@@ -19,3 +19,5 @@ Nothing has been released yet.
   workspace (search, module/category/feature sidebar, drawer, footer with
   Retry/Undo) replaces the temporary entry screen; `U` also works on the
   title screen.
+- 1.2.0: a shared `FeatureSwitch` (ON/OFF) widget for module panels, drawn
+  like the approved QoL switch. Contract unchanged (1.1).

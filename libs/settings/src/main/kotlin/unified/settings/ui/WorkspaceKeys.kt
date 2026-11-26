@@ -18,4 +18,7 @@ object WorkspaceKeys {
     const val NO_SETTINGS: String = "unified_settings.no_settings"
     const val PROVIDER_FAILED: String = "unified_settings.provider_failed"
     const val PANEL_FAILED: String = "unified_settings.panel_failed"
+    const val SWITCH_ON: String = "unified_settings.switch.on"
+    const val SWITCH_OFF: String = "unified_settings.switch.off"
+    const val SWITCH_NARRATION: String = "unified_settings.switch.narration"
 }
