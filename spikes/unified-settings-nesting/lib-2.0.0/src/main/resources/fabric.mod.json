@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "id": "unified_settings",
+  "version": "${version}",
+  "name": "Unified Settings (Library) [spike]",
+  "environment": "client",
+  "entrypoints": { "client": ["unified.settings.spike.UnifiedSettings"] },
+  "depends": { "fabricloader": "*", "fabric-key-mapping-api-v1": "*" }
+}

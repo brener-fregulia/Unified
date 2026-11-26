@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "id": "spike_runner",
+  "version": "${version}",
+  "name": "Unified Settings nesting spike runner",
+  "environment": "client",
+  "entrypoints": { "client": ["unified.spike.runner.SpikeRunner"] },
+  "depends": { "fabricloader": "*", "fabric-lifecycle-events-v1": "*" }
+}

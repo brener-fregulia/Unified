@@ -2,7 +2,7 @@
 
 Status labels follow [AGENTS.md](../../AGENTS.md#decision-status-labels).
 The product direction in §1 was approved by the Product Owner on 2026-11-26.
-Everything else is **[Proposed]** or **[Open]**; §17 lists the decisions. Nothing
+Everything else is **[Proposed]** unless §17 records a decision. Nothing
 here is implemented.
 
 ## 1. Product requirements [Approved 2026-11-26]
@@ -54,7 +54,9 @@ here is implemented.
     Fabric Loader 0.20.1's resolver (`ModResolver`, `ModPrioSorter`)
     selects one candidate per mod id and orders candidates by version, which
     indicates that the highest nested version loads. It also contains a
-    "duplicate mod" error path. **Not yet verified at runtime;** see R6.
+    "duplicate mod" error path. **Verified at runtime in M2.1.0 (§18):** one
+    copy loads, namely the highest version that satisfies every `depends`
+    range.
   - Key mappings must be registered during client initialization.
   - Custom entrypoints (`FabricLoader.getEntrypointContainers(name, type)`)
     list the mods that declare one, without classpath scanning.
@@ -75,13 +77,15 @@ here is implemented.
   (`include(project(":libs:settings"))`). That one copy loads depends on the
   loader's de-duplication of nested mods (§2, R6).
 - **At runtime:**
-  - Fabric loads exactly one copy, the newest bundled by any installed
+  - Fabric loads exactly one copy: the highest bundled version that satisfies
+    every installed mod's `depends` range (§18), bundled by any installed
     Unified mod. That copy registers the key, the button and the screen.
   - Each mod contributes through a custom entrypoint, `unified-settings`.
 - **Classloader:** one copy, one mod id, no duplicate classes.
 - **Players:** install nothing extra. A Unified mod alone still carries the
   library.
-- **Version skew:** the loader picks the highest version. The contract
+- **Version skew:** the loader picks the highest version allowed by every
+  range (§18). The contract
   changes only additively within a major version, and each mod declares
   `"unified_settings": ">=x.y <(x+1)"` in `depends`. An incompatible
   combination then fails at startup with Fabric's clear message instead of at
@@ -226,7 +230,7 @@ interface SettingsSession {            // owned and implemented by the mod
 | Both | One library (the newer copy). Both modules, ordered QoL, Optimizations. One key, one button. |
 | Neither | Nothing (the library exists only inside a Unified mod). |
 | Graphics later | It adds the nested library and one provider. |
-| Mismatched versions | The loader picks the highest library. Compatible within a major version; an incompatible major version gives Fabric's startup error naming the mods. |
+| Mismatched versions | The loader picks the highest library version that every mod's range allows. Compatible within a major version; unsatisfiable ranges give Fabric's startup error naming the mods (§18). |
 
 ## 10. Configuration ownership [Proposed]
 
@@ -288,7 +292,8 @@ interface SettingsSession {            // owned and implemented by the mod
     screen and preview behave as today.
 12. **US-AC-12:** removing one mod leaves the other's settings and file
     intact.
-13. **US-AC-13:** with two different library versions nested, the newest
+13. **US-AC-13:** with two different library versions nested, the highest
+    one that every range allows (normally the newest)
     loads and both providers work; an incompatible major version is refused
     at startup with a clear message.
 
@@ -314,7 +319,8 @@ interface SettingsSession {            // owned and implemented by the mod
 ## 15. Risks [Proposed]
 
 - **R1: contract drift.** A provider compiled against a newer library than
-  the loaded one cannot happen, because the loader picks the highest version.
+  the loaded one cannot happen if each mod's `depends` lower bound is the
+  contract version it was compiled against (§18.4).
   A careless breaking change inside a major version would break older mods.
   Mitigation: additive-only rule and a compatibility test with the previous
   library JAR.
@@ -327,7 +333,8 @@ interface SettingsSession {            // owned and implemented by the mod
 - **R4: carrying over a key binding** touches the player's options. It must
   happen once, only when the old key was customized, and through vanilla's
   options API.
-- **R6: nested-library de-duplication is not documented by Fabric.** It is
+- **R6 [Resolved by the M2.1.0 spike, §18]: nested-library de-duplication
+  is not documented by Fabric.** It is
   inferred from Loader 0.20.1's resolver code (§2). Before any other M2.1
   work, a spike builds two mods nesting different `unified_settings`
   versions and confirms that exactly one, the highest, loads (US-AC-13). If
@@ -348,21 +355,138 @@ interface SettingsSession {            // owned and implemented by the mod
 Optimizations' own settings follow with its first approved feature (Fast IP
 Ping, after its open decisions).
 
-## 17. Open decisions for Product Owner approval
+## 17. Decisions
 
-- **Q-US1 [Open]:** adopt alternative A. This amends the monorepo rule "no
-  shared runtime library" to allow exactly one library, `unified_settings`,
-  nested in each mod, contract-only plus the shared screen.
-- **Q-US2 [Proposed]:** default key `U` (no vanilla 26.3 binding).
-- **Q-US3 [Open]:** carry an existing custom binding of QoL's old key over to
-  the new key once (recommended), or start everyone on `U`.
-- **Q-US4 [Open]:** Options button label and placement ("Unified
-  Settings…", in the free grid slot of the Options screen).
-- **Q-US5 [Proposed]:** fixed module order: QoL, Optimizations, Graphics.
-- **Q-US6 [Open]:** with a single module installed, show its module row or go
-  straight to its categories.
-- **Q-US7 [Proposed]:** the library's own name in mod lists, "Unified
-  Settings (library)", with its own version and tag namespace
-  (`settings/v…`).
-- **Q-US8 [Open]:** Optimizations' minimal storage and feature list (it has
-  no Core), decided with Fast IP Ping's Q-FIP7.
+Recorded on 2026-11-26 (M2.1.0 brief). Approval of the product decisions
+does not authorize implementing the shared workspace: that waits for the
+spike result (§18) and a separate implementation brief.
+
+- **Q-US1 [Approved 2026-11-26, conditional]:** alternative A, subject to
+  runtime validation (§18). This amends the monorepo rule "no shared runtime
+  library" for exactly one library, `unified_settings`, once the condition
+  is met.
+- **Q-US2 [Approved 2026-11-26]:** default key `U`.
+- **Q-US3 [Approved 2026-11-26]:** preserve a custom binding of QoL's old
+  settings key through a one-time migration to the new key.
+- **Q-US4 [Approved 2026-11-26]:** one "Unified Settings…" button in
+  Minecraft's Options screen.
+- **Q-US5 [Approved 2026-11-26]:** module order QoL, Optimizations,
+  Graphics.
+- **Q-US6 [Approved 2026-11-26]:** hide the module navigation layer when only
+  one Unified mod is installed.
+- **Q-US7 [Approved 2026-11-26]:** library name "Unified Settings (Library)",
+  independently versioned.
+- **Q-US8 [Approved 2026-11-26]:** Optimizations owns its own minimal
+  configuration persistence, with no dependency on QoL's Core.
+
+## 18. Runtime spike results (M2.1.0, 2026-11-26)
+
+### 18.1 Setup
+
+- **Location:** `spikes/unified-settings-nesting/`, a separate Gradle build
+  that never touches the production modules. Run it with
+  `./gradlew -p spikes/unified-settings-nesting :runner:runSpike<Scenario>`
+  after `./gradlew :mods:qol:jar :mods:optimizations:jar`.
+- **Versions:** the monorepo's own Minecraft 26.3, Loader 0.20.1, Loom
+  1.19.4, Fabric API and Fabric Language Kotlin, read from the root
+  `gradle.properties`.
+- **Library:** `unified_settings` in three versions with the same classes:
+  - 1.0.0: contract `describe()`;
+  - 1.1.0: adds `order()` with a default, an additive change;
+  - 2.0.0: `describe()` removed and `title()` required, a breaking change.
+
+  Each version registers one unbound key mapping (the production `U` key is
+  not registered) and lists providers from the `unified-settings`
+  entrypoint, catching each provider's failures.
+- **Parents:** stand-ins that nest one library version each, the same way
+  Loom's `include` does (`META-INF/jars/` plus a `jars` entry; compared with
+  a real `include` build).
+  - `spike_parent_a` is compiled against contract 1.0.
+  - `spike_parent_b` is compiled against 1.1 and overrides `order()`.
+- **Real mods:** copies of the production Unified: QoL and Unified:
+  Optimizations JARs with the library nested into them. The production
+  artifacts are only read.
+- **Runner** (`spike_runner`): after the client starts, it records:
+  - the loaded mod list;
+  - each `unified_settings` instance, its version and its parent;
+  - the library's init count;
+  - the providers' answers;
+  - how many copies of the library class exist;
+  - how many spike key mappings exist.
+
+  It writes these to `spike-result.txt` in the scenario's disposable run
+  directory and closes the game.
+
+### 18.2 Results (actual runtime, not compilation)
+
+Unless a row says otherwise, every run had 1 library instance, init count 1,
+1 library class copy, 1 key mapping, and no Fabric warnings.
+
+| Scenario | Nested versions | Loaded | Providers |
+| --- | --- | --- | --- |
+| ParentsA100B110 | A 1.0.0, B 1.1.0 | **1.1.0** (from B) | Both work (A order 100 by default, B 20) |
+| ParentsA110B100 (reversed) | A 1.1.0, B 1.0.0 | **1.1.0** (from A) | Both work |
+| ParentsSameVersion | A 1.1.0, B 1.1.0 | 1.1.0 | Both work |
+| BreakingWithRange (both `>=1.0.0 <2.0.0`) | A 1.0.0, B 2.0.0 | **1.0.0**: 2.0.0 is excluded by both ranges | Both work; B, compiled against 1.1, is served 1.0 |
+| BreakingNoRange (no `depends`) | A 1.0.0, B 2.0.0 | **2.0.0** | Both fail with `AbstractMethodError`; the library's catch isolates them and the game runs |
+| BreakingConflictingRanges (A `<2.0.0`, B `>=2.0.0`) | A 1.0.0, B 2.0.0 | Nothing: **startup refused** | Fabric's "Incompatible mods found!" names both mods and their ranges |
+| QolOnly | QoL 1.0.0 | 1.0.0 (from `qol_unified`) | QoL starts normally (8 features) |
+| OptimizationsOnly | Optimizations 1.1.0 | 1.1.0 (from `unified_optimizations`) | Optimizations starts normally |
+| QolAndOptimizations | QoL 1.0.0, Optimizations 1.1.0 | 1.1.0 (from Optimizations) | Both start normally |
+| QolAndOptimizationsReversed | QoL 1.1.0, Optimizations 1.0.0 | 1.1.0 (from QoL) | Both start normally |
+
+The parents call the library's static API, and every run reported the
+loaded version. Neither real mod has a dependency on the other; the mod list
+shows only what each scenario installed.
+
+### 18.3 Actual Fabric Loader behavior
+
+- **One copy:** nested mods with the same id are reduced to one copy. There
+  was no duplicate-mod error, no duplicate classes and no second
+  initialization.
+- **Which version:** the copy is the **highest version that satisfies every
+  installed mod's `depends` range**, not simply the highest nested version
+  (BreakingWithRange).
+- **Unsatisfiable ranges** stop the game at startup with a clear message.
+  This is the desired failure.
+- **Without a range,** the highest version loads even when it breaks older
+  providers. Ranges are therefore mandatory.
+
+### 18.4 Contract rules for the implementation [Proposed]
+
+1. **Lower bound = the contract version compiled against.** Each mod
+   declares `"unified_settings": ">=<compiled contract> <<next major>"`.
+   BreakingWithRange shows why: a mod compiled against 1.1 can otherwise be
+   served 1.0, and any 1.1-only call would fail with `NoSuchMethodError`.
+2. **Additive changes only** within a major version. New interface methods
+   need defaults, and nothing public is removed or changed. 1.0 providers
+   worked unchanged on 1.1.
+3. **The library isolates every provider call** (verified with
+   `AbstractMethodError`) and sorts providers by the approved module order
+   (Q-US5). Entrypoint order is not something to rely on.
+4. **The library's initializer stays idempotent and cheap.** It ran exactly
+   once in every scenario.
+
+### 18.5 Conclusion
+
+**Alternative A remains viable** and meets the condition of Q-US1: one
+instance, one initialization, one key mapping, and both parents reach the
+selected API. Incompatibilities surface either at startup (ranges) or as
+isolated provider failures.
+
+**Remaining risks:**
+
+- The spike library is Java; the production library will be Kotlin, so its
+  `depends` must include Fabric Language Kotlin, which both mods already
+  require.
+- Mod-list UIs such as Mod Menu will show the nested library; the name is
+  approved in Q-US7.
+- The key-binding migration (Q-US3) and the Options button are untested
+  until implemented.
+- No implementation is authorized until a separate brief.
+
+**Recommended first implementation step:** create `:libs:settings` (Kotlin,
+version 1.0.0) containing only the contract and the coordinator (key `U`,
+Options button, provider discovery and ordering). Nest it in both mods with
+`include` and the range rule above. Then generalize QoL's workspace into it
+in a later step.
