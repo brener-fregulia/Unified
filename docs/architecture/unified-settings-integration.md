@@ -725,3 +725,16 @@ See the M2.1.2 report: library, QoL and Optimizations unit tests; every QoL
 game-test scenario; the three runtime scenarios with the production JARs
 (including migration from a seeded options.txt and search across modules);
 screenshots of combined, single-mod, narrow and ultrawide layouts.
+
+## 21. Library 1.2.0: shared switch (M2.2, 2026-11-26)
+
+- `unified.settings.ui.FeatureSwitch`: the ON/OFF switch, drawn like the
+  approved QoL switch, for module panels. Unified: Optimizations uses it; QoL
+  keeps its own identical switch (unchanged in this milestone).
+- Contract unchanged (1.1). The library version moves to 1.2.0 because mods
+  compiled against the new class need `>=1.2.0`; both mods now declare
+  `>=1.2.0 <2.0.0`.
+- With both mods installed the workspace shows
+  `Unified: Optimizations → Network → Fast IP Ping` and
+  `→ Performance → FastQuit`; the "No configurable features yet" note no
+  longer appears for Optimizations.

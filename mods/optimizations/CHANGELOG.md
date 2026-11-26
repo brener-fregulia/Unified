@@ -14,8 +14,17 @@ project's [versioning policy](../../docs/development/versioning.md). Tags use
 
 ### Added
 
-- Unified Settings: listed as its own group in the shared settings workspace
-  ("No configurable features yet"); carries Unified Settings (Library) 1.1.0.
+- **Fast IP Ping** (Network, on by default): server-list pings of private,
+  LAN, Tailscale and loopback IP addresses skip the slow reverse DNS lookup.
+  Public IPs, host names and joining servers are unchanged; Mojang's
+  blocklist still checks the IP and the typed address.
+- **FastQuit** (Performance, off by default): returns to the menu while a
+  singleplayer world finishes saving in the background. Opening, creating,
+  editing or deleting a world, and closing the game, wait for the save.
+  Inactive while the original FastQuit mod is installed.
+- Settings in the shared Unified Settings workspace, saved to
+  `config/unified_optimizations/config.json`. Carries Unified Settings
+  (Library) 1.2.0.
 
 - Unified Settings: the shared **Open Unified Settings** key (default `U`)
   and Options button list this mod, which has no settings yet. The mod

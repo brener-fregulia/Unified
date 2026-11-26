@@ -16,17 +16,26 @@ Client-side performance and network optimizations for Minecraft Java 26.3
   confirmed in the current Minecraft code, and no speed claim is made without
   a benchmark.
 
-## Foundation (2026-11-26)
+## Foundation (2026-11-26, extended in M2.2)
 
-- A client entrypoint that only logs. No optimization, Mixin, Fabric API
-  dependency or settings UI yet.
-- Its own configuration directory, `config/unified_optimizations/`, separate
-  from Unified: QoL's `config/qol_unified/`. No file is written until a
-  feature with settings is approved.
-- en_us and pt_br texts.
-- Whether to add a feature registry, settings or conflict handling is decided
-  with the first approved feature (Fast IP Ping Q-FIP7). Unified: QoL's Core is
-  not copied by default.
+- `core/OptimizationFeature`: the implemented features (id, category,
+  default, conflicting mod ids). Only implemented features are listed.
+- `core/OptimizationsConfig`: `config/unified_optimizations/config.json`,
+  `{"schemaVersion":1,"features":{"<id>":{"enabled":true}}}`. Only explicit
+  choices are stored; nothing is written until the player changes a switch;
+  unknown keys are preserved; invalid values fall back to the default; an
+  unreadable file is moved to `config.json.invalid` before the next save; a
+  newer schema is never rewritten; writes are atomic (temporary file, then
+  atomic replace).
+- `core/Optimizations`: lock-free enabled/active state (active = enabled and
+  no conflicting mod), save-then-apply switches (a failed save changes
+  nothing and is reported).
+- Settings: `OptimizationsWorkspace` in the shared Unified Settings workspace
+  (Network → Fast IP Ping, Performance → FastQuit), using the library's
+  shared `FeatureSwitch` (Unified Settings 1.2.0).
+- Mixins in Java (`unified_optimizations.mixins.json`), logic in Kotlin.
+  Requires Fabric API's lifecycle events (already required by the nested
+  library). Unified: QoL's Core is not copied.
 
 ## Catalog
 
@@ -35,8 +44,8 @@ unchanged.
 
 | Feature | Proposed id | Milestone | Status / notes |
 | --- | --- | --- | --- |
-| Fast IP Ping (no reverse DNS for literal-IP server-list pings) | `fast_ip_ping` [Proposed] | M1.10 [Proposed] | Direction approved by the PO on 2026-11-26; spec [Fast IP Ping V1](specifications/fast-ip-ping-v1.md) [Proposed], not approved for implementation. Open: Q-FIP2, Q-FIP3, Q-FIP6, Q-FIP7 |
-| FastQuit (fast world exit) | `fast_world_exit` | M1.11 (planned by the PO, 2026-11-26; previously M3 [Approved]) | Must not compromise world data safety. Not yet researched |
+| Fast IP Ping (no reverse DNS for server-list pings of non-public literal IPs) | `fast_ip_ping` | M2.2 | **Implemented 2026-11-26**, Network, default on. [Spec](specifications/fast-ip-ping-v1.md) §15. Open: Q-FIP8 (confirm scope), Q-FIP3 (public IPs), Q-FIP2 [Deferred], Q-FIP6 |
+| FastQuit (return to the menu while the world saves) | `fast_quit` | M2.3 | **Implemented 2026-11-26**, Performance, default **off**. [Spec](specifications/fastquit-v1.md). Open: Q-FQ1 (default) |
 | Server ping optimization | `server_ping` | M3 [Approved] | Likely restart-required. Relationship to `fast_ip_ping`: Q-FIP6 [Open] |
 
 ## Documents

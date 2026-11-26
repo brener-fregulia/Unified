@@ -1,4 +1,8 @@
-# Fast IP Ping V1 (M1.10)
+# Fast IP Ping V1 (M2.2)
+
+> **Implemented 2026-11-26 (M2.2).** See §15 for the implemented scope, the
+> blocklist finding that narrowed it, and the decisions still open. Sections
+> 1–14 are the original proposal, kept for history.
 
 Status labels follow [AGENTS.md](../../../AGENTS.md#decision-status-labels).
 The Product Owner approved the direction (feature, milestone, category,
@@ -301,3 +305,91 @@ properties and no security settings are changed.
 - **Deferred:** the join and Direct Connect paths (Q-FIP2).
 - **Excluded:** ping caching or parallelism, LAN and Realms, any DNS cache,
   and global resolver changes.
+
+## 15. M2.2 implementation [Implemented 2026-11-26]
+
+### 15.1 Blocklist finding (resolves the research for Q-FIP3)
+
+Verified in 26.3 and Patchy 2.2.10 (`javap`):
+
+- `AddressCheck.createFromService()` loads every `BlockListSupplier`
+  (Patchy's `MojangBlockListSupplier` downloads
+  `sessionserver.mojang.com/blockedservers`).
+- `isAllowed(ResolvedServerAddress)` reads `getHostName()` **and**
+  `getHostIp()` eagerly (even with no list loaded), then tests both against
+  each list. `isAllowed(ServerAddress)` tests the typed host.
+- Patchy's `BlockedServers` matches SHA-1 hashes of: the exact string, `*.`
+  suffixes of a host name, and `a.b.c.*` prefixes of an IPv4 address.
+
+So, for a literal, vanilla checks three strings: the **PTR name**, the IP and
+the typed text. The PTR name can only be obtained by the reverse query; there
+is no supported way to keep that leg without the query. Skipping it is
+therefore a real change to one leg of the check, not an equivalence.
+
+### 15.2 Implemented scope (safe default)
+
+- **Fast path only for non-public literals:** loopback (`127/8`, `::1`),
+  private (`10/8`, `172.16/12`, `192.168/16`), link-local (`169.254/16`,
+  `fe80::/10`), carrier-grade NAT / Tailscale (`100.64/10`), IPv6
+  unique-local (`fc00::/7`), and the IPv4-mapped forms of those.
+- **Public literals** (`8.8.8.8`, `2001:db8::1` …) keep vanilla's reverse
+  lookup and full check: unchanged security behavior. Changing them is
+  Q-FIP3 (§15.5) and is **not** implemented.
+- On the fast path the address is built from the literal's bytes with the
+  typed text as its host name (`InetAddress.getByAddress(text, bytes)`), and
+  vanilla's own `addressCheck` runs in vanilla's order on the typed text and
+  the IP, then the typed address. A blocked IP is refused exactly as before.
+- **Precise difference from vanilla, non-public literals only:** the PTR name
+  supplied by the player's own resolver (router, hosts file, Tailscale DNS) is
+  not matched against the blocklist. The typed text and IP still are. When no
+  PTR record exists, vanilla itself checks the IP text as the host name, so
+  the result is identical in the common case. Rationale for default-on:
+  Mojang's list targets public servers, and such addresses are not reachable
+  on the internet. **The PO is asked to confirm this (Q-FIP8).**
+- Category **Network** ("Rede"), default on, live, client-only; only
+  `ServerStatusPinger.pingServer` (server list). Join and Direct Connect
+  untouched (Q-FIP2 stays deferred).
+
+### 15.3 Code
+
+- `IpLiteral` (Kotlin): strict parse (§6 table) and `isNonPublic`.
+- `FastIpPing` (Kotlin): the fast resolution; returns null to fall back.
+- `ServerStatusPingerMixin`: `@WrapOperation` on `resolveAddress` in
+  `pingServer`; `ServerNameResolverAccessor` reads `addressCheck`.
+- Settings, persistence and conflicts: the module's own registry and
+  configuration (Q-FIP7 resolved: `core/` in Optimizations, no QoL classes).
+  `fastipping` and `fastserverpings` installed → inactive (Q-FIP5).
+
+### 15.4 Measured DNS behavior
+
+Unit tests (`FastIpPingTest`) install a counting
+`InetAddressResolverProvider` for the test JVM only: the vanilla steps on
+`192.168.1.20` perform 1 reverse lookup; the fast path on IPv4/IPv6
+non-public literals performs 0 forward and 0 reverse lookups, keeps the port
+and runs both checks in vanilla's order; public IPs, host names and invalid
+text fall back without any lookup.
+
+Game test (`runGameTestFastipping`, real `ServerStatusPinger` against the
+world opened to LAN; counting provider on the boot class path of that run
+only):
+
+| Address | Feature | Result | Reverse | Forward |
+| --- | --- | --- | --- | --- |
+| `127.0.0.1:<lan>` | on | status shown | 0 | 0 |
+| `localhost:<lan>` | on | status shown | 0 | 1 |
+| `[::1]:<lan>` | on | status shown | 0 | 0 |
+| `127.0.0.1:<closed>` | on | connection refused | 0 | 0 |
+| `999.1.1.1:<lan>` | on | `cannot_connect` (vanilla) | 0 | 1 |
+| `127.0.0.1:<lan>` | **off** | status shown | **1** | 1 |
+| `127.0.0.1:<lan>` | on again (live) | status shown | 0 | 0 |
+
+No timing claim is made.
+
+### 15.5 Decisions still open
+
+- **Q-FIP8 [Open]:** confirm the non-public scope as default-on (§15.2).
+- **Q-FIP3 [Open], narrowed:** public literals. Options: keep vanilla
+  (current), or an opt-in setting that skips the PTR leg for public IPs too
+  (weakens the blocklist's host-name leg for those addresses).
+- **Q-FIP2 [Deferred]:** join and Direct Connect.
+- **Q-FIP6 [Open]:** relationship to `server_ping`.

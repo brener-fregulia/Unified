@@ -56,14 +56,14 @@ public final class SettingsRuntimeGameTest implements FabricClientGameTest {
         LOGGER.info("[settings-runtime] {} passed", scenario);
     }
 
-    /** Exactly one unified_settings, version 1.1.0, nested in an installed Unified mod; only the expected mods. */
+    /** Exactly one unified_settings, version 1.2.0, nested in an installed Unified mod; only the expected mods. */
     private void loadedMods() {
         ctx.runOnClient(mc -> {
             List<ModContainer> libs = FabricLoader.getInstance().getAllMods().stream()
                     .filter(m -> m.getMetadata().getId().equals("unified_settings")).toList();
             check(libs.size() == 1, "one unified_settings, found " + libs.size());
             ModContainer lib = libs.getFirst();
-            check(lib.getMetadata().getVersion().getFriendlyString().equals("1.1.0"), "library 1.1.0");
+            check(lib.getMetadata().getVersion().getFriendlyString().equals("1.2.0"), "library 1.2.0");
             String parent = lib.getContainingMod().map(m -> m.getMetadata().getId()).orElse("-");
             check(parent.equals(QOL) || parent.equals(OPTIMIZATIONS), "nested in a Unified mod, was " + parent);
             check(FabricLoader.getInstance().isModLoaded(QOL) == qol, "QoL installed: " + qol);
@@ -172,28 +172,28 @@ public final class SettingsRuntimeGameTest implements FabricClientGameTest {
                 check(rows.stream().anyMatch(r -> r.getKind() == WorkspaceNavigation.Kind.CATEGORY),
                         "QoL categories shown");
             } else {
-                check(rows.isEmpty(), "Optimizations only: no sidebar rows, an explanation instead");
+                check("fast_ip_ping".equals(screen.navigation().selected()), "Optimizations' first feature selected");
                 check(classMissing("unified.qol.ui.screen.QolWorkspace"), "no QoL classes");
             }
             if (optimizations) {
-                check(screen.navigation().modules().stream().filter(m -> m.getId().equals(OPTIMIZATIONS))
-                        .allMatch(m -> m.getFeatures().isEmpty()), "Optimizations shows no fake features");
-                if (qol) {
-                    check(rows.stream().anyMatch(r -> r.getKind() == WorkspaceNavigation.Kind.NOTE
-                            && r.getModuleId().equals(OPTIMIZATIONS)), "Optimizations says it has no features yet");
-                }
+                List<String> features = screen.navigation().modules().stream()
+                        .filter(m -> m.getId().equals(OPTIMIZATIONS)).flatMap(m -> m.getFeatures().stream())
+                        .map(f -> f.getCategoryId() + "/" + f.getId()).toList();
+                check(features.equals(List.of("network/fast_ip_ping", "performance/fast_quit")),
+                        "Optimizations: only implemented features, " + features);
+                check(rows.stream().noneMatch(r -> r.getKind() == WorkspaceNavigation.Kind.NOTE), "no empty note");
             }
         });
         ctx.takeScreenshot("settings-runtime-" + scenario + "-workspace");
         if (qol && optimizations) {
-            // Collapse the QoL group: the Optimizations group and its note come into view.
+            // Collapse the QoL group: the Optimizations group and its categories come into view.
             ctx.runOnClient(mc -> {
                 UnifiedSettingsScreen screen = (UnifiedSettingsScreen) mc.gui.screen();
                 screen.navigation().clickModule(QOL);
                 screen.resize(screen.width, screen.height); // rebuild
                 check(!screen.navigation().isModuleExpanded(QOL), "QoL group collapsed");
-                check(screen.navRows().stream().anyMatch(r -> r.getKind() == WorkspaceNavigation.Kind.NOTE),
-                        "Optimizations note visible");
+                check(screen.navRows().stream().anyMatch(r -> r.getKind() == WorkspaceNavigation.Kind.CATEGORY
+                        && r.getModuleId().equals(OPTIMIZATIONS)), "Optimizations categories visible");
             });
             ctx.waitTicks(1);
             ctx.takeScreenshot("settings-runtime-" + scenario + "-groups");
