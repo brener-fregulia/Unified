@@ -49,6 +49,12 @@ Unified/
   `build.gradle.kts`. A `build-logic` convention plugin is not justified for
   two modules. Toolchain versions are shared through the root
   `gradle.properties`, which is the one place to update them.
+- **Java namespaces [Approved 2026-11-26, M2.0.1].** One root package per
+  mod: `unified.qol`, `unified.optimizations`, later `unified.graphics`. Every
+  source set uses it (main, test, development fixtures), and so do Fabric
+  entrypoints and Mixin packages. A package is internal to its mod; mod ids,
+  configuration keys and translation keys never derive from it, so packages
+  can change without a configuration migration.
 - **Configuration directories.** `config/qol_unified/` and
   `config/unified_optimizations/`. A mod never reads another mod's files.
 
@@ -74,6 +80,13 @@ and never publishes. Game tests need a desktop session and run locally, as
 before.
 
 ## History
+
+- 2026-11-26, M2.0.1: Java packages simplified from
+  `io.github.brener_fregulia.qolunified` to `unified.qol` and from
+  `io.github.brener_fregulia.unified.optimizations` to
+  `unified.optimizations`. Mod ids, configuration, key bindings and
+  translations are unchanged. The Maven group in `gradle.properties` stays
+  `io.github.brener_fregulia`; it is a build coordinate, not a package.
 
 Until 2026-11-26 the repository was `brener-fregulia/qol-unified` with a single
 Gradle project. It was renamed to `brener-fregulia/Unified` (GitHub keeps

@@ -100,7 +100,7 @@ Approved in M0.2. Versions verified 2026-11-21.
 | Loom | `net.fabricmc.fabric-loom` 1.19.4 (non-remapping plugin for 26.1+) |
 | Fabric Loader | 0.20.1 |
 | Fabric API | 0.166.2+26.3, approved dependency (resolves Q-A1) |
-| Mod ID / package | `qol_unified` / `io.github.brener_fregulia.qolunified` (resolves Q-A4) |
+| Mod ID / package | `qol_unified` / `unified.qol` (Q-A4; package `io.github.brener_fregulia.qolunified` until M2.0.1, 2026-11-26) |
 | Environment | Client only; one `client` entrypoint, no `main`/server entrypoint |
 | Unit tests | JUnit 5, from the Core milestone (resolves the unit-test part of Q-A5) |
 | CI | GitHub Actions build verification only; no publishing or tagging |
@@ -112,7 +112,7 @@ Sources: `meta.fabricmc.net` (game and loader versions),
 ## Shared platform utilities [Approved 2026-11-23]
 
 Small helpers that more than one feature needs live in
-`io.github.brener_fregulia.qolunified.platform`, not inside a feature
+`unified.qol.platform`, not inside a feature
 (feature isolation). The first one is `ModNames`: a mod's display name for
 a registry namespace from Fabric Loader metadata, falling back to the
 namespace. Target Info and Sound Control both use it
@@ -126,6 +126,7 @@ namespace. Target Info and Sound Control both use it
 - **Q-A3 [Resolved 2026-11-21]** Mod Menu integration is optional and
   deferred.
 - **Q-A4 [Resolved 2026-11-21]** Mod ID `qol_unified`, package
-  `io.github.brener_fregulia.qolunified`.
+  `io.github.brener_fregulia.qolunified`. The package became `unified.qol`
+  in M2.0.1 (2026-11-26); the mod id is unchanged.
 - **Q-A5 [Resolved 2026-11-21]** JUnit 5 for unit tests; manual in-game QA
   initially. In-game test automation is deferred.
