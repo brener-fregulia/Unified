@@ -8,6 +8,7 @@ import io.github.brener_fregulia.qolunified.feature.keyboardmap.KeyboardMapFeatu
 import io.github.brener_fregulia.qolunified.feature.shulkerpreview.ShulkerPreviewFeature;
 import io.github.brener_fregulia.qolunified.feature.soundcontrol.SoundControlFeature;
 import io.github.brener_fregulia.qolunified.feature.targetinfo.TargetInfoFeature;
+import io.github.brener_fregulia.qolunified.feature.zoom.ZoomFeature;
 import java.util.List;
 
 /** The production feature list. Features are registered here explicitly (M0 §3.5). */
@@ -28,6 +29,7 @@ public final class Features {
         builder.register(new TargetInfoFeature());
         builder.register(new SoundControlFeature());
         builder.register(new ShulkerPreviewFeature());
+        builder.register(new ZoomFeature());
         developmentFeatures.forEach(builder::register);
         return builder.build();
     }

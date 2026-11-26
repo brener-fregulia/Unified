@@ -49,6 +49,7 @@ public final class QolUnifiedClient implements ClientModInitializer {
         // Fabric only accepts key mappings during client start, so this one exists even while the feature is off;
         // it opens nothing then.
         KeyboardMapHooks.registerKeyMapping();
+        io.github.brener_fregulia.qolunified.feature.zoom.ZoomHooks.register();
         // Settings comparisons (settings-ux-v1.md §8): small drawers, shown in the settings even while a feature is
         // off; their rendering classes load only when the settings panel draws them.
         io.github.brener_fregulia.qolunified.feature.foodhud.FoodHudComparison.register();
