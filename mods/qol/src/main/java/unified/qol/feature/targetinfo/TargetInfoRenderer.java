@@ -154,7 +154,17 @@ public final class TargetInfoRenderer {
         g.fill(x + width - 1, y + 1, x + width, y + height - 1, BORDER);
 
         if (icon) {
-            g.item(v.icon(), x + PAD, y + (height - ICON) / 2);
+            int iconY = y + (height - ICON) / 2;
+            g.item(v.icon(), x + PAD, iconY);
+            if (!v.contents().isEmpty()) {
+                // A placed shulker box's last-seen content icon, as Shulker Preview draws it on box items: half size
+                // in the icon's top-right quadrant.
+                g.pose().pushMatrix();
+                g.pose().translate(x + PAD + 8, iconY);
+                g.pose().scale(0.5f, 0.5f);
+                g.item(v.contents(), 0, 0);
+                g.pose().popMatrix();
+            }
         }
         int ty = y + PAD + (contentHeight < ICON && icon ? (ICON - contentHeight) / 2 : 0);
         g.text(font, name, x + textX, ty, NAME, true);

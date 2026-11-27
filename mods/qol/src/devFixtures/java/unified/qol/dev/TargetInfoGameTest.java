@@ -68,6 +68,7 @@ final class TargetInfoGameTest {
             visibility();
             guiScales();
             settings();
+            placedShulkers();
         }
     }
 
@@ -507,6 +508,97 @@ final class TargetInfoGameTest {
     }
 
     // ---- Helpers ----
+
+    // ---- Placed shulker boxes (target-info-v1.md §17) ----
+
+    private static final String SP = "shulker_preview";
+    private static final String CONTENTS = "{Items:[{Slot:0b,id:\"minecraft:dirt\",count:1},"
+            + "{Slot:1b,id:\"minecraft:stone\",count:64},{Slot:2b,id:\"minecraft:stone\",count:64},"
+            + "{Slot:5b,id:\"minecraft:oak_log\",count:3}]}";
+
+    private void placedShulkers() {
+        lookAtTarget();
+        // Unknown: the server holds the items, the client's block entity never receives them.
+        place("minecraft:red_shulker_box" + CONTENTS);
+        check(ctx.computeOnClient(mc -> mc.level.getBlockEntity(TARGET)
+                instanceof net.minecraft.world.level.block.entity.ShulkerBoxBlockEntity box && box.isEmpty()),
+                "client block entity has no items (not synced by Minecraft)");
+        check(server.computeOnServer(s -> s.overworld().getBlockEntity(TARGET)
+                instanceof net.minecraft.world.level.block.entity.ShulkerBoxBlockEntity box && !box.isEmpty()),
+                "the server has them");
+        TargetView unknown = drawn();
+        check(unknown.contents().isEmpty() && !hasLastSeenLine(unknown), "never opened: no icon, no guess");
+        shot("30-shulker-unknown");
+
+        // Opened and closed: first occupied slot by default (dirt), labelled as last seen.
+        openAndClose();
+        TargetView first = drawn();
+        check(first.contents().is(net.minecraft.world.item.Items.DIRT), "first occupied slot: " + first.contents());
+        check(hasLastSeenLine(first), "labelled as last seen");
+        shot("31-shulker-first-occupied");
+
+        // The player's Shulker Preview preference: predominant item (stone), and back.
+        setShulkerSource("predominant");
+        check(drawn().contents().is(net.minecraft.world.item.Items.STONE), "predominant item");
+        shot("32-shulker-predominant");
+        setShulkerSource("first_occupied");
+        check(drawn().contents().is(net.minecraft.world.item.Items.DIRT), "preference change applies");
+
+        // Any block change at the position drops the snapshot, so another box is never shown with old contents.
+        place("minecraft:blue_shulker_box" + CONTENTS);
+        check(drawn().contents().isEmpty(), "replaced box: unknown again");
+
+        // Empty box: opened, nothing inside, no icon.
+        place("minecraft:air");
+        place("minecraft:shulker_box");
+        openAndClose();
+        TargetView empty = drawn();
+        check(empty.contents().isEmpty() && !hasLastSeenLine(empty), "empty box: no icon");
+
+        // Every color.
+        for (net.minecraft.world.item.DyeColor color : net.minecraft.world.item.DyeColor.values()) {
+            place("minecraft:air");
+            place("minecraft:" + color.getSerializedName() + "_shulker_box" + CONTENTS);
+            openAndClose();
+            check(drawn().contents().is(net.minecraft.world.item.Items.DIRT), "color " + color);
+        }
+
+        // Target Info off: nothing drawn and nothing recorded.
+        place("minecraft:air");
+        place("minecraft:purple_shulker_box" + CONTENTS);
+        setEnabled(false);
+        int before = ctx.computeOnClient(mc -> unified.qol.feature.targetinfo.ShulkerSnapshots.size());
+        openAndClose();
+        check(ctx.computeOnClient(mc -> TargetInfoRenderer.lastDrawn()) == null, "off: nothing drawn");
+        check(ctx.computeOnClient(mc -> unified.qol.feature.targetinfo.ShulkerSnapshots.size()) == before,
+                "off: nothing recorded");
+        setEnabled(true);
+        check(drawn().contents().isEmpty(), "on again: still unknown, never guessed");
+        place("minecraft:air");
+    }
+
+    /** Uses the targeted box like a player (the use key), waits for its menu, then closes it. */
+    private void openAndClose() {
+        ctx.getInput().pressKey(o -> o.keyUse);
+        ctx.waitForScreen(net.minecraft.client.gui.screens.inventory.ShulkerBoxScreen.class);
+        ctx.waitTicks(3);
+        ctx.runOnClient(mc -> mc.gui.screen().onClose());
+        ctx.waitTicks(3);
+    }
+
+    private boolean hasLastSeenLine(TargetView view) {
+        return view.lines().stream().anyMatch(l -> l.getContents()
+                instanceof net.minecraft.network.chat.contents.TranslatableContents t
+                && t.getKey().equals(unified.qol.feature.targetinfo.TargetInfoTexts.SHULKER_LAST_SEEN));
+    }
+
+    private void setShulkerSource(String source) {
+        on(core -> {
+            var choice = core.choices().get(SP);
+            core.saveAndApply(Map.of(SP, choice.withSettings(choice.settings().with("slot_icon_source", source))));
+        });
+        ctx.waitTicks(2);
+    }
 
     private void lookAtTarget() {
         // Eye height 1.62: yaw 0 faces south; pitch 29 aims at the centre of the block two metres ahead.

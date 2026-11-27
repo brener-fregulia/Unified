@@ -491,3 +491,72 @@ and `DetailsTest.overlaySitsBelowBossBars`.
 - Entities have no icon; tamed wolves (40 health) show numeric health.
 - Not covered automatically: a real Paper server, other mods' blocks, and
   WTHIT side by side.
+
+## 17. Placed Shulker Box contents [Implemented 2026-11-27]
+
+Target Info shows a representative item on a placed Shulker Box's icon, drawn
+like Shulker Preview's slot icon (the actual item, half size, top-right
+quadrant of the box icon), plus a "Contents as last seen" line.
+
+### 17.1 What the client can know (verified in 26.3 with `javap` and a game test)
+
+- `ShulkerBoxBlockEntity` does not override `getUpdateTag`/`getUpdatePacket`;
+  `BaseContainerBlockEntity.getUpdateTag` returns an **empty** tag. A placed
+  box's items are therefore never sent to clients: not in chunk data, not in
+  block-entity updates.
+- **Singleplayer** uses the same network path: the client's block entity is
+  empty while the integrated server's holds the items (asserted by the game
+  test). Reading the integrated server's world from client code would work
+  only in singleplayer and is not done.
+- **Multiplayer (vanilla or Paper):** identical; nothing more is sent.
+- **The only legitimate source** is the box's own menu while the player has
+  it open (`ShulkerBoxMenu`, filled by the server's container packets).
+- A box never opened in this session is **unknown**: no icon, no guess.
+
+### 17.2 Last-seen snapshots (`ShulkerSnapshots`)
+
+A cache is necessary: without it nothing could ever be shown.
+
+- **Attribution:** when the player uses a placed Shulker Box (Fabric
+  `UseBlockCallback`, observing only) and a `ShulkerBoxScreen` opens within
+  20 ticks while that block is still a Shulker Box, the menu belongs to that
+  position. Otherwise nothing is recorded.
+- **Capture:** the menu's 27 container slots are copied when the screen
+  closes, through Shulker Preview's own summary builder
+  (`ShulkerContents.summaryOf`).
+- **Scope:** memory only, bounded (512), keyed by dimension and position,
+  cleared on every join and disconnect, so nothing crosses servers or worlds.
+  Never written to disk.
+- **Invalidation:** a Mixin observes `ClientLevel.sendBlockUpdated`; any
+  change of block at a remembered position (broken, replaced, recolored)
+  drops its snapshot.
+- **Never current:** the contents can change after closing (hoppers, other
+  players, commands), so the overlay says "Contents as last seen".
+- Nothing is recorded while Target Info is off.
+
+### 17.3 Selection and settings
+
+- The icon comes from `ShulkerSummary.iconStack`, Shulker Preview's rule: the
+  first occupied slot by default, or the predominant item when the player's
+  Shulker Preview `slot_icon_source` is "predominant". The stored choice is
+  followed even while Shulker Preview itself is off.
+- No new setting. Target Info's master switch controls display and recording.
+- An empty box shows no icon and no line.
+
+### 17.4 Validation
+
+`runGameTestTargetinfo`, section `placedShulkers`: unknown before opening
+(client block entity empty, server's full); first occupied (dirt) after
+open and close; predominant (stone) after changing the preference, and back;
+a replaced box is unknown again; an empty box shows nothing; all 16 dye
+colors; Target Info off draws and records nothing. A dedicated-server run was
+not needed for the data boundary: the singleplayer client receives exactly
+what a dedicated server sends (verified above).
+
+### 17.5 Limitations
+
+- Only boxes opened by this player in this session have an icon.
+- The icon can be out of date after the box was closed (labelled).
+- A server plugin that opens a Shulker-type menu of its own in response to
+  using a box would be attributed to that box. The snapshot would still be
+  labelled "last seen" and would drop on any block change.

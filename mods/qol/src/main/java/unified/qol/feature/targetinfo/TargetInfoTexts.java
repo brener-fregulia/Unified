@@ -27,6 +27,8 @@ public final class TargetInfoTexts {
     public static final String HEALTH = P + "health";
     public static final String REQUIRES = P + "requires";
     public static final String COUNT = P + "count";
+    /** A placed shulker box's icon shows its contents as last seen, not live (§17). */
+    public static final String SHULKER_LAST_SEEN = P + "shulker_last_seen";
 
     private TargetInfoTexts() {
     }

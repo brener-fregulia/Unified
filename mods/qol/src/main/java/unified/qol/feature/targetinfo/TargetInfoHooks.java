@@ -16,5 +16,6 @@ final class TargetInfoHooks {
 
     static void install() {
         HudElementRegistry.attachElementAfter(VanillaHudElements.BOSS_BAR, ELEMENT, TargetInfoRenderer::extract);
+        ShulkerSnapshots.register();
     }
 }

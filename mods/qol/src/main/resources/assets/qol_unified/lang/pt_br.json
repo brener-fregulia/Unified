@@ -246,5 +246,6 @@
   "qol_unified.feature.mouse_tweaks.setting.wheel_direction.inverted": "Para cima envia, para baixo traz",
   "qol_unified.feature.mouse_tweaks.setting.wheel_search_order": "Ordem de busca da rodinha",
   "qol_unified.feature.mouse_tweaks.setting.wheel_search_order.last_to_first": "Do último ao primeiro",
-  "qol_unified.feature.mouse_tweaks.setting.wheel_search_order.first_to_last": "Do primeiro ao último"
+  "qol_unified.feature.mouse_tweaks.setting.wheel_search_order.first_to_last": "Do primeiro ao último",
+  "qol_unified.target_info.shulker_last_seen": "Conteúdo visto por último"
 }

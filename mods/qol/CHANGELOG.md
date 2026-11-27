@@ -9,6 +9,14 @@ released yet.
 
 ## [Unreleased]
 
+### Added
+
+- Target Info shows a placed Shulker Box's contents icon (first occupied slot,
+  or the predominant item per Shulker Preview's setting) once you have opened
+  that box in the current session, labelled "Contents as last seen".
+  Minecraft does not send placed boxes' items to clients, so boxes you have not
+  opened show no icon.
+
 ### Fixed
 
 - Inventory Mouse Tweaks no longer blocks vanilla's Shift + double-click with an

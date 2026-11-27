@@ -246,5 +246,6 @@
   "qol_unified.feature.mouse_tweaks.setting.wheel_direction.inverted": "Up sends, down brings",
   "qol_unified.feature.mouse_tweaks.setting.wheel_search_order": "Wheel search order",
   "qol_unified.feature.mouse_tweaks.setting.wheel_search_order.last_to_first": "Last to first",
-  "qol_unified.feature.mouse_tweaks.setting.wheel_search_order.first_to_last": "First to last"
+  "qol_unified.feature.mouse_tweaks.setting.wheel_search_order.first_to_last": "First to last",
+  "qol_unified.target_info.shulker_last_seen": "Contents as last seen"
 }

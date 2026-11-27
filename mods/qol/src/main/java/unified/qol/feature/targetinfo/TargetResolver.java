@@ -159,7 +159,39 @@ final class TargetResolver {
                 lines.add(text(line));
             }
         }
-        return new TargetView(pos, icon, block.getName(), source, tools, mark, List.copyOf(lines), null, instant);
+        ItemStack contents = ItemStack.EMPTY;
+        if (block instanceof net.minecraft.world.level.block.ShulkerBoxBlock) {
+            contents = shulkerContents(level, pos);
+            if (!contents.isEmpty()) {
+                lines.add(Component.translatable(TargetInfoTexts.SHULKER_LAST_SEEN));
+            }
+        }
+        return new TargetView(pos, icon, block.getName(), source, tools, mark, List.copyOf(lines), null, instant,
+                contents);
+    }
+
+    /**
+     * A placed box's representative item from its last-seen snapshot, chosen with Shulker Preview's own rule and the
+     * player's Shulker Preview preference (first occupied slot by default); empty when unknown or empty.
+     */
+    static ItemStack shulkerContents(Level level, BlockPos pos) {
+        var summary = ShulkerSnapshots.lastSeen(level, pos);
+        if (summary == null || summary.isEmpty()) {
+            return ItemStack.EMPTY;
+        }
+        ItemStack icon = summary.iconStack(shulkerIconSource());
+        return icon == null ? ItemStack.EMPTY : icon;
+    }
+
+    /** The player's Shulker Preview {@code slot_icon_source} choice, stored even while that feature is off. */
+    static String shulkerIconSource() {
+        try {
+            return unified.qol.QolUnifiedClient.core().choices()
+                    .get(unified.qol.feature.shulkerpreview.ShulkerPreviewSettings.ID).settings()
+                    .getEnum(unified.qol.feature.shulkerpreview.ShulkerPreviewSettings.SLOT_ICON_SOURCE);
+        } catch (RuntimeException e) {
+            return unified.qol.feature.shulkerpreview.ShulkerPreviewSettings.FIRST_OCCUPIED;
+        }
     }
 
     private List<Probe> probes(BlockState state) {

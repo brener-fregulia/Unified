@@ -15,7 +15,14 @@ import net.minecraft.world.item.ItemStack;
  * @param tools the recommended tool icons, left to right
  * @param health the entity's health, or {@code null}
  * @param instant the block breaks instantly, so no progress bar
+ * @param contents a placed shulker box's last-seen representative item, drawn on its icon, or {@link ItemStack#EMPTY}
  */
 public record TargetView(BlockPos pos, ItemStack icon, Component name, Component source, List<ItemStack> tools,
-        ToolAdvice.Mark mark, List<Component> lines, EntityDetails.Health health, boolean instant) {
+        ToolAdvice.Mark mark, List<Component> lines, EntityDetails.Health health, boolean instant,
+        ItemStack contents) {
+    /** A view without shulker contents. */
+    public TargetView(BlockPos pos, ItemStack icon, Component name, Component source, List<ItemStack> tools,
+            ToolAdvice.Mark mark, List<Component> lines, EntityDetails.Health health, boolean instant) {
+        this(pos, icon, name, source, tools, mark, lines, health, instant, ItemStack.EMPTY);
+    }
 }

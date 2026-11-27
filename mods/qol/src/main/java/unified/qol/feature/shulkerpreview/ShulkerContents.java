@@ -85,8 +85,17 @@ public final class ShulkerContents {
         } catch (RuntimeException e) {
             return ShulkerSummary.of(List.of()); // malformed component: treated as unknown
         }
+        return summaryOf(items);
+    }
+
+    /**
+     * The summary of a box's slots in slot order (the same grouping the item preview uses). The stacks are copied, so
+     * the summary never holds a live, mutable stack. Used by Target Info for a placed box's last-seen contents.
+     */
+    public static ShulkerSummary<ItemStack> summaryOf(List<ItemStack> items) {
         List<ShulkerSummary.Slot<ItemStack>> slots = new ArrayList<>(ShulkerSummary.SLOTS);
-        for (ItemStack item : items) {
+        for (ItemStack original : items) {
+            ItemStack item = original.copy();
             slots.add(item.isEmpty() ? null
                     : new ShulkerSummary.Slot<>(item.getItem(), item, item.getCount(), item.getMaxStackSize()));
         }

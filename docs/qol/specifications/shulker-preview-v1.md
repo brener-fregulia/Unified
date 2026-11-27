@@ -401,3 +401,11 @@ activation key is unchanged.
 - Game test: the same cases on real items, both modes and `slot_icon` off,
   with screenshots `29-shift-hint`, `30-icon-first-occupied` and
   `31-icon-predominant`.
+
+## 16. Reuse by Target Info [Implemented 2026-11-27]
+
+`ShulkerContents.summaryOf(List<ItemStack>)` exposes the summary builder for a
+list of slots, so Target Info's placed-box indicator
+([target-info-v1.md §17](target-info-v1.md)) uses the same grouping and
+`ShulkerSummary.iconStack` selection. Shulker Preview's behavior and
+appearance are unchanged.
